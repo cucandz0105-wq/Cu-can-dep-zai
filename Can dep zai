@@ -1,0 +1,599 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local PlayerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
+local MyWorkspace = game:GetService("Workspace")
+local CurrentCamera = MyWorkspace.CurrentCamera
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "PremiumFinalFixMenu"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = PlayerGui
+
+local ToggleRoundBtn = Instance.new("TextButton")
+ToggleRoundBtn.Size = UDim2.new(0, 45, 0, 45)
+ToggleRoundBtn.Position = UDim2.new(0.05, 0, 0.3, 0)
+ToggleRoundBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+ToggleRoundBtn.BorderSizePixel = 2
+ToggleRoundBtn.BorderColor3 = Color3.fromRGB(60, 60, 60)
+ToggleRoundBtn.Text = "CC"
+ToggleRoundBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleRoundBtn.Font = Enum.Font.SourceSansBold
+ToggleRoundBtn.TextSize = 18
+ToggleRoundBtn.Visible = true
+ToggleRoundBtn.Active = true
+ToggleRoundBtn.Draggable = true
+ToggleRoundBtn.Parent = ScreenGui
+
+local UICornerRound = Instance.new("UICorner")
+UICornerRound.CornerRadius = UDim.new(1, 0)
+UICornerRound.Parent = ToggleRoundBtn
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 360, 0, 300)
+MainFrame.Position = UDim2.new(0.3, 0, 0.3, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+MainFrame.BorderSizePixel = 2
+MainFrame.BorderColor3 = Color3.fromRGB(40, 40, 40)
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.Visible = false
+MainFrame.Parent = ScreenGui
+
+local TopBar = Instance.new("Frame")
+TopBar.Size = UDim2.new(1, 0, 0, 30)
+TopBar.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+TopBar.BorderSizePixel = 0
+TopBar.Parent = MainFrame
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(0.6, 0, 1, 0)
+Title.Position = UDim2.new(0, 10, 0, 0)
+Title.BackgroundTransparency = 1
+Title.Text = "5-TAB PREMIUM MENU"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.Font = Enum.Font.SourceSansBold
+Title.TextSize = 14
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = TopBar
+
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(0, 30, 0, 30)
+CloseBtn.Position = UDim2.new(1, -30, 0, 0)
+CloseBtn.BackgroundTransparency = 1
+CloseBtn.Text = "X"
+CloseBtn.TextColor3 = Color3.fromRGB(255, 70, 70)
+CloseBtn.Font = Enum.Font.SourceSansBold
+CloseBtn.TextSize = 16
+CloseBtn.Parent = TopBar
+
+local InnerFrame = Instance.new("Frame")
+InnerFrame.Size = UDim2.new(1, 0, 1, -30)
+InnerFrame.Position = UDim2.new(0, 0, 0, 30)
+InnerFrame.BackgroundTransparency = 1
+InnerFrame.Parent = MainFrame
+
+local Sidebar = Instance.new("Frame")
+Sidebar.Size = UDim2.new(0, 90, 1, 0)
+Sidebar.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+Sidebar.BorderSizePixel = 0
+Sidebar.Parent = InnerFrame
+
+local Content = Instance.new("Frame")
+Content.Size = UDim2.new(1, -95, 1, -10)
+Content.Position = UDim2.new(0, 100, 0, 5)
+Content.BackgroundTransparency = 1
+Content.Parent = InnerFrame
+
+local btns = {}
+local tabs = {}
+
+local function createTabButton(name, pos, id)
+	local b = Instance.new("TextButton")
+	b.Size = UDim2.new(1, -10, 0, 32)
+	b.Position = UDim2.new(0, 5, 0, pos)
+	b.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+	b.Text = name
+	b.TextColor3 = Color3.fromRGB(255, 255, 255)
+	b.Font = Enum.Font.SourceSansBold
+	b.TextSize = 13
+	b.Parent = Sidebar
+	btns[id] = b
+	
+	local f = Instance.new("Frame")
+	f.Size = UDim2.new(1, 0, 1, 0)
+	f.BackgroundTransparency = 1
+	f.Visible = false
+	f.Parent = Content
+	tabs[id] = f
+	return f
+end
+
+local t1 = createTabButton("Speed", 5, 1)
+local t2 = createTabButton("Noclip", 42, 2)
+local t3 = createTabButton("ESP & TP", 79, 3)
+local t4 = createTabButton("Fling & View", 116, 4)
+local t5 = createTabButton("Float", 153, 5)
+
+local function show(id)
+	for i, v in pairs(tabs) do v.Visible = (i == id) end
+	for i, v in pairs(btns) do v.BackgroundColor3 = (i == id) and Color3.fromRGB(60, 60, 60) or Color3.fromRGB(30, 30, 30) end
+end
+
+btns[1].MouseButton1Click:Connect(function() show(1) end)
+btns[2].MouseButton1Click:Connect(function() show(2) end)
+btns[3].MouseButton1Click:Connect(function() show(3) end)
+btns[4].MouseButton1Click:Connect(function() show(4) end)
+btns[5].MouseButton1Click:Connect(function() show(5) end)
+show(1)
+
+ToggleRoundBtn.MouseButton1Click:Connect(function()
+	MainFrame.Visible = true
+	ToggleRoundBtn.Visible = false
+end)
+
+CloseBtn.MouseButton1Click:Connect(function()
+	MainFrame.Visible = false
+	ToggleRoundBtn.Visible = true
+end)
+
+local SpeedToggle = Instance.new("TextButton", t1)
+SpeedToggle.Size = UDim2.new(1, -10, 0, 40)
+SpeedToggle.Position = UDim2.new(0, 5, 0, 10)
+SpeedToggle.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+SpeedToggle.Text = "Speed: OFF"
+SpeedToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+SpeedToggle.Font = Enum.Font.SourceSansBold
+SpeedToggle.TextSize = 16
+
+local SpeedInput = Instance.new("TextBox", t1)
+SpeedInput.Size = UDim2.new(1, -10, 0, 40)
+SpeedInput.Position = UDim2.new(0, 5, 0, 60)
+SpeedInput.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+SpeedInput.Text = "50"
+SpeedInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+SpeedInput.Font = Enum.Font.SourceSansBold
+SpeedInput.TextSize = 16
+
+local sActive = false
+local sConn = nil
+
+SpeedToggle.MouseButton1Click:Connect(function()
+	sActive = not sActive
+	local lp = Players.LocalPlayer
+	if sActive then
+		SpeedToggle.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+		SpeedToggle.Text = "Speed: ON"
+		sConn = RunService.Heartbeat:Connect(function()
+			local c = lp.Character
+			local h = c and c:FindFirstChildWhichIsA("Humanoid")
+			if h then h.WalkSpeed = tonumber(SpeedInput.Text) or 50 end
+		end)
+	else
+		SpeedToggle.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+		SpeedToggle.Text = "Speed: OFF"
+		if sConn then sConn:Disconnect() end
+		local c = lp.Character
+		local h = c and c:FindFirstChildWhichIsA("Humanoid")
+		if h then h.WalkSpeed = 16 end
+	end
+end)
+
+local NoclipToggle = Instance.new("TextButton", t2)
+NoclipToggle.Size = UDim2.new(1, -10, 0, 50)
+NoclipToggle.Position = UDim2.new(0, 5, 0, 10)
+NoclipToggle.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+NoclipToggle.Text = "Noclip: OFF"
+NoclipToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+NoclipToggle.Font = Enum.Font.SourceSansBold
+NoclipToggle.TextSize = 16
+
+local nActive = false
+local nConn = nil
+
+nConn = RunService.Stepped:Connect(function()
+	if nActive then
+		local c = Players.LocalPlayer.Character
+		if c then
+			for _, p in pairs(c:GetDescendants()) do
+				if p:IsA("BasePart") and p.CanCollide then p.CanCollide = false end
+			end
+		end
+	end
+end)
+
+NoclipToggle.MouseButton1Click:Connect(function()
+	nActive = not nActive
+	if nActive then
+		NoclipToggle.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+		NoclipToggle.Text = "Noclip: ON"
+	else
+		NoclipToggle.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+		NoclipToggle.Text = "Noclip: OFF"
+		local c = Players.LocalPlayer.Character
+		if c then
+			for _, p in pairs(c:GetDescendants()) do
+				if p:IsA("BasePart") then p.CanCollide = true end
+			end
+		end
+	end
+end)
+
+local EspToggle = Instance.new("TextButton", t3)
+EspToggle.Size = UDim2.new(1, -10, 0, 35)
+EspToggle.Position = UDim2.new(0, 5, 0, 5)
+EspToggle.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+EspToggle.Text = "ESP: OFF"
+EspToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+EspToggle.Font = Enum.Font.SourceSansBold
+EspToggle.TextSize = 14
+
+local TPInput = Instance.new("TextBox", t3)
+TPInput.Size = UDim2.new(1, -10, 0, 35)
+TPInput.Position = UDim2.new(0, 5, 0, 45)
+TPInput.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+TPInput.PlaceholderText = "Enter Name, DisplayName or ID..."
+TPInput.Text = ""
+TPInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+TPInput.Font = Enum.Font.SourceSansBold
+TPInput.TextSize = 14
+
+local TPBtn = Instance.new("TextButton", t3)
+TPBtn.Size = UDim2.new(1, -10, 0, 35)
+TPBtn.Position = UDim2.new(0, 5, 0, 85)
+TPBtn.BackgroundColor3 = Color3.fromRGB(35, 120, 240)
+TPBtn.Text = "Teleport"
+TPBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+TPBtn.Font = Enum.Font.SourceSansBold
+TPBtn.TextSize = 16
+
+local function findPlr(str)
+	if str == "" then return nil end
+	
+	local targetId = tonumber(str)
+	if targetId then
+		for _, v in pairs(Players:GetPlayers()) do
+			if v ~= Players.LocalPlayer and v.UserId == targetId then
+				return v
+			end
+		end
+	end
+	
+	local s = string.lower(str)
+	for _, v in pairs(Players:GetPlayers()) do
+		if v ~= Players.LocalPlayer then
+			local nameLower = string.lower(v.Name)
+			local dispLower = string.lower(v.DisplayName)
+			if string.sub(dispLower, 1, #s) == s or string.sub(nameLower, 1, #s) == s then
+				return v
+			end
+		end
+	end
+	return nil
+end
+
+TPBtn.MouseButton1Click:Connect(function()
+	local txt = TPInput.Text
+	if txt ~= "" then
+		local target = findPlr(txt)
+		if target and target.Character then
+			local tHrp = target.Character:FindFirstChild("HumanoidRootPart")
+			local myC = Players.LocalPlayer.Character
+			local myHrp = myC and myC:FindFirstChild("HumanoidRootPart")
+			if tHrp and myHrp then
+				myHrp.CFrame = tHrp.CFrame + Vector3.new(0, 3, 0)
+			end
+		end
+	end
+end)
+
+local espActive = false
+local espObjects = {}
+
+local function createEsp(plr)
+	if plr == Players.LocalPlayer then return end
+	
+	local function addHighlight()
+		if not espActive then return end
+		local c = plr.Character
+		if c then
+			local hrp = c:WaitForChild("HumanoidRootPart", 5)
+			if hrp and not c:FindFirstChild("PremiumEspHighlight") then
+				local color = plr.TeamColor and plr.TeamColor.Color or Color3.fromRGB(255, 255, 255)
+				
+				local hl = Instance.new("Highlight")
+				hl.Name = "PremiumEspHighlight"
+				hl.FillTransparency = 0.5
+				hl.OutlineTransparency = 0
+				hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+				hl.FillColor = color
+				hl.OutlineColor = color
+				hl.Parent = c
+				table.insert(espObjects, hl)
+				
+				local bb = Instance.new("BillboardGui")
+				bb.Name = "PremiumEspTag"
+				bb.Adornee = hrp
+				bb.Size = UDim2.new(0, 200, 0, 30)
+				bb.StudsOffset = Vector3.new(0, 4.5, 0)
+				bb.AlwaysOnTop = true
+				bb.Parent = c
+				table.insert(espObjects, bb)
+				
+				local tl = Instance.new("TextLabel")
+				tl.Size = UDim2.new(1, 0, 1, 0)
+				tl.BackgroundTransparency = 1
+				tl.Text = plr.DisplayName or plr.Name
+				tl.TextColor3 = color
+				tl.TextStrokeTransparency = 0
+				tl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+				tl.Font = Enum.Font.SourceSansBold
+				tl.TextSize = 18
+				tl.Parent = bb
+			end
+		end
+	end
+	
+	plr.CharacterAdded:Connect(addHighlight)
+	if plr.Character then addHighlight() end
+end
+
+EspToggle.MouseButton1Click:Connect(function()
+	espActive = not espActive
+	if espActive then
+		EspToggle.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+		EspToggle.Text = "ESP: ON"
+		for _, p in pairs(Players:GetPlayers()) do createEsp(p) end
+	else
+		EspToggle.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+		EspToggle.Text = "ESP: OFF"
+		for _, o in pairs(espObjects) do
+			if o and o.Parent then o:Destroy() end
+		end
+		espObjects = {}
+		for _, p in pairs(Players:GetPlayers()) do
+			local c = p.Character
+			if c then
+				local hl = c:FindFirstChild("PremiumEspHighlight")
+				local tag = c:FindFirstChild("PremiumEspTag")
+				if hl then hl:Destroy() end
+				if tag then tag:Destroy() end
+			end
+		end
+	end
+end)
+
+Players.PlayerAdded:Connect(function(p)
+	if espActive then createEsp(p) end
+end)
+
+local FlingToggle = Instance.new("TextButton", t4)
+FlingToggle.Size = UDim2.new(1, -10, 0, 30)
+FlingToggle.Position = UDim2.new(0, 5, 0, 5)
+FlingToggle.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+FlingToggle.Text = "WalkFling: OFF"
+FlingToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+FlingToggle.Font = Enum.Font.SourceSansBold
+FlingToggle.TextSize = 14
+
+local FlingInput = Instance.new("TextBox", t4)
+FlingInput.Size = UDim2.new(1, -10, 0, 30)
+FlingInput.Position = UDim2.new(0, 5, 0, 40)
+FlingInput.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+FlingInput.Text = "99999"
+FlingInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+FlingInput.Font = Enum.Font.SourceSansBold
+FlingInput.TextSize = 14
+
+local fActive = false
+local fConn = nil
+
+FlingToggle.MouseButton1Click:Connect(function()
+	local lp = Players.LocalPlayer
+	fActive = not fActive
+	
+	if fActive then
+		FlingToggle.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+		FlingToggle.Text = "WalkFling: ON"
+		
+		nActive = false
+		NoclipToggle.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+		NoclipToggle.Text = "Noclip: OFF"
+		
+		fConn = RunService.Heartbeat:Connect(function()
+			local c = lp.Character
+			local hrp = c and c:FindFirstChild("HumanoidRootPart")
+			if hrp then
+				local power = tonumber(FlingInput.Text) or 99999
+				hrp.RotVelocity = Vector3.new(power, power, power)
+				RunService.RenderStepped:Wait()
+				if hrp then hrp.RotVelocity = Vector3.new(0, 0, 0) end
+			end
+		end)
+	else
+		FlingToggle.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+		FlingToggle.Text = "WalkFling: OFF"
+		if fConn then fConn:Disconnect() end
+		local c = lp.Character
+		local hrp = c and c:FindFirstChild("HumanoidRootPart")
+		if hrp then hrp.RotVelocity = Vector3.new(0, 0, 0) end
+	end
+end)
+
+local ViewInput = Instance.new("TextBox", t4)
+ViewInput.Size = UDim2.new(1, -10, 0, 30)
+ViewInput.Position = UDim2.new(0, 5, 0, 80)
+ViewInput.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+ViewInput.PlaceholderText = "View Name/DisplayName/ID..."
+ViewInput.Text = ""
+ViewInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+ViewInput.Font = Enum.Font.SourceSansBold
+ViewInput.TextSize = 14
+
+local ViewBtn = Instance.new("TextButton", t4)
+ViewBtn.Size = UDim2.new(0, 120, 0, 30)
+ViewBtn.Position = UDim2.new(0, 5, 0, 115)
+ViewBtn.BackgroundColor3 = Color3.fromRGB(35, 120, 240)
+ViewBtn.Text = "View"
+ViewBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+ViewBtn.Font = Enum.Font.SourceSansBold
+ViewBtn.TextSize = 14
+
+local UnviewBtn = Instance.new("TextButton", t4)
+UnviewBtn.Size = UDim2.new(0, 120, 0, 30)
+UnviewBtn.Position = UDim2.new(0, 130, 0, 115)
+UnviewBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+UnviewBtn.Text = "Unview"
+UnviewBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+UnviewBtn.Font = Enum.Font.SourceSansBold
+UnviewBtn.TextSize = 14
+
+local ViewStatusLabel = Instance.new("TextLabel", ScreenGui)
+ViewStatusLabel.Size = UDim2.new(1, 0, 0, 30)
+ViewStatusLabel.Position = UDim2.new(0, 0, 0, 5)
+ViewStatusLabel.BackgroundTransparency = 1
+ViewStatusLabel.Text = ""
+ViewStatusLabel.TextColor3 = Color3.fromRGB(255, 230, 0)
+ViewStatusLabel.TextStrokeTransparency = 0
+ViewStatusLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+ViewStatusLabel.Font = Enum.Font.SourceSansBold
+ViewStatusLabel.TextSize = 18
+ViewStatusLabel.Visible = false
+
+local viewConn = nil
+
+local function resetCamera()
+	if viewConn then viewConn:Disconnect() viewConn = nil end
+	local lp = Players.LocalPlayer
+	local myC = lp.Character
+	local myHum = myC and myC:FindFirstChildWhichIsA("Humanoid")
+	if myHum then
+		CurrentCamera.CameraSubject = myHum
+	end
+	ViewStatusLabel.Visible = false
+	ViewStatusLabel.Text = ""
+end
+
+ViewBtn.MouseButton1Click:Connect(function()
+	local txt = ViewInput.Text
+	if txt ~= "" then
+		local target = findPlr(txt)
+		if target and target.Character then
+			local tHum = target.Character:FindFirstChildWhichIsA("Humanoid")
+			if tHum then
+				if viewConn then viewConn:Disconnect() end
+				
+				CurrentCamera.CameraSubject = tHum
+				ViewStatusLabel.Text = "Viewing: " .. target.DisplayName .. " (@" .. target.Name .. ") [ID: " .. tostring(target.UserId) .. "]"
+				ViewStatusLabel.Visible = true
+				
+				viewConn = target.CharacterAdded:Connect(function(newChar)
+					local newHum = newChar:WaitForChild("Humanoid", 5)
+					if newHum then
+						CurrentCamera.CameraSubject = newHum
+					else
+						resetCamera()
+					end
+				end)
+			end
+		end
+	end
+end)
+
+UnviewBtn.MouseButton1Click:Connect(function()
+	resetCamera()
+end)
+
+local FloatToggle = Instance.new("TextButton", t5)
+FloatToggle.Size = UDim2.new(1, -10, 0, 40)
+FloatToggle.Position = UDim2.new(0, 5, 0, 10)
+FloatToggle.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+FloatToggle.Text = "Float: OFF"
+FloatToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+FloatToggle.Font = Enum.Font.SourceSansBold
+FloatToggle.TextSize = 16
+
+local FloatInput = Instance.new("TextBox", t5)
+FloatInput.Size = UDim2.new(1, -10, 0, 40)
+FloatInput.Position = UDim2.new(0, 5, 0, 60)
+FloatInput.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+FloatInput.Text = "0"
+FloatInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+FloatInput.Font = Enum.Font.SourceSansBold
+FloatInput.TextSize = 16
+
+local flActive = false
+local flConn = nil
+local floatPart = nil
+local lockedY = 0
+
+FloatToggle.MouseButton1Click:Connect(function()
+	local lp = Players.LocalPlayer
+	flActive = not flActive
+	
+	if flActive then
+		FloatToggle.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+		FloatToggle.Text = "Float: ON"
+		
+		local c = lp.Character
+		local hrp = c and c:FindFirstChild("HumanoidRootPart")
+		if hrp then
+			local offset = tonumber(FloatInput.Text) or 0
+			hrp.CFrame = hrp.CFrame + Vector3.new(0, offset, 0)
+			
+			lockedY = hrp.Position.Y - 3.25
+			
+			floatPart = Instance.new("Part")
+			floatPart.Size = Vector3.new(15, 0.5, 15)
+			floatPart.Transparency = 1
+			floatPart.Anchored = true
+			floatPart.Name = "PremiumIYFloatPart"
+			floatPart.Parent = MyWorkspace
+			
+			flConn = RunService.RenderStepped:Connect(function()
+				local char = lp.Character
+				local root = char and char:FindFirstChild("HumanoidRootPart")
+				local hum = char and char:FindFirstChildWhichIsA("Humanoid")
+				
+				if root and floatPart then
+					if hum and hum.Jump then
+						lockedY = root.Position.Y - 3.25
+					end
+					root.Velocity = Vector3.new(root.Velocity.X, 0, root.Velocity.Z)
+					floatPart.CFrame = CFrame.new(root.Position.X, lockedY, root.Position.Z)
+				end
+			end)
+		else
+			flActive = false
+		end
+	else
+		FloatToggle.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+		FloatToggle.Text = "Float: OFF"
+		if flConn then flConn:Disconnect() flConn = nil end
+		if floatPart then floatPart:Destroy() floatPart = nil end
+	end
+end)
+
+Players.LocalPlayer.CharacterAdded:Connect(function()
+	sActive = false
+	SpeedToggle.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	SpeedToggle.Text = "Speed: OFF"
+	if sConn then sConn:Disconnect() end
+	
+	fActive = false
+	FlingToggle.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	FlingToggle.Text = "WalkFling: OFF"
+	if fConn then fConn:Disconnect() end
+	
+	nActive = false
+	NoclipToggle.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	NoclipToggle.Text = "Noclip: OFF"
+	
+	flActive = false
+	FloatToggle.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	FloatToggle.Text = "Float: OFF"
+	if flConn then flConn:Disconnect() flConn = nil end
+	if floatPart then floatPart:Destroy() floatPart = nil end
+	
+	resetCamera()
+end)
