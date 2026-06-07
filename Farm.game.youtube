@@ -1,0 +1,248 @@
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CoreGui = game:GetService("CoreGui")
+
+local localPlayer = Players.LocalPlayer
+local eventsFolder = ReplicatedStorage:WaitForChild("events")
+
+-- Các Remote của game
+local uploadAllRemote = eventsFolder:WaitForChild("uploadAll")
+local claimAllRemote = eventsFolder:WaitForChild("claimAll")
+local collectRemote = eventsFolder:WaitForChild("collect")
+local rebirthRemote = eventsFolder:WaitForChild("rebirth")
+
+-- Biến trạng thái
+local isAutoUpload = false
+local isAutoClaim = false
+local isAutoCollect = false
+local isAutoRebirth = false
+
+-- --- TẠO GIAO DIỆN (GUI) ---
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "ZynxUltimateScrollingMenu"
+pcall(function() screenGui.Parent = CoreGui end)
+if not screenGui.Parent then screenGui.Parent = localPlayer:WaitForChild("PlayerGui") end
+
+-- 1. KHUNG MENU CHÍNH
+local mainPanel = Instance.new("Frame")
+mainPanel.Size = UDim2.new(0, 180, 0, 200)
+mainPanel.Position = UDim2.new(0.05, 0, 0.25, 0)
+mainPanel.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+mainPanel.BorderSizePixel = 0
+mainPanel.Active = true
+mainPanel.Draggable = true -- Kéo thả menu đi riêng
+mainPanel.Parent = screenGui
+
+local mainCorner = Instance.new("UICorner")
+mainCorner.CornerRadius = UDim.new(0, 10)
+mainCorner.Parent = mainPanel
+
+-- Tiêu đề Menu
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Size = UDim2.new(1, -35, 0, 30)
+titleLabel.Position = UDim2.new(0, 10, 0, 0)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Text = "MENU SCROLL"
+titleLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
+titleLabel.Font = Enum.Font.SourceSansBold
+titleLabel.TextSize = 15
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.Parent = mainPanel
+
+-- NÚT X THU NHỎ MENU QUYẾT ĐỊNH KHÔNG ĐỤNG ĐẾN NÚT TRÒN
+local closeButton = Instance.new("TextButton")
+closeButton.Size = UDim2.new(0, 22, 0, 22)
+closeButton.Position = UDim2.new(1, -28, 0, 4)
+closeButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+closeButton.Text = "X"
+closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeButton.Font = Enum.Font.SourceSansBold
+closeButton.TextSize = 12
+closeButton.Parent = mainPanel
+local cbCorner = Instance.new("UICorner") cbCorner.CornerRadius = UDim.new(1, 0) cbCorner.Parent = closeButton
+
+-- 2. NÚT TRÒN ĐỘC LẬP HOÀN TOÀN (Luôn luôn hiện ở góc màn hình, không bao giờ ẩn)
+local openRoundButton = Instance.new("TextButton")
+openRoundButton.Size = UDim2.new(0, 45, 0, 45)
+openRoundButton.Position = UDim2.new(0.02, 0, 0.82, 0) -- Nằm riêng biệt dưới góc né khu vực farm
+openRoundButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+openRoundButton.Text = "M"
+openRoundButton.TextColor3 = Color3.fromRGB(30, 30, 30)
+openRoundButton.Font = Enum.Font.SourceSansBold
+openRoundButton.TextSize = 20
+openRoundButton.Visible = true -- [SỬA LỖI]: Luôn luôn hiện độc lập
+openRoundButton.Active = true
+openRoundButton.Draggable = true -- Kéo thả nút tròn đi riêng biệt
+openRoundButton.Parent = screenGui
+
+local orbCorner = Instance.new("UICorner")
+orbCorner.CornerRadius = UDim.new(1, 0)
+orbCorner.Parent = openRoundButton
+
+-- --- KHUNG CUỘN/VUỐT LÊN XUỐNG ---
+local scrollFrame = Instance.new("ScrollingFrame")
+scrollFrame.Size = UDim2.new(1, 0, 1, -35)
+scrollFrame.Position = UDim2.new(0, 0, 0, 35)
+scrollFrame.BackgroundTransparency = 1
+scrollFrame.BorderSizePixel = 0
+scrollFrame.ScrollBarThickness = 4
+scrollFrame.ScrollBarImageColor3 = Color3.fromRGB(255, 215, 0)
+scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 220) 
+scrollFrame.Parent = mainPanel
+
+local uiListLayout = Instance.new("UIListLayout")
+uiListLayout.Padding = UDim.new(0, 8)
+uiListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+uiListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+uiListLayout.Parent = scrollFrame
+
+
+-- --- CÁC NÚT TÍNH NĂNG (Theo thứ tự logic farm) ---
+
+-- 1. GOM SẢN PHẨM
+local collectButton = Instance.new("TextButton")
+collectButton.Size = UDim2.new(0, 150, 0, 35)
+collectButton.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
+collectButton.Text = "Auto Collect: OFF"
+collectButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+collectButton.Font = Enum.Font.SourceSansBold
+collectButton.TextSize = 14
+collectButton.LayoutOrder = 1
+collectButton.Parent = scrollFrame
+local c3 = Instance.new("UICorner") c3.CornerRadius = UDim.new(0, 6) c3.Parent = collectButton
+
+-- 2. UPLOAD BÁN ĐỒ
+local uploadButton = Instance.new("TextButton")
+uploadButton.Size = UDim2.new(0, 150, 0, 35)
+uploadButton.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
+uploadButton.Text = "Auto Upload: OFF"
+uploadButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+uploadButton.Font = Enum.Font.SourceSansBold
+uploadButton.TextSize = 14
+uploadButton.LayoutOrder = 2
+uploadButton.Parent = scrollFrame
+local c1 = Instance.new("UICorner") c1.CornerRadius = UDim.new(0, 6) c1.Parent = uploadButton
+
+-- 3. CLAIM PHẦN THƯỞNG
+local claimButton = Instance.new("TextButton")
+claimButton.Size = UDim2.new(0, 150, 0, 35)
+claimButton.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
+claimButton.Text = "Auto Claim: OFF"
+claimButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+claimButton.Font = Enum.Font.SourceSansBold
+claimButton.TextSize = 14
+claimButton.LayoutOrder = 3
+claimButton.Parent = scrollFrame
+local c2 = Instance.new("UICorner") c2.CornerRadius = UDim.new(0, 6) c2.Parent = claimButton
+
+-- 4. REBIRTH
+local rebirthButton = Instance.new("TextButton")
+rebirthButton.Size = UDim2.new(0, 150, 0, 35)
+rebirthButton.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
+rebirthButton.Text = "Auto Rebirth: OFF"
+rebirthButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+rebirthButton.Font = Enum.Font.SourceSansBold
+rebirthButton.TextSize = 14
+rebirthButton.LayoutOrder = 4
+rebirthButton.Parent = scrollFrame
+local c4 = Instance.new("UICorner") c4.CornerRadius = UDim.new(0, 6) c4.Parent = rebirthButton
+
+
+-- --- LOGIC HOẠT ĐỘNG (LOOPS) ---
+
+local function startUploadLoop()
+    task.spawn(function()
+        while isAutoUpload do
+            pcall(function() uploadAllRemote:FireServer() end)
+            task.wait(2)
+        end
+    end)
+end
+
+local function startClaimLoop()
+    task.spawn(function()
+        while isAutoClaim do
+            pcall(function() claimAllRemote:FireServer() end)
+            task.wait(2)
+        end
+    end)
+end
+
+local function startCollectLoop()
+    task.spawn(function()
+        while isAutoCollect do
+            local function quetDoiTuong(obj)
+                if not isAutoCollect then return end
+                local id = string.match(obj.Name, "%w+-%w+-%w+-%w+-%w+")
+                if id then
+                    pcall(function() 
+                        local args = { id }
+                        collectRemote:FireServer(unpack(args)) 
+                    end)
+                    task.wait(0.02)
+                end
+                for _, child in pairs(obj:GetChildren()) do quetDoiTuong(child) end
+            end
+            quetDoiTuong(workspace)
+            local backpack = localPlayer:FindFirstChild("Backpack")
+            if backpack then quetDoiTuong(backpack) end
+            task.wait(0.5)
+        end
+    end)
+end
+
+local function startRebirthLoop()
+    task.spawn(function()
+        while isAutoRebirth do
+            pcall(function() 
+                local args = { 5 }
+                rebirthRemote:FireServer(unpack(args)) 
+            end)
+            task.wait(3)
+        end
+    end)
+end
+
+
+-- --- SỰ KIỆN CÁC NÚT BẤM ---
+
+uploadButton.MouseButton1Click:Connect(function()
+    isAutoUpload = not isAutoUpload
+    uploadButton.Text = isAutoUpload and "Auto Upload: ON" or "Auto Upload: OFF"
+    uploadButton.BackgroundColor3 = isAutoUpload and Color3.fromRGB(60, 220, 60) or Color3.fromRGB(255, 60, 60)
+    if isAutoUpload then startUploadLoop() end
+end)
+
+claimButton.MouseButton1Click:Connect(function()
+    isAutoClaim = not isAutoClaim
+    claimButton.Text = isAutoClaim and "Auto Claim: ON" or "Auto Claim: OFF"
+    claimButton.BackgroundColor3 = isAutoClaim and Color3.fromRGB(60, 220, 60) or Color3.fromRGB(255, 60, 60)
+    if isAutoClaim then startClaimLoop() end
+end)
+
+collectButton.MouseButton1Click:Connect(function()
+    isAutoCollect = not isAutoCollect
+    collectButton.Text = isAutoCollect and "Auto Collect: ON" or "Auto Collect: OFF"
+    collectButton.BackgroundColor3 = isAutoCollect and Color3.fromRGB(60, 220, 60) or Color3.fromRGB(255, 60, 60)
+    if isAutoCollect then startCollectLoop() end
+end)
+
+rebirthButton.MouseButton1Click:Connect(function()
+    isAutoRebirth = not isAutoRebirth
+    rebirthButton.Text = isAutoRebirth and "Auto Rebirth: ON" or "Auto Rebirth: OFF"
+    rebirthButton.BackgroundColor3 = isAutoRebirth and Color3.fromRGB(60, 220, 60) or Color3.fromRGB(255, 60, 60)
+    if isAutoRebirth then startRebirthLoop() end
+end)
+
+
+-- --- [MỚI] CƠ CHẾ ĐÓNG / MỞ SONG SONG TÁCH BIỆT ---
+
+-- Bấm nút X: Ẩn menu chính đi (Nút tròn M vẫn nằm im ở góc của nó không đổi)
+closeButton.MouseButton1Click:Connect(function()
+    mainPanel.Visible = false
+end)
+
+-- Bấm nút M tròn: Đóng/Mở (Toggle) menu chính tại chỗ của nó, còn nút M không bao giờ biến mất!
+openRoundButton.MouseButton1Click:Connect(function()
+    mainPanel.Visible = not mainPanel.Visible
+end)
