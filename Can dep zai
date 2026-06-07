@@ -6,6 +6,10 @@ local PlayerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
 local MyWorkspace = game:GetService("Workspace")
 local CurrentCamera = MyWorkspace.CurrentCamera
 
+if PlayerGui:FindFirstChild("PremiumFinalMenu_V6") then
+    PlayerGui["PremiumFinalMenu_V6"]:Destroy()
+end
+
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "PremiumFinalMenu_V6"
 ScreenGui.ResetOnSpawn = false
@@ -99,7 +103,7 @@ local function createTab(name, id)
     local f = Instance.new("ScrollingFrame")
     f.Size = UDim2.new(1, 0, 1, 0)
     f.BackgroundTransparency = 1
-    f.CanvasSize = UDim2.new(0, 0, 2.2, 0) -- Increased canvas size for float section
+    f.CanvasSize = UDim2.new(0, 0, 2.2, 0)
     f.Visible = false
     f.ScrollBarThickness = 2
     f.Parent = Content
@@ -116,14 +120,10 @@ createTab("Noclip", 2)
 createTab("ESP & TP", 3)
 createTab("View & Fling", 4)
 
-ToggleRoundBtn.MouseButton1Click:Connect(function()
-    MainFrame.Visible = not MainFrame.Visible
-end)
+ToggleRoundBtn.MouseButton1Click:Connect(function() MainFrame.Visible = not MainFrame.Visible end)
 CloseBtn.MouseButton1Click:Connect(function() MainFrame.Visible = false end)
 
--- === TAB 1: MOVEMENT (SPEED, FLY & FLOAT) ===
 local t1 = tabs[1]
-
 local SpeedTitle = Instance.new("TextLabel", t1)
 SpeedTitle.Size = UDim2.new(1, 0, 0, 20)
 SpeedTitle.Text = "--- Walk Speed ---"
@@ -165,7 +165,6 @@ FlyInput.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 FlyInput.Text = "2"
 FlyInput.TextColor3 = Color3.fromRGB(255, 255, 0)
 
--- Float Section Added Back
 local FloatTitle = Instance.new("TextLabel", t1)
 FloatTitle.Size = UDim2.new(1, 0, 0, 20)
 FloatTitle.Position = UDim2.new(0, 0, 0, 220)
@@ -192,10 +191,7 @@ RunService.Heartbeat:Connect(function()
     if sActive then
         local char = Players.LocalPlayer.Character
         local hum = char and char:FindFirstChildWhichIsA("Humanoid")
-        if hum then
-            local val = tonumber(SpeedInput.Text) or 16
-            hum.WalkSpeed = val
-        end
+        if hum then hum.WalkSpeed = tonumber(SpeedInput.Text) or 16 end
     end
 end)
 
@@ -215,12 +211,10 @@ FlyToggle.MouseButton1Click:Connect(function()
     Flying = not Flying
     FlyToggle.Text = Flying and "Fly: ON" or "Fly: OFF"
     FlyToggle.BackgroundColor3 = Flying and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(50, 50, 50)
-    
     local char = Players.LocalPlayer.Character
     local root = char and char:FindFirstChild("HumanoidRootPart")
     local hum = char and char:FindFirstChildWhichIsA("Humanoid")
     if not root or not hum then return end
-
     if Flying then
         hum.PlatformStand = true
         FlyBV = Instance.new("BodyVelocity", root)
@@ -243,35 +237,25 @@ RunService.RenderStepped:Connect(function()
         local root = char and char:FindFirstChild("HumanoidRootPart")
         if root and FlyBV and FlyBG then
             local cam = workspace.CurrentCamera
-            local multiplier = tonumber(FlyInput.Text) or 1
-            local speed = 25 * multiplier
+            local speed = 25 * (tonumber(FlyInput.Text) or 1)
             local moveDir = char.Humanoid.MoveDirection
-            
             local forward = cam.CFrame.LookVector
             local right = cam.CFrame.RightVector
-            
             local flatF = Vector3.new(forward.X, 0, forward.Z).Unit
             local flatR = Vector3.new(right.X, 0, right.Z).Unit
             local finalDir = (forward * moveDir:Dot(flatF)) + (right * moveDir:Dot(flatR))
-            
-            if finalDir.Magnitude > 0 then
-                FlyBV.Velocity = finalDir.Unit * speed
-            else
-                FlyBV.Velocity = Vector3.zero
-            end
+            if finalDir.Magnitude > 0 then FlyBV.Velocity = finalDir.Unit * speed else FlyBV.Velocity = Vector3.zero end
             FlyBG.CFrame = cam.CFrame
         end
     end
 end)
 
--- Float Logic Implementation
 local floatActive = false
 local floatPart = nil
 FloatToggle.MouseButton1Click:Connect(function()
     floatActive = not floatActive
     FloatToggle.Text = floatActive and "Float: ON" or "Float: OFF"
     FloatToggle.BackgroundColor3 = floatActive and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(50, 50, 50)
-    
     if floatActive then
         local char = Players.LocalPlayer.Character
         local root = char and char:FindFirstChild("HumanoidRootPart")
@@ -281,31 +265,36 @@ FloatToggle.MouseButton1Click:Connect(function()
             floatPart.Transparency = 1
             floatPart.Anchored = true
             floatPart.Parent = char
-            
             task.spawn(function()
                 while floatActive and char and root and floatPart do
-                    local offset = tonumber(FloatInput.Text) or 0
-                    floatPart.CFrame = root.CFrame * CFrame.new(0, -3.5 + offset, 0)
+                    floatPart.CFrame = root.CFrame * CFrame.new(0, -3.5 + (tonumber(FloatInput.Text) or 0), 0)
                     RunService.Heartbeat:Wait()
                 end
             end)
         end
     else
-        if floatPart then
-            floatPart:Destroy()
-            floatPart = nil
-        end
+        if floatPart then floatPart:Destroy() floatPart = nil end
     end
 end)
-
--- === TAB 2: NOCLIP (ULTIMATE STABLE FIX) ===
+-- === TAB 2: NOCLIP & INVISIBLE ===
 local t2 = tabs[2]
 local NoclipToggle = Instance.new("TextButton", t2)
-NoclipToggle.Size = UDim2.new(1, -10, 0, 50)
+NoclipToggle.Size = UDim2.new(1, -10, 0, 45)
 NoclipToggle.Position = UDim2.new(0, 5, 0, 10)
 NoclipToggle.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 NoclipToggle.Text = "Noclip: OFF"
 NoclipToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+NoclipToggle.Font = Enum.Font.SourceSansBold
+NoclipToggle.TextSize = 14
+
+local InvisToggle = Instance.new("TextButton", t2)
+InvisToggle.Size = UDim2.new(1, -10, 0, 45)
+InvisToggle.Position = UDim2.new(0, 5, 0, 60)
+InvisToggle.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+InvisToggle.Text = "Invisible: OFF"
+InvisToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+InvisToggle.Font = Enum.Font.SourceSansBold
+InvisToggle.TextSize = 14
 
 local nActive = false
 RunService.Stepped:Connect(function()
@@ -313,17 +302,8 @@ RunService.Stepped:Connect(function()
     if c then
         for _, p in pairs(c:GetDescendants()) do
             if p:IsA("BasePart") then
-                if nActive then
-                    p.CanCollide = false
-                else
-                    -- Forces instantaneous return to original game collisions state when disabled
-                    if p.Name == "HumanoidRootPart" then
-                        p.CanCollide = false
-                    elseif p.Parent:IsA("Accessory") then
-                        p.CanCollide = false
-                    else
-                        p.CanCollide = true
-                    end
+                if nActive then p.CanCollide = false else
+                    if p.Name == "HumanoidRootPart" or p.Parent:IsA("Accessory") then p.CanCollide = false else p.CanCollide = true end
                 end
             end
         end
@@ -334,15 +314,35 @@ NoclipToggle.MouseButton1Click:Connect(function()
     nActive = not nActive
     NoclipToggle.Text = nActive and "Noclip: ON" or "Noclip: OFF"
     NoclipToggle.BackgroundColor3 = nActive and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(50, 50, 50)
-    
-    local c = Players.LocalPlayer.Character
-    local hum = c and c:FindFirstChildWhichIsA("Humanoid")
-    if hum then
-        hum:ChangeState(Enum.HumanoidStateType.Running)
-    end
+    local hum = Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChildWhichIsA("Humanoid")
+    if hum then hum:ChangeState(Enum.HumanoidStateType.Running) end
 end)
 
--- === TAB 3: ESP & TP ===
+local invisActive = false
+local originalTransparencies = {}
+local function setCharacterTransparency(char, transparency)
+    for _, obj in pairs(char:GetDescendants()) do
+        if (obj:IsA("BasePart") and obj.Name ~= "HumanoidRootPart") or obj:IsA("Decal") then
+            if invisActive then
+                if not originalTransparencies[obj] then originalTransparencies[obj] = obj.Transparency end
+                obj.Transparency = transparency
+            else
+                obj.Transparency = originalTransparencies[obj] or 0
+            end
+        end
+    end
+end
+
+InvisToggle.MouseButton1Click:Connect(function()
+    invisActive = not invisActive
+    InvisToggle.Text = invisActive and "Invisible: ON" or "Invisible: OFF"
+    InvisToggle.BackgroundColor3 = invisActive and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(50, 50, 50)
+    if Players.LocalPlayer.Character then setCharacterTransparency(Players.LocalPlayer.Character, 1) end
+    if not invisActive then originalTransparencies = {} end
+end)
+Players.LocalPlayer.CharacterAdded:Connect(function(char) if invisActive then task.wait(0.5) setCharacterTransparency(char, 1) end end)
+
+-- === TAB 3: ESP CHUẨN XỊN (FIX NAME TAG TO KHI Ở XA) & TELEPORT ===
 local t3 = tabs[3]
 local EspToggle = Instance.new("TextButton", t3)
 EspToggle.Size = UDim2.new(1, -10, 0, 35)
@@ -350,6 +350,8 @@ EspToggle.Position = UDim2.new(0, 5, 0, 5)
 EspToggle.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 EspToggle.Text = "ESP: OFF"
 EspToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+EspToggle.Font = Enum.Font.SourceSansBold
+EspToggle.TextSize = 14
 
 local TPInput = Instance.new("TextBox", t3)
 TPInput.Size = UDim2.new(1, -10, 0, 35)
@@ -370,9 +372,7 @@ local function findPlr(str)
     if str == "" then return nil end
     local targetId = tonumber(str)
     if targetId then
-        for _, v in pairs(Players:GetPlayers()) do
-            if v ~= Players.LocalPlayer and v.UserId == targetId then return v end
-        end
+        for _, v in pairs(Players:GetPlayers()) do if v ~= Players.LocalPlayer and v.UserId == targetId then return v end end
     end
     local s = string.lower(str)
     for _, v in pairs(Players:GetPlayers()) do
@@ -383,7 +383,6 @@ local function findPlr(str)
     return nil
 end
 
--- Teleport Click logic
 TPBtn.MouseButton1Click:Connect(function()
     local target = findPlr(TPInput.Text)
     if target and target.Character then
@@ -394,38 +393,98 @@ TPBtn.MouseButton1Click:Connect(function()
 end)
 
 local espActive = false
-local espObjects = {}
+local espStorage = workspace:FindFirstChild("PremiumESP_Storage") or Instance.new("Folder", workspace)
+espStorage.Name = "PremiumESP_Storage"
+
 local function createEsp(plr)
     if plr == Players.LocalPlayer then return end
+    
     local function addHighlight()
         if not espActive then return end
         local c = plr.Character
-        if c and not c:FindFirstChild("PremiumEspHighlight") then
-            local color = plr.TeamColor and plr.TeamColor.Color or Color3.fromRGB(255, 255, 255)
-            local hl = Instance.new("Highlight", c)
-            hl.Name = "PremiumEspHighlight"
-            hl.FillColor = color
-            hl.OutlineColor = color
-            table.insert(espObjects, hl)
+        if not c then return end
+        
+        local pName = plr.Name
+        if espStorage:FindFirstChild(pName) then espStorage[pName]:Destroy() end
+        
+        local container = Instance.new("Folder", espStorage)
+        container.Name = pName
 
-            local bb = Instance.new("BillboardGui", c)
-            bb.Name = "PremiumEspTag"
-            bb.Adornee = c:WaitForChild("HumanoidRootPart", 5)
-            bb.Size = UDim2.new(0, 200, 0, 30)
-            bb.StudsOffset = Vector3.new(0, 4.5, 0)
+        local isEnemy = (plr.Team ~= Players.LocalPlayer.Team) or (plr.Team == nil)
+        local espColor = isEnemy and Color3.fromRGB(255, 30, 30) or Color3.fromRGB(0, 255, 100)
+        
+        local hl = Instance.new("Highlight")
+        hl.Name = "Glow"
+        hl.Adornee = c
+        hl.FillColor = espColor
+        hl.OutlineColor = Color3.fromRGB(255, 255, 255)
+        hl.FillTransparency = 0.5
+        hl.OutlineTransparency = 0.1
+        hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+        hl.Parent = container
+
+        local hrp = c:WaitForChild("HumanoidRootPart", 5)
+        if hrp then
+            -- Thay đổi cấu trúc BillboardGui dùng hệ Scale lớn hơn để không bị mờ nhòe khi ở xa
+            local bb = Instance.new("BillboardGui", container)
+            bb.Name = "EspUI"
             bb.AlwaysOnTop = true
-            table.insert(espObjects, bb)
+            bb.Size = UDim2.new(0, 200, 0, 50) -- Tăng vùng chứa text lên kích thước chuẩn
+            bb.StudsOffset = Vector3.new(0, 4.5, 0) -- Đẩy tag lên cao hẳn trên đầu cho dễ nhìn
+            bb.Adornee = hrp
+
+            -- THUỘC TÍNH QUAN TRỌNG: Giúp kích thước tag tự tăng tỉ lệ khi ở xa, ko bị thu nhỏ
+            bb.DistanceLowerLimit = 0
+            bb.DistanceUpperLimit = 1000
+            
+            local healthBg = Instance.new("Frame", bb)
+            healthBg.Size = UDim2.new(0, 6, 0, 40)
+            healthBg.Position = UDim2.new(0, -15, 0, 5)
+            healthBg.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+            healthBg.BorderSizePixel = 0
+            
+            local healthMain = Instance.new("Frame", healthBg)
+            healthMain.Size = UDim2.new(1, 0, 1, 0)
+            healthMain.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+            healthMain.BorderSizePixel = 0
 
             local tl = Instance.new("TextLabel", bb)
             tl.Size = UDim2.new(1, 0, 1, 0)
             tl.BackgroundTransparency = 1
-            tl.Text = plr.DisplayName or plr.Name
-            tl.TextColor3 = color
-            tl.TextSize = 18
+            tl.TextColor3 = espColor
+            tl.TextSize = 22 -- Phóng to font chữ gốc lên 22
             tl.Font = Enum.Font.SourceSansBold
+            tl.TextXAlignment = Enum.TextXAlignment.Left
+            
+            local stroke = Instance.new("UIStroke", tl)
+            stroke.Color = Color3.fromRGB(0, 0, 0)
+            stroke.Thickness = 2.2 -- Làm viền đen dày hơn cho nổi bật chữ
+            
+            task.spawn(function()
+                local hum = c:WaitForChild("Humanoid", 5)
+                while espActive and c and hum and hrp and container.Parent and plr.Parent do
+                    local myChar = Players.LocalPlayer.Character
+                    local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
+                    if myHrp then
+                        local dist = math.floor((hrp.Position - myHrp.Position).Magnitude)
+                        tl.Text = string.format("%s\n[%sm]", plr.DisplayName, dist) -- Xuống dòng khoảng cách nhìn cho gọn
+                    else
+                        tl.Text = plr.DisplayName
+                    end
+                    
+                    if hum.MaxHealth > 0 then
+                        local healthRatio = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
+                        healthMain.Size = UDim2.new(1, 0, healthRatio, 0)
+                        healthMain.Position = UDim2.new(0, 0, 1 - healthRatio, 0)
+                        healthMain.BackgroundColor3 = Color3.fromHSV(healthRatio * 0.33, 1, 1)
+                    end
+                    task.wait(0.1)
+                end
+                container:Destroy()
+            end)
         end
     end
-    plr.CharacterAdded:Connect(addHighlight)
+    plr.CharacterAdded:Connect(function() task.wait(0.5); addHighlight() end)
     if plr.Character then addHighlight() end
 end
 
@@ -433,14 +492,15 @@ EspToggle.MouseButton1Click:Connect(function()
     espActive = not espActive
     EspToggle.Text = espActive and "ESP: ON" or "ESP: OFF"
     EspToggle.BackgroundColor3 = espActive and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(50, 50, 50)
-    if not espActive then
-        for _, o in pairs(espObjects) do if o and o.Parent then o:Destroy() end end
-        espObjects = {}
-    else
+    
+    espStorage:ClearAllChildren()
+    if espActive then
         for _, p in pairs(Players:GetPlayers()) do createEsp(p) end
     end
 end)
+
 Players.PlayerAdded:Connect(function(p) if espActive then createEsp(p) end end)
+Players.PlayerRemoving:Connect(function(p) if espStorage:FindFirstChild(p.Name) then espStorage[p.Name]:Destroy() end end)
 
 -- === TAB 4: VIEW & FLING ===
 local t4 = tabs[4]
@@ -541,4 +601,3 @@ ViewBtn.MouseButton1Click:Connect(function()
     end
 end)
 UnviewBtn.MouseButton1Click:Connect(resetCamera)
-
