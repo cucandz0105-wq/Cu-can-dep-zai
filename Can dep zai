@@ -1,10 +1,5 @@
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local UIS = game:GetService("UserInputService")
-
 local PlayerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
-local MyWorkspace = game:GetService("Workspace")
-local CurrentCamera = MyWorkspace.CurrentCamera
 
 if PlayerGui:FindFirstChild("PremiumFinalMenu_V6") then
     PlayerGui["PremiumFinalMenu_V6"]:Destroy()
@@ -20,11 +15,11 @@ ToggleRoundBtn.Size = UDim2.new(0, 50, 0, 50)
 ToggleRoundBtn.Position = UDim2.new(0.05, 0, 0.3, 0)
 ToggleRoundBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 ToggleRoundBtn.BorderSizePixel = 2
-ToggleRoundBtn.BorderColor3 = Color3.fromRGB(200, 200, 200)
+ToggleRoundBtn.BorderColor3 = Color3.fromRGB(255, 255, 255)
 ToggleRoundBtn.Text = "💀"
 ToggleRoundBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 ToggleRoundBtn.Font = Enum.Font.SourceSansBold
-ToggleRoundBtn.TextSize = 20
+ToggleRoundBtn.TextSize = 25
 ToggleRoundBtn.Draggable = true
 ToggleRoundBtn.Active = true
 ToggleRoundBtn.Parent = ScreenGui
@@ -36,7 +31,7 @@ UICornerRound.Parent = ToggleRoundBtn
 local MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(0, 380, 0, 320)
 MainFrame.Position = UDim2.new(0.3, 0, 0.3, 0)
-MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 MainFrame.BorderSizePixel = 0
 MainFrame.Draggable = true
 MainFrame.Active = true
@@ -49,7 +44,7 @@ UICornerMain.Parent = MainFrame
 
 local TopBar = Instance.new("Frame")
 TopBar.Size = UDim2.new(1, 0, 0, 35)
-TopBar.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+TopBar.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 TopBar.Parent = MainFrame
 
 local Title = Instance.new("TextLabel")
@@ -68,15 +63,15 @@ CloseBtn.Size = UDim2.new(0, 35, 0, 35)
 CloseBtn.Position = UDim2.new(1, -35, 0, 0)
 CloseBtn.BackgroundTransparency = 1
 CloseBtn.Text = "X"
-CloseBtn.TextColor3 = Color3.fromRGB(255, 50, 50)
+CloseBtn.TextColor3 = Color3.fromRGB(255, 70, 70)
 CloseBtn.Font = Enum.Font.SourceSansBold
-CloseBtn.TextSize = 20
+CloseBtn.TextSize = 22
 CloseBtn.Parent = TopBar
 
 local Sidebar = Instance.new("Frame")
 Sidebar.Size = UDim2.new(0, 100, 1, -35)
 Sidebar.Position = UDim2.new(0, 0, 0, 35)
-Sidebar.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+Sidebar.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
 Sidebar.Parent = MainFrame
 
 local Content = Instance.new("Frame")
@@ -92,11 +87,11 @@ local function createTab(name, id)
     local b = Instance.new("TextButton")
     b.Size = UDim2.new(1, -10, 0, 35)
     b.Position = UDim2.new(0, 5, 0, (#btns * 40) + 5)
-    b.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    b.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
     b.Text = name
-    b.TextColor3 = Color3.fromRGB(255, 255, 255)
+    b.TextColor3 = Color3.fromRGB(255, 255, 255) -- Chữ trên nút Tab màu trắng rõ nét
     b.Font = Enum.Font.SourceSansBold
-    b.TextSize = 14
+    b.TextSize = 15
     b.Parent = Sidebar
     btns[id] = b
 
@@ -105,13 +100,17 @@ local function createTab(name, id)
     f.BackgroundTransparency = 1
     f.CanvasSize = UDim2.new(0, 0, 2.2, 0)
     f.Visible = false
-    f.ScrollBarThickness = 2
+    f.ScrollBarThickness = 4
+    f.ScrollBarImageColor3 = Color3.fromRGB(255, 255, 255)
     f.Parent = Content
     tabs[id] = f
 
     b.MouseButton1Click:Connect(function()
         for i, v in pairs(tabs) do v.Visible = (i == id) end
-        for i, v in pairs(btns) do v.BackgroundColor3 = (i == id) and Color3.fromRGB(60, 60, 60) or Color3.fromRGB(30, 30, 30) end
+        for i, v in pairs(btns) do 
+            v.BackgroundColor3 = (i == id) and Color3.fromRGB(70, 70, 70) or Color3.fromRGB(35, 35, 35)
+            v.TextColor3 = (i == id) and Color3.fromRGB(255, 255, 0) or Color3.fromRGB(255, 255, 255) -- Tab đang chọn đổi sang màu vàng
+        end
     end)
 end
 
@@ -123,68 +122,98 @@ createTab("View & Fling", 4)
 ToggleRoundBtn.MouseButton1Click:Connect(function() MainFrame.Visible = not MainFrame.Visible end)
 CloseBtn.MouseButton1Click:Connect(function() MainFrame.Visible = false end)
 
+_G.PremiumSharedData = { tabs = tabs, gui = ScreenGui }
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local CurrentCamera = workspace.CurrentCamera
+
+local data = _G.PremiumSharedData
+if not data or not data.tabs then return end
+local tabs = data.tabs
+local ScreenGui = data.gui
+
+-- Hàm phụ để chỉnh font chữ nhanh và tạo viền ô nhập
+local function styleLabel(obj, size, isTitle)
+    obj.Font = Enum.Font.SourceSansBold
+    obj.TextSize = size or 16
+    if isTitle then
+        obj.TextColor3 = Color3.fromRGB(255, 255, 255) -- Tiêu đề màu trắng sáng hẳn
+    else
+        obj.TextColor3 = Color3.fromRGB(255, 255, 255)
+    end
+end
+
+local function styleTextBox(obj)
+    obj.Font = Enum.Font.SourceSansBold
+    obj.TextSize = 16
+    obj.TextColor3 = Color3.fromRGB(255, 255, 0) -- Số nhập hiện màu vàng cho nổi
+    obj.BorderSizePixel = 1
+    obj.BorderColor3 = Color3.fromRGB(100, 100, 100) -- Có viền xám bao quanh ô nhập
+end
+
+-- === TAB 1: MOVEMENT ===
 local t1 = tabs[1]
 local SpeedTitle = Instance.new("TextLabel", t1)
 SpeedTitle.Size = UDim2.new(1, 0, 0, 20)
 SpeedTitle.Text = "--- Walk Speed ---"
-SpeedTitle.TextColor3 = Color3.fromRGB(200, 200, 200)
 SpeedTitle.BackgroundTransparency = 1
+styleLabel(SpeedTitle, 16, true)
 
 local SpeedToggle = Instance.new("TextButton", t1)
 SpeedToggle.Size = UDim2.new(1, -10, 0, 35)
 SpeedToggle.Position = UDim2.new(0, 0, 0, 25)
-SpeedToggle.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+SpeedToggle.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
 SpeedToggle.Text = "Speed: OFF"
-SpeedToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+styleLabel(SpeedToggle, 16)
 
 local SpeedInput = Instance.new("TextBox", t1)
 SpeedInput.Size = UDim2.new(1, -10, 0, 30)
 SpeedInput.Position = UDim2.new(0, 0, 0, 65)
-SpeedInput.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+SpeedInput.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 SpeedInput.Text = "25"
-SpeedInput.TextColor3 = Color3.fromRGB(255, 255, 0)
+styleTextBox(SpeedInput)
 
 local FlyTitle = Instance.new("TextLabel", t1)
 FlyTitle.Size = UDim2.new(1, 0, 0, 20)
 FlyTitle.Position = UDim2.new(0, 0, 0, 110)
 FlyTitle.Text = "--- IY Fly ---"
-FlyTitle.TextColor3 = Color3.fromRGB(200, 200, 200)
 FlyTitle.BackgroundTransparency = 1
+styleLabel(FlyTitle, 16, true)
 
 local FlyToggle = Instance.new("TextButton", t1)
 FlyToggle.Size = UDim2.new(1, -10, 0, 35)
 FlyToggle.Position = UDim2.new(0, 0, 0, 135)
-FlyToggle.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+FlyToggle.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
 FlyToggle.Text = "Fly: OFF"
-FlyToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+styleLabel(FlyToggle, 16)
 
 local FlyInput = Instance.new("TextBox", t1)
 FlyInput.Size = UDim2.new(1, -10, 0, 30)
 FlyInput.Position = UDim2.new(0, 0, 0, 175)
-FlyInput.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+FlyInput.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 FlyInput.Text = "2"
-FlyInput.TextColor3 = Color3.fromRGB(255, 255, 0)
+styleTextBox(FlyInput)
 
 local FloatTitle = Instance.new("TextLabel", t1)
 FloatTitle.Size = UDim2.new(1, 0, 0, 20)
 FloatTitle.Position = UDim2.new(0, 0, 0, 220)
 FloatTitle.Text = "--- Float ---"
-FloatTitle.TextColor3 = Color3.fromRGB(200, 200, 200)
 FloatTitle.BackgroundTransparency = 1
+styleLabel(FloatTitle, 16, true)
 
 local FloatToggle = Instance.new("TextButton", t1)
 FloatToggle.Size = UDim2.new(1, -10, 0, 35)
 FloatToggle.Position = UDim2.new(0, 0, 0, 245)
-FloatToggle.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+FloatToggle.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
 FloatToggle.Text = "Float: OFF"
-FloatToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+styleLabel(FloatToggle, 16)
 
 local FloatInput = Instance.new("TextBox", t1)
 FloatInput.Size = UDim2.new(1, -10, 0, 30)
 FloatInput.Position = UDim2.new(0, 0, 0, 285)
-FloatInput.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+FloatInput.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 FloatInput.Text = "0"
-FloatInput.TextColor3 = Color3.fromRGB(255, 255, 0)
+styleTextBox(FloatInput)
 
 local sActive = false
 RunService.Heartbeat:Connect(function()
@@ -198,7 +227,7 @@ end)
 SpeedToggle.MouseButton1Click:Connect(function()
     sActive = not sActive
     SpeedToggle.Text = sActive and "Speed: ON" or "Speed: OFF"
-    SpeedToggle.BackgroundColor3 = sActive and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(50, 50, 50)
+    SpeedToggle.BackgroundColor3 = sActive and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(55, 55, 55)
     if not sActive then 
         local h = Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChildWhichIsA("Humanoid")
         if h then h.WalkSpeed = 16 end
@@ -210,7 +239,7 @@ local FlyBV, FlyBG
 FlyToggle.MouseButton1Click:Connect(function()
     Flying = not Flying
     FlyToggle.Text = Flying and "Fly: ON" or "Fly: OFF"
-    FlyToggle.BackgroundColor3 = Flying and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(50, 50, 50)
+    FlyToggle.BackgroundColor3 = Flying and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(55, 55, 55)
     local char = Players.LocalPlayer.Character
     local root = char and char:FindFirstChild("HumanoidRootPart")
     local hum = char and char:FindFirstChildWhichIsA("Humanoid")
@@ -221,8 +250,6 @@ FlyToggle.MouseButton1Click:Connect(function()
         FlyBV.MaxForce = Vector3.new(1e5, 1e5, 1e5)
         FlyBG = Instance.new("BodyGyro", root)
         FlyBG.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
-        FlyBG.P = 10000
-        FlyBG.D = 500
     else
         hum.PlatformStand = false
         if FlyBV then FlyBV:Destroy() end
@@ -255,7 +282,7 @@ local floatPart = nil
 FloatToggle.MouseButton1Click:Connect(function()
     floatActive = not floatActive
     FloatToggle.Text = floatActive and "Float: ON" or "Float: OFF"
-    FloatToggle.BackgroundColor3 = floatActive and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(50, 50, 50)
+    FloatToggle.BackgroundColor3 = floatActive and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(55, 55, 55)
     if floatActive then
         local char = Players.LocalPlayer.Character
         local root = char and char:FindFirstChild("HumanoidRootPart")
@@ -276,25 +303,15 @@ FloatToggle.MouseButton1Click:Connect(function()
         if floatPart then floatPart:Destroy() floatPart = nil end
     end
 end)
--- === TAB 2: NOCLIP & INVISIBLE ===
+
+-- === TAB 2: NOCLIP ONLY ===
 local t2 = tabs[2]
 local NoclipToggle = Instance.new("TextButton", t2)
 NoclipToggle.Size = UDim2.new(1, -10, 0, 45)
 NoclipToggle.Position = UDim2.new(0, 5, 0, 10)
-NoclipToggle.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+NoclipToggle.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
 NoclipToggle.Text = "Noclip: OFF"
-NoclipToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
-NoclipToggle.Font = Enum.Font.SourceSansBold
-NoclipToggle.TextSize = 14
-
-local InvisToggle = Instance.new("TextButton", t2)
-InvisToggle.Size = UDim2.new(1, -10, 0, 45)
-InvisToggle.Position = UDim2.new(0, 5, 0, 60)
-InvisToggle.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-InvisToggle.Text = "Invisible: OFF"
-InvisToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
-InvisToggle.Font = Enum.Font.SourceSansBold
-InvisToggle.TextSize = 14
+styleLabel(NoclipToggle, 16)
 
 local nActive = false
 RunService.Stepped:Connect(function()
@@ -313,72 +330,39 @@ end)
 NoclipToggle.MouseButton1Click:Connect(function()
     nActive = not nActive
     NoclipToggle.Text = nActive and "Noclip: ON" or "Noclip: OFF"
-    NoclipToggle.BackgroundColor3 = nActive and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(50, 50, 50)
-    local hum = Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChildWhichIsA("Humanoid")
-    if hum then hum:ChangeState(Enum.HumanoidStateType.Running) end
+    NoclipToggle.BackgroundColor3 = nActive and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(55, 55, 55)
 end)
 
-local invisActive = false
-local originalTransparencies = {}
-local function setCharacterTransparency(char, transparency)
-    for _, obj in pairs(char:GetDescendants()) do
-        if (obj:IsA("BasePart") and obj.Name ~= "HumanoidRootPart") or obj:IsA("Decal") then
-            if invisActive then
-                if not originalTransparencies[obj] then originalTransparencies[obj] = obj.Transparency end
-                obj.Transparency = transparency
-            else
-                obj.Transparency = originalTransparencies[obj] or 0
-            end
-        end
-    end
-end
-
-InvisToggle.MouseButton1Click:Connect(function()
-    invisActive = not invisActive
-    InvisToggle.Text = invisActive and "Invisible: ON" or "Invisible: OFF"
-    InvisToggle.BackgroundColor3 = invisActive and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(50, 50, 50)
-    if Players.LocalPlayer.Character then setCharacterTransparency(Players.LocalPlayer.Character, 1) end
-    if not invisActive then originalTransparencies = {} end
-end)
-Players.LocalPlayer.CharacterAdded:Connect(function(char) if invisActive then task.wait(0.5) setCharacterTransparency(char, 1) end end)
-
--- === TAB 3: ESP CHUẨN XỊN (FIX NAME TAG TO KHI Ở XA) & TELEPORT ===
+-- === TAB 3: ESP & TELEPORT ===
 local t3 = tabs[3]
 local EspToggle = Instance.new("TextButton", t3)
 EspToggle.Size = UDim2.new(1, -10, 0, 35)
 EspToggle.Position = UDim2.new(0, 5, 0, 5)
-EspToggle.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+EspToggle.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
 EspToggle.Text = "ESP: OFF"
-EspToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
-EspToggle.Font = Enum.Font.SourceSansBold
-EspToggle.TextSize = 14
+styleLabel(EspToggle, 16)
 
 local TPInput = Instance.new("TextBox", t3)
 TPInput.Size = UDim2.new(1, -10, 0, 35)
 TPInput.Position = UDim2.new(0, 5, 0, 45)
-TPInput.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-TPInput.PlaceholderText = "Enter Name, DisplayName or ID..."
+TPInput.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+TPInput.PlaceholderText = "Enter Player Name..."
 TPInput.Text = ""
-TPInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+styleTextBox(TPInput)
+TPInput.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
 
 local TPBtn = Instance.new("TextButton", t3)
 TPBtn.Size = UDim2.new(1, -10, 0, 35)
 TPBtn.Position = UDim2.new(0, 5, 0, 85)
 TPBtn.BackgroundColor3 = Color3.fromRGB(35, 120, 240)
 TPBtn.Text = "Teleport"
-TPBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+styleLabel(TPBtn, 16)
 
 local function findPlr(str)
     if str == "" then return nil end
-    local targetId = tonumber(str)
-    if targetId then
-        for _, v in pairs(Players:GetPlayers()) do if v ~= Players.LocalPlayer and v.UserId == targetId then return v end end
-    end
     local s = string.lower(str)
     for _, v in pairs(Players:GetPlayers()) do
-        if v ~= Players.LocalPlayer then
-            if string.sub(string.lower(v.DisplayName), 1, #s) == s or string.sub(string.lower(v.Name), 1, #s) == s then return v end
-        end
+        if v ~= Players.LocalPlayer and (string.sub(string.lower(v.DisplayName), 1, #s) == s or string.sub(string.lower(v.Name), 1, #s) == s) then return v end
     end
     return nil
 end
@@ -398,173 +382,112 @@ espStorage.Name = "PremiumESP_Storage"
 
 local function createEsp(plr)
     if plr == Players.LocalPlayer then return end
-    
     local function addHighlight()
-        if not espActive then return end
-        local c = plr.Character
-        if not c then return end
-        
+        if not espActive or not plr.Character then return end
         local pName = plr.Name
         if espStorage:FindFirstChild(pName) then espStorage[pName]:Destroy() end
-        
         local container = Instance.new("Folder", espStorage)
         container.Name = pName
-
-        local isEnemy = (plr.Team ~= Players.LocalPlayer.Team) or (plr.Team == nil)
-        local espColor = isEnemy and Color3.fromRGB(255, 30, 30) or Color3.fromRGB(0, 255, 100)
-        
-        local hl = Instance.new("Highlight")
-        hl.Name = "Glow"
-        hl.Adornee = c
-        hl.FillColor = espColor
-        hl.OutlineColor = Color3.fromRGB(255, 255, 255)
+        local hl = Instance.new("Highlight", container)
+        hl.Adornee = plr.Character
+        hl.FillColor = (plr.Team ~= Players.LocalPlayer.Team) and Color3.fromRGB(255, 30, 30) or Color3.fromRGB(0, 255, 100)
         hl.FillTransparency = 0.5
-        hl.OutlineTransparency = 0.1
-        hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-        hl.Parent = container
-
-        local hrp = c:WaitForChild("HumanoidRootPart", 5)
+        
+        local hrp = plr.Character:WaitForChild("HumanoidRootPart", 5)
         if hrp then
-            -- Thay đổi cấu trúc BillboardGui dùng hệ Scale lớn hơn để không bị mờ nhòe khi ở xa
             local bb = Instance.new("BillboardGui", container)
-            bb.Name = "EspUI"
             bb.AlwaysOnTop = true
-            bb.Size = UDim2.new(0, 200, 0, 50) -- Tăng vùng chứa text lên kích thước chuẩn
-            bb.StudsOffset = Vector3.new(0, 4.5, 0) -- Đẩy tag lên cao hẳn trên đầu cho dễ nhìn
+            bb.Size = UDim2.new(0, 200, 0, 50)
+            bb.StudsOffset = Vector3.new(0, 4.5, 0)
             bb.Adornee = hrp
-
-            -- THUỘC TÍNH QUAN TRỌNG: Giúp kích thước tag tự tăng tỉ lệ khi ở xa, ko bị thu nhỏ
-            bb.DistanceLowerLimit = 0
-            bb.DistanceUpperLimit = 1000
-            
-            local healthBg = Instance.new("Frame", bb)
-            healthBg.Size = UDim2.new(0, 6, 0, 40)
-            healthBg.Position = UDim2.new(0, -15, 0, 5)
-            healthBg.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-            healthBg.BorderSizePixel = 0
-            
-            local healthMain = Instance.new("Frame", healthBg)
-            healthMain.Size = UDim2.new(1, 0, 1, 0)
-            healthMain.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
-            healthMain.BorderSizePixel = 0
-
             local tl = Instance.new("TextLabel", bb)
             tl.Size = UDim2.new(1, 0, 1, 0)
             tl.BackgroundTransparency = 1
-            tl.TextColor3 = espColor
-            tl.TextSize = 22 -- Phóng to font chữ gốc lên 22
+            tl.TextColor3 = hl.FillColor
+            tl.TextSize = 22
             tl.Font = Enum.Font.SourceSansBold
-            tl.TextXAlignment = Enum.TextXAlignment.Left
-            
-            local stroke = Instance.new("UIStroke", tl)
-            stroke.Color = Color3.fromRGB(0, 0, 0)
-            stroke.Thickness = 2.2 -- Làm viền đen dày hơn cho nổi bật chữ
             
             task.spawn(function()
-                local hum = c:WaitForChild("Humanoid", 5)
-                while espActive and c and hum and hrp and container.Parent and plr.Parent do
+                while espActive and plr.Character and hrp and container.Parent do
                     local myChar = Players.LocalPlayer.Character
                     local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
-                    if myHrp then
-                        local dist = math.floor((hrp.Position - myHrp.Position).Magnitude)
-                        tl.Text = string.format("%s\n[%sm]", plr.DisplayName, dist) -- Xuống dòng khoảng cách nhìn cho gọn
-                    else
-                        tl.Text = plr.DisplayName
-                    end
-                    
-                    if hum.MaxHealth > 0 then
-                        local healthRatio = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
-                        healthMain.Size = UDim2.new(1, 0, healthRatio, 0)
-                        healthMain.Position = UDim2.new(0, 0, 1 - healthRatio, 0)
-                        healthMain.BackgroundColor3 = Color3.fromHSV(healthRatio * 0.33, 1, 1)
-                    end
-                    task.wait(0.1)
+                    tl.Text = myHrp and string.format("%s [%sm]", plr.DisplayName, math.floor((hrp.Position - myHrp.Position).Magnitude)) or plr.DisplayName
+                    task.wait(0.2)
                 end
-                container:Destroy()
             end)
         end
     end
     plr.CharacterAdded:Connect(function() task.wait(0.5); addHighlight() end)
-    if plr.Character then addHighlight() end
+    addHighlight()
 end
 
 EspToggle.MouseButton1Click:Connect(function()
     espActive = not espActive
     EspToggle.Text = espActive and "ESP: ON" or "ESP: OFF"
-    EspToggle.BackgroundColor3 = espActive and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(50, 50, 50)
-    
+    EspToggle.BackgroundColor3 = espActive and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(55, 55, 55)
     espStorage:ClearAllChildren()
-    if espActive then
-        for _, p in pairs(Players:GetPlayers()) do createEsp(p) end
-    end
+    if espActive then for _, p in pairs(Players:GetPlayers()) do createEsp(p) end end
 end)
-
-Players.PlayerAdded:Connect(function(p) if espActive then createEsp(p) end end)
-Players.PlayerRemoving:Connect(function(p) if espStorage:FindFirstChild(p.Name) then espStorage[p.Name]:Destroy() end end)
 
 -- === TAB 4: VIEW & FLING ===
 local t4 = tabs[4]
 local FlingToggle = Instance.new("TextButton", t4)
 FlingToggle.Size = UDim2.new(1, -10, 0, 30)
 FlingToggle.Position = UDim2.new(0, 5, 0, 5)
-FlingToggle.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+FlingToggle.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
 FlingToggle.Text = "WalkFling: OFF"
-FlingToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+styleLabel(FlingToggle, 16)
 
 local FlingInput = Instance.new("TextBox", t4)
 FlingInput.Size = UDim2.new(1, -10, 0, 30)
 FlingInput.Position = UDim2.new(0, 5, 0, 40)
-FlingInput.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+FlingInput.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 FlingInput.Text = "99999"
-FlingInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+styleTextBox(FlingInput)
 
 local fActive = false
 local fConn = nil
 FlingToggle.MouseButton1Click:Connect(function()
     fActive = not fActive
     FlingToggle.Text = fActive and "WalkFling: ON" or "WalkFling: OFF"
-    FlingToggle.BackgroundColor3 = fActive and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(50, 50, 50)
+    FlingToggle.BackgroundColor3 = fActive and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(55, 55, 55)
     if fActive then
         nActive = false
-        NoclipToggle.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-        NoclipToggle.Text = "Noclip: OFF"
         fConn = RunService.Heartbeat:Connect(function()
             local hrp = Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
             if hrp then
                 local p = tonumber(FlingInput.Text) or 99999
                 hrp.RotVelocity = Vector3.new(p, p, p)
                 RunService.RenderStepped:Wait()
-                if hrp then hrp.RotVelocity = Vector3.new(0, 0, 0) end
+                if hrp then hrp.RotVelocity = Vector3.zero end
             end
         end)
     else
         if fConn then fConn:Disconnect() end
-        local hrp = Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-        if hrp then hrp.RotVelocity = Vector3.new(0, 0, 0) end
     end
 end)
 
 local ViewInput = Instance.new("TextBox", t4)
 ViewInput.Size = UDim2.new(1, -10, 0, 30)
 ViewInput.Position = UDim2.new(0, 5, 0, 80)
-ViewInput.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-ViewInput.PlaceholderText = "View Name/DisplayName/ID..."
-ViewInput.Text = ""
-ViewInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+ViewInput.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+ViewInput.PlaceholderText = "View Player Name..."
+styleTextBox(ViewInput)
+ViewInput.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
 
 local ViewBtn = Instance.new("TextButton", t4)
 ViewBtn.Size = UDim2.new(0, 120, 0, 30)
 ViewBtn.Position = UDim2.new(0, 5, 0, 115)
 ViewBtn.BackgroundColor3 = Color3.fromRGB(35, 120, 240)
 ViewBtn.Text = "View"
-ViewBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+styleLabel(ViewBtn, 16)
 
 local UnviewBtn = Instance.new("TextButton", t4)
 UnviewBtn.Size = UDim2.new(0, 120, 0, 30)
 UnviewBtn.Position = UDim2.new(0, 130, 0, 115)
 UnviewBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
 UnviewBtn.Text = "Unview"
-UnviewBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+styleLabel(UnviewBtn, 16)
 
 local ViewStatusLabel = Instance.new("TextLabel", ScreenGui)
 ViewStatusLabel.Size = UDim2.new(1, 0, 0, 30)
@@ -572,8 +495,7 @@ ViewStatusLabel.Position = UDim2.new(0, 0, 0, 5)
 ViewStatusLabel.BackgroundTransparency = 1
 ViewStatusLabel.Text = ""
 ViewStatusLabel.TextColor3 = Color3.fromRGB(255, 230, 0)
-ViewStatusLabel.Font = Enum.Font.SourceSansBold
-ViewStatusLabel.TextSize = 18
+styleLabel(ViewStatusLabel, 18)
 ViewStatusLabel.Visible = false
 
 local viewConn = nil
@@ -591,12 +513,8 @@ ViewBtn.MouseButton1Click:Connect(function()
         if tHum then
             if viewConn then viewConn:Disconnect() end
             CurrentCamera.CameraSubject = tHum
-            ViewStatusLabel.Text = "Viewing: " .. target.DisplayName .. " (@" .. target.Name .. ")"
+            ViewStatusLabel.Text = "Viewing: " .. target.DisplayName
             ViewStatusLabel.Visible = true
-            viewConn = target.CharacterAdded:Connect(function(nc)
-                local nh = nc:WaitForChild("Humanoid", 5)
-                if nh then CurrentCamera.CameraSubject = nh else resetCamera() end
-            end)
         end
     end
 end)
