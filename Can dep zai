@@ -1,61 +1,85 @@
 local Players = game:GetService("Players")
-local PlayerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+local CurrentCamera = Workspace.CurrentCamera
 
-if PlayerGui:FindFirstChild("PremiumFinalMenu_V6") then
-    PlayerGui["PremiumFinalMenu_V6"]:Destroy()
+-- Dọn dẹp menu cũ chống đè UI
+local oldGuis = {"PremiumMovementMenu_V1", "PremiumMovementMenu_V2", "IYPlatformGui"}
+for _, guiName in ipairs(oldGuis) do
+    if PlayerGui:FindFirstChild(guiName) then PlayerGui[guiName]:Destroy() end
 end
 
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "PremiumFinalMenu_V6"
+ScreenGui.Name = "PremiumMovementMenu_V2"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = PlayerGui
 
-local ToggleRoundBtn = Instance.new("TextButton")
-ToggleRoundBtn.Size = UDim2.new(0, 50, 0, 50)
-ToggleRoundBtn.Position = UDim2.new(0.05, 0, 0.3, 0)
-ToggleRoundBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-ToggleRoundBtn.BorderSizePixel = 2
-ToggleRoundBtn.BorderColor3 = Color3.fromRGB(255, 255, 255)
-ToggleRoundBtn.Text = "💀"
-ToggleRoundBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-ToggleRoundBtn.Font = Enum.Font.SourceSansBold
-ToggleRoundBtn.TextSize = 25
-ToggleRoundBtn.Draggable = true
-ToggleRoundBtn.Active = true
-ToggleRoundBtn.Parent = ScreenGui
+-- Hàm reset hoạt ảnh nhân vật mượt mà
+local function resetCharacterAnimation()
+    local char = LocalPlayer.Character
+    local hum = char and char:FindFirstChildWhichIsA("Humanoid")
+    if hum then
+        local currentState = hum:GetState()
+        hum:ChangeState(Enum.HumanoidStateType.RunningNoPhysics)
+        task.wait(0.01)
+        hum:ChangeState(currentState)
+    end
+end
 
-local UICornerRound = Instance.new("UICorner")
-UICornerRound.CornerRadius = UDim.new(1, 0)
-UICornerRound.Parent = ToggleRoundBtn
+-- ====================================================================
+-- [1. NÚT MENU ICON "💀" - DI CHUYỂN TỰ DO]
+-- ====================================================================
+local MenuBtn = Instance.new("TextButton")
+MenuBtn.Size = UDim2.new(0, 60, 0, 60)
+MenuBtn.Position = UDim2.new(0.02, 0, 0.45, 0)
+MenuBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+MenuBtn.BorderSizePixel = 2
+MenuBtn.BorderColor3 = Color3.fromRGB(255, 255, 255)
+MenuBtn.Text = "💀"
+MenuBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+MenuBtn.Font = Enum.Font.SourceSansBold
+MenuBtn.TextSize = 30
+MenuBtn.Draggable = true
+MenuBtn.Active = true
+MenuBtn.ZIndex = 10
+MenuBtn.Parent = ScreenGui
+Instance.new("UICorner", MenuBtn).CornerRadius = UDim.new(0, 30)
 
+-- ====================================================================
+-- [2. KHUNG MENU CHÍNH - 4 TABS CHUYÊN NGHIỆP]
+-- ====================================================================
 local MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(0, 380, 0, 320)
-MainFrame.Position = UDim2.new(0.3, 0, 0.3, 0)
+MainFrame.Position = UDim2.new(0.35, 0, 0.30, 0)
 MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-MainFrame.BorderSizePixel = 0
+MainFrame.BackgroundTransparency = 0.05
+MainFrame.BorderSizePixel = 2
+MainFrame.BorderColor3 = Color3.fromRGB(255, 255, 255)
 MainFrame.Draggable = true
 MainFrame.Active = true
 MainFrame.Visible = false
+MainFrame.ZIndex = 12
 MainFrame.Parent = ScreenGui
-
-local UICornerMain = Instance.new("UICorner")
-UICornerMain.CornerRadius = UDim.new(0, 10)
-UICornerMain.Parent = MainFrame
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
 
 local TopBar = Instance.new("Frame")
 TopBar.Size = UDim2.new(1, 0, 0, 35)
 TopBar.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+TopBar.ZIndex = 13
 TopBar.Parent = MainFrame
 
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, -40, 1, 0)
 Title.Position = UDim2.new(0, 10, 0, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "PREMIUM CC MENU (SPEED & FLY)"
+Title.Text = "PREMIUM UTILITY MENU (FIXED V2)"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Font = Enum.Font.SourceSansBold
-Title.TextSize = 16
+Title.TextSize = 14
 Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.ZIndex = 14
 Title.Parent = TopBar
 
 local CloseBtn = Instance.new("TextButton")
@@ -65,43 +89,50 @@ CloseBtn.BackgroundTransparency = 1
 CloseBtn.Text = "X"
 CloseBtn.TextColor3 = Color3.fromRGB(255, 70, 70)
 CloseBtn.Font = Enum.Font.SourceSansBold
-CloseBtn.TextSize = 22
+CloseBtn.TextSize = 20
+CloseBtn.ZIndex = 14
 CloseBtn.Parent = TopBar
 
 local Sidebar = Instance.new("Frame")
 Sidebar.Size = UDim2.new(0, 100, 1, -35)
 Sidebar.Position = UDim2.new(0, 0, 0, 35)
 Sidebar.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+Sidebar.ZIndex = 13
 Sidebar.Parent = MainFrame
 
 local Content = Instance.new("Frame")
 Content.Size = UDim2.new(1, -110, 1, -45)
 Content.Position = UDim2.new(0, 105, 0, 40)
 Content.BackgroundTransparency = 1
+Content.ZIndex = 13
 Content.Parent = MainFrame
+
+MenuBtn.MouseButton1Click:Connect(function() MainFrame.Visible = not MainFrame.Visible end)
+CloseBtn.MouseButton1Click:Connect(function() MainFrame.Visible = false end)
 
 local btns = {}
 local tabs = {}
-
 local function createTab(name, id)
     local b = Instance.new("TextButton")
     b.Size = UDim2.new(1, -10, 0, 35)
     b.Position = UDim2.new(0, 5, 0, (#btns * 40) + 5)
     b.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
     b.Text = name
-    b.TextColor3 = Color3.fromRGB(255, 255, 255) -- Chữ trên nút Tab màu trắng rõ nét
+    b.TextColor3 = Color3.fromRGB(255, 255, 255)
     b.Font = Enum.Font.SourceSansBold
-    b.TextSize = 15
+    b.TextSize = 14
+    b.ZIndex = 14
     b.Parent = Sidebar
     btns[id] = b
 
     local f = Instance.new("ScrollingFrame")
     f.Size = UDim2.new(1, 0, 1, 0)
     f.BackgroundTransparency = 1
-    f.CanvasSize = UDim2.new(0, 0, 2.2, 0)
+    f.CanvasSize = UDim2.new(0, 0, 1.8, 0)
     f.Visible = false
     f.ScrollBarThickness = 4
     f.ScrollBarImageColor3 = Color3.fromRGB(255, 255, 255)
+    f.ZIndex = 14
     f.Parent = Content
     tabs[id] = f
 
@@ -109,7 +140,7 @@ local function createTab(name, id)
         for i, v in pairs(tabs) do v.Visible = (i == id) end
         for i, v in pairs(btns) do 
             v.BackgroundColor3 = (i == id) and Color3.fromRGB(70, 70, 70) or Color3.fromRGB(35, 35, 35)
-            v.TextColor3 = (i == id) and Color3.fromRGB(255, 255, 0) or Color3.fromRGB(255, 255, 255) -- Tab đang chọn đổi sang màu vàng
+            v.TextColor3 = (i == id) and Color3.fromRGB(255, 255, 0) or Color3.fromRGB(255, 255, 255)
         end
     end)
 end
@@ -117,109 +148,89 @@ end
 createTab("Movement", 1)
 createTab("Noclip", 2)
 createTab("ESP & TP", 3)
-createTab("View & Fling", 4)
+createTab("View/Fling", 4)
 
-ToggleRoundBtn.MouseButton1Click:Connect(function() MainFrame.Visible = not MainFrame.Visible end)
-CloseBtn.MouseButton1Click:Connect(function() MainFrame.Visible = false end)
-
-_G.PremiumSharedData = { tabs = tabs, gui = ScreenGui }
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local CurrentCamera = workspace.CurrentCamera
-
-local data = _G.PremiumSharedData
-if not data or not data.tabs then return end
-local tabs = data.tabs
-local ScreenGui = data.gui
-
--- Hàm phụ để chỉnh font chữ nhanh và tạo viền ô nhập
-local function styleLabel(obj, size, isTitle)
+local function styleLabel(obj, size)
     obj.Font = Enum.Font.SourceSansBold
-    obj.TextSize = size or 16
-    if isTitle then
-        obj.TextColor3 = Color3.fromRGB(255, 255, 255) -- Tiêu đề màu trắng sáng hẳn
-    else
-        obj.TextColor3 = Color3.fromRGB(255, 255, 255)
-    end
+    obj.TextSize = size or 15
+    obj.TextColor3 = Color3.fromRGB(255, 255, 255)
+    obj.ZIndex = 15
 end
 
 local function styleTextBox(obj)
     obj.Font = Enum.Font.SourceSansBold
-    obj.TextSize = 16
-    obj.TextColor3 = Color3.fromRGB(255, 255, 0) -- Số nhập hiện màu vàng cho nổi
+    obj.TextSize = 15
+    obj.TextColor3 = Color3.fromRGB(255, 255, 0)
     obj.BorderSizePixel = 1
-    obj.BorderColor3 = Color3.fromRGB(100, 100, 100) -- Có viền xám bao quanh ô nhập
+    obj.BorderColor3 = Color3.fromRGB(100, 100, 100)
+    obj.ZIndex = 15
 end
 
--- === TAB 1: MOVEMENT ===
+-- ====================================================================
+-- [TAB 1: MOVEMENT CONFIG]
+-- ====================================================================
 local t1 = tabs[1]
+
 local SpeedTitle = Instance.new("TextLabel", t1)
 SpeedTitle.Size = UDim2.new(1, 0, 0, 20)
 SpeedTitle.Text = "--- Walk Speed ---"
 SpeedTitle.BackgroundTransparency = 1
-styleLabel(SpeedTitle, 16, true)
+styleLabel(SpeedTitle, 14)
 
 local SpeedToggle = Instance.new("TextButton", t1)
-SpeedToggle.Size = UDim2.new(1, -10, 0, 35)
+SpeedToggle.Size = UDim2.new(1, -10, 0, 30)
 SpeedToggle.Position = UDim2.new(0, 0, 0, 25)
 SpeedToggle.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
 SpeedToggle.Text = "Speed: OFF"
-styleLabel(SpeedToggle, 16)
+styleLabel(SpeedToggle, 14)
 
 local SpeedInput = Instance.new("TextBox", t1)
-SpeedInput.Size = UDim2.new(1, -10, 0, 30)
-SpeedInput.Position = UDim2.new(0, 0, 0, 65)
+SpeedInput.Size = UDim2.new(1, -10, 0, 25)
+SpeedInput.Position = UDim2.new(0, 0, 0, 60)
 SpeedInput.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 SpeedInput.Text = "25"
 styleTextBox(SpeedInput)
 
 local FlyTitle = Instance.new("TextLabel", t1)
 FlyTitle.Size = UDim2.new(1, 0, 0, 20)
-FlyTitle.Position = UDim2.new(0, 0, 0, 110)
-FlyTitle.Text = "--- IY Fly ---"
+FlyTitle.Position = UDim2.new(0, 0, 0, 95)
+FlyTitle.Text = "--- IY Fly (Bay Tự Do) ---"
 FlyTitle.BackgroundTransparency = 1
-styleLabel(FlyTitle, 16, true)
+styleLabel(FlyTitle, 14)
 
 local FlyToggle = Instance.new("TextButton", t1)
-FlyToggle.Size = UDim2.new(1, -10, 0, 35)
-FlyToggle.Position = UDim2.new(0, 0, 0, 135)
+FlyToggle.Size = UDim2.new(1, -10, 0, 30)
+FlyToggle.Position = UDim2.new(0, 0, 0, 120)
 FlyToggle.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
 FlyToggle.Text = "Fly: OFF"
-styleLabel(FlyToggle, 16)
+styleLabel(FlyToggle, 14)
 
 local FlyInput = Instance.new("TextBox", t1)
-FlyInput.Size = UDim2.new(1, -10, 0, 30)
-FlyInput.Position = UDim2.new(0, 0, 0, 175)
+FlyInput.Size = UDim2.new(1, -10, 0, 25)
+FlyInput.Position = UDim2.new(0, 0, 0, 155)
 FlyInput.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 FlyInput.Text = "2"
 styleTextBox(FlyInput)
 
 local FloatTitle = Instance.new("TextLabel", t1)
 FloatTitle.Size = UDim2.new(1, 0, 0, 20)
-FloatTitle.Position = UDim2.new(0, 0, 0, 220)
-FloatTitle.Text = "--- Float ---"
+FloatTitle.Position = UDim2.new(0, 0, 0, 190)
+FloatTitle.Text = "--- Float (Thảm Ảo Đuổi Chân) ---"
 FloatTitle.BackgroundTransparency = 1
-styleLabel(FloatTitle, 16, true)
+styleLabel(FloatTitle, 14)
 
 local FloatToggle = Instance.new("TextButton", t1)
-FloatToggle.Size = UDim2.new(1, -10, 0, 35)
-FloatToggle.Position = UDim2.new(0, 0, 0, 245)
+FloatToggle.Size = UDim2.new(1, -10, 0, 30)
+FloatToggle.Position = UDim2.new(0, 0, 0, 215)
 FloatToggle.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
 FloatToggle.Text = "Float: OFF"
-styleLabel(FloatToggle, 16)
+styleLabel(FloatToggle, 14)
 
-local FloatInput = Instance.new("TextBox", t1)
-FloatInput.Size = UDim2.new(1, -10, 0, 30)
-FloatInput.Position = UDim2.new(0, 0, 0, 285)
-FloatInput.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-FloatInput.Text = "0"
-styleTextBox(FloatInput)
-
+-- Logic WalkSpeed
 local sActive = false
 RunService.Heartbeat:Connect(function()
-    if sActive then
-        local char = Players.LocalPlayer.Character
-        local hum = char and char:FindFirstChildWhichIsA("Humanoid")
+    if sActive and LocalPlayer.Character then
+        local hum = LocalPlayer.Character:FindFirstChildWhichIsA("Humanoid")
         if hum then hum.WalkSpeed = tonumber(SpeedInput.Text) or 16 end
     end
 end)
@@ -228,22 +239,26 @@ SpeedToggle.MouseButton1Click:Connect(function()
     sActive = not sActive
     SpeedToggle.Text = sActive and "Speed: ON" or "Speed: OFF"
     SpeedToggle.BackgroundColor3 = sActive and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(55, 55, 55)
-    if not sActive then 
-        local h = Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChildWhichIsA("Humanoid")
+    resetCharacterAnimation()
+    if not sActive and LocalPlayer.Character then 
+        local h = LocalPlayer.Character:FindFirstChildWhichIsA("Humanoid")
         if h then h.WalkSpeed = 16 end
     end
 end)
 
+-- Logic IY Fly
 local Flying = false
 local FlyBV, FlyBG
 FlyToggle.MouseButton1Click:Connect(function()
     Flying = not Flying
     FlyToggle.Text = Flying and "Fly: ON" or "Fly: OFF"
     FlyToggle.BackgroundColor3 = Flying and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(55, 55, 55)
-    local char = Players.LocalPlayer.Character
+    local char = LocalPlayer.Character
     local root = char and char:FindFirstChild("HumanoidRootPart")
     local hum = char and char:FindFirstChildWhichIsA("Humanoid")
     if not root or not hum then return end
+    
+    resetCharacterAnimation()
     if Flying then
         hum.PlatformStand = true
         FlyBV = Instance.new("BodyVelocity", root)
@@ -259,70 +274,111 @@ FlyToggle.MouseButton1Click:Connect(function()
 end)
 
 RunService.RenderStepped:Connect(function()
-    if Flying then
-        local char = Players.LocalPlayer.Character
-        local root = char and char:FindFirstChild("HumanoidRootPart")
-        if root and FlyBV and FlyBG then
-            local cam = workspace.CurrentCamera
+    if Flying and LocalPlayer.Character then
+        local root = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        local hum = LocalPlayer.Character:FindFirstChildWhichIsA("Humanoid")
+        if root and FlyBV and FlyBG and hum then
             local speed = 25 * (tonumber(FlyInput.Text) or 1)
-            local moveDir = char.Humanoid.MoveDirection
-            local forward = cam.CFrame.LookVector
-            local right = cam.CFrame.RightVector
+            local moveDir = hum.MoveDirection
+            local forward = CurrentCamera.CFrame.LookVector
+            local right = CurrentCamera.CFrame.RightVector
             local flatF = Vector3.new(forward.X, 0, forward.Z).Unit
             local flatR = Vector3.new(right.X, 0, right.Z).Unit
             local finalDir = (forward * moveDir:Dot(flatF)) + (right * moveDir:Dot(flatR))
             if finalDir.Magnitude > 0 then FlyBV.Velocity = finalDir.Unit * speed else FlyBV.Velocity = Vector3.zero end
-            FlyBG.CFrame = cam.CFrame
+            FlyBG.CFrame = CurrentCamera.CFrame
         end
     end
 end)
 
-local floatActive = false
-local floatPart = nil
+-- ====================================================================
+-- THUẬT TOÁN ĐỒNG BỘ "THẢM ẢO SIÊU TỐC ĐỘ" TỪ CODE CỦA MÀY (ĐÃ FIX LỖI GIẬT)
+-- ====================================================================
+local Floating = false
+local platform = nil
+local renderConnection = nil
+
+local function cleanUpFloat()
+    if renderConnection then renderConnection:Disconnect() renderConnection = nil end
+    if platform then platform:Destroy() platform = nil end
+end
+
 FloatToggle.MouseButton1Click:Connect(function()
-    floatActive = not floatActive
-    FloatToggle.Text = floatActive and "Float: ON" or "Float: OFF"
-    FloatToggle.BackgroundColor3 = floatActive and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(55, 55, 55)
-    if floatActive then
-        local char = Players.LocalPlayer.Character
-        local root = char and char:FindFirstChild("HumanoidRootPart")
-        if root and not floatPart then
-            floatPart = Instance.new("Part")
-            floatPart.Size = Vector3.new(6, 0.5, 6)
-            floatPart.Transparency = 1
-            floatPart.Anchored = true
-            floatPart.Parent = char
-            task.spawn(function()
-                while floatActive and char and root and floatPart do
-                    floatPart.CFrame = root.CFrame * CFrame.new(0, -3.5 + (tonumber(FloatInput.Text) or 0), 0)
-                    RunService.Heartbeat:Wait()
-                end
-            end)
-        end
+    Floating = not Floating
+    FloatToggle.Text = Floating and "Float: ON" or "Float: OFF"
+    FloatToggle.BackgroundColor3 = Floating and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(55, 55, 55)
+    
+    local char = LocalPlayer.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    local hum = char and char:FindFirstChildWhichIsA("Humanoid")
+    if not root or not hum then return end
+    
+    resetCharacterAnimation()
+    
+    if Floating then
+        -- Khởi tạo thảm tàng hình vật lý chuẩn kích thước IY
+        platform = Instance.new("Part")
+        platform.Name = "IY_InvisiblePlatform"
+        platform.Size = Vector3.new(5, 0.6, 5)
+        platform.Transparency = 1 -- 1 = Tàng hình hoàn toàn
+        platform.Anchored = true
+        platform.CanCollide = true
+        platform.Material = Enum.Material.Plastic -- Đảm bảo ma sát tốt tạo âm thanh chân
+        platform.Parent = Workspace
+        
+        local targetY = root.Position.Y - 3.25
+        platform.CFrame = CFrame.new(root.Position.X, targetY, root.Position.Z)
+        
+        -- Dùng chuỗi Heartbeat cập nhật mượt ngay sau luồng vật lý để triệt tiêu lỗi ổ gà
+        renderConnection = RunService.Heartbeat:Connect(function()
+            local currentCharacter = LocalPlayer.Character
+            local currentRoot = currentCharacter and currentCharacter:FindFirstChild("HumanoidRootPart")
+            local currentHumanoid = currentCharacter and currentCharacter:FindFirstChildWhichIsA("Humanoid")
+            if not currentRoot or not currentHumanoid or not platform then return end
+            
+            local state = currentHumanoid:GetState()
+            
+            -- Nếu đang nhảy hoặc rơi, cập nhật ngay lập tức mốc chiều cao mới theo chân với tốc độ ngang
+            if state == Enum.HumanoidStateType.Jumping or state == Enum.HumanoidStateType.Freefall or currentHumanoid.Jump then
+                targetY = currentRoot.Position.Y - 3.25
+            end
+            
+            -- Cập nhật đồng bộ tọa độ X, Z theo phím chạy, và Y theo độ cao nhảy mà không làm méo góc xoay nhân vật
+            platform.CFrame = CFrame.new(currentRoot.Position.X, targetY, currentRoot.Position.Z)
+            
+            -- Sửa lỗi đơ hoạt ảnh chân: Nếu đứng im trên thảm, chuyển sang Air để tránh xung đột hoạt ảnh
+            if currentHumanoid.MoveDirection.Magnitude > 0 then
+                currentHumanoid.FloorMaterial = Enum.Material.Plastic
+            end
+        end)
     else
-        if floatPart then floatPart:Destroy() floatPart = nil end
+        cleanUpFloat()
+        hum.FloorMaterial = Enum.Material.Air
     end
 end)
 
--- === TAB 2: NOCLIP ONLY ===
+-- Tự động dọn dẹp khi chết hoặc hồi sinh
+LocalPlayer.CharacterAdded:Connect(function()
+    Floating = false
+    cleanUpFloat()
+    FloatToggle.Text = "Float: OFF"
+    FloatToggle.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+end)
+-- Chạy nối tiếp đoạn này ngay sau khi chạy xong đoạn 1
 local t2 = tabs[2]
 local NoclipToggle = Instance.new("TextButton", t2)
 NoclipToggle.Size = UDim2.new(1, -10, 0, 45)
 NoclipToggle.Position = UDim2.new(0, 5, 0, 10)
 NoclipToggle.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
 NoclipToggle.Text = "Noclip: OFF"
-styleLabel(NoclipToggle, 16)
+styleLabel(NoclipToggle, 15)
 
 local nActive = false
-RunService.Stepped:Connect(function()
-    local c = Players.LocalPlayer.Character
-    if c then
-        for _, p in pairs(c:GetDescendants()) do
-            if p:IsA("BasePart") then
-                if nActive then p.CanCollide = false else
-                    if p.Name == "HumanoidRootPart" or p.Parent:IsA("Accessory") then p.CanCollide = false else p.CanCollide = true end
-                end
-            end
+-- Lắng nghe RenderStepped liên tục để tắt va chạm chân thực nhất
+RunService.RenderStepped:Connect(function()
+    if nActive and LocalPlayer.Character then
+        for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+            if part:IsA("BasePart") then part.CanCollide = false end
         end
     end
 end)
@@ -331,22 +387,32 @@ NoclipToggle.MouseButton1Click:Connect(function()
     nActive = not nActive
     NoclipToggle.Text = nActive and "Noclip: ON" or "Noclip: OFF"
     NoclipToggle.BackgroundColor3 = nActive and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(55, 55, 55)
+    resetCharacterAnimation()
+    
+    -- SỬA LỖI: Khi TẮT Noclip, ép toàn bộ Part cơ thể hồi lại va chạm ngay lập tức
+    if not nActive and LocalPlayer.Character then
+        for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+            if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then 
+                part.CanCollide = true 
+            end
+        end
+    end
 end)
 
--- === TAB 3: ESP & TELEPORT ===
+-- TAB 3: ESP SIÊU TỐC & TELEPORT
 local t3 = tabs[3]
 local EspToggle = Instance.new("TextButton", t3)
 EspToggle.Size = UDim2.new(1, -10, 0, 35)
 EspToggle.Position = UDim2.new(0, 5, 0, 5)
 EspToggle.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
 EspToggle.Text = "ESP: OFF"
-styleLabel(EspToggle, 16)
+styleLabel(EspToggle, 14)
 
 local TPInput = Instance.new("TextBox", t3)
 TPInput.Size = UDim2.new(1, -10, 0, 35)
 TPInput.Position = UDim2.new(0, 5, 0, 45)
 TPInput.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-TPInput.PlaceholderText = "Enter Player Name..."
+TPInput.PlaceholderText = "Nhập tên Player cần dịch chuyển..."
 TPInput.Text = ""
 styleTextBox(TPInput)
 TPInput.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
@@ -355,14 +421,14 @@ local TPBtn = Instance.new("TextButton", t3)
 TPBtn.Size = UDim2.new(1, -10, 0, 35)
 TPBtn.Position = UDim2.new(0, 5, 0, 85)
 TPBtn.BackgroundColor3 = Color3.fromRGB(35, 120, 240)
-TPBtn.Text = "Teleport"
-styleLabel(TPBtn, 16)
+TPBtn.Text = "Dịch Chuyển (Teleport)"
+styleLabel(TPBtn, 14)
 
 local function findPlr(str)
     if str == "" then return nil end
     local s = string.lower(str)
     for _, v in pairs(Players:GetPlayers()) do
-        if v ~= Players.LocalPlayer and (string.sub(string.lower(v.DisplayName), 1, #s) == s or string.sub(string.lower(v.Name), 1, #s) == s) then return v end
+        if v ~= LocalPlayer and (string.sub(string.lower(v.DisplayName), 1, #s) == s or string.sub(string.lower(v.Name), 1, #s) == s) then return v end
     end
     return nil
 end
@@ -371,72 +437,97 @@ TPBtn.MouseButton1Click:Connect(function()
     local target = findPlr(TPInput.Text)
     if target and target.Character then
         local tHrp = target.Character:FindFirstChild("HumanoidRootPart")
-        local myHrp = Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        local myHrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
         if tHrp and myHrp then myHrp.CFrame = tHrp.CFrame + Vector3.new(0, 3, 0) end
     end
 end)
 
 local espActive = false
-local espStorage = workspace:FindFirstChild("PremiumESP_Storage") or Instance.new("Folder", workspace)
+local espStorage = Workspace:FindFirstChild("PremiumESP_Storage") or Instance.new("Folder", Workspace)
 espStorage.Name = "PremiumESP_Storage"
 
 local function createEsp(plr)
-    if plr == Players.LocalPlayer then return end
+    if plr == LocalPlayer then return end
+    
     local function addHighlight()
         if not espActive or not plr.Character then return end
         local pName = plr.Name
         if espStorage:FindFirstChild(pName) then espStorage[pName]:Destroy() end
+        
         local container = Instance.new("Folder", espStorage)
         container.Name = pName
+        
         local hl = Instance.new("Highlight", container)
         hl.Adornee = plr.Character
-        hl.FillColor = (plr.Team ~= Players.LocalPlayer.Team) and Color3.fromRGB(255, 30, 30) or Color3.fromRGB(0, 255, 100)
+        hl.FillColor = (plr.Team ~= LocalPlayer.Team) and Color3.fromRGB(255, 30, 30) or Color3.fromRGB(0, 255, 100)
         hl.FillTransparency = 0.5
         
-        local hrp = plr.Character:WaitForChild("HumanoidRootPart", 5)
+        -- SỬA LỖI TRỄ: Lấy nhanh HRP không dùng WaitForChild chặn luồng
+        local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
         if hrp then
             local bb = Instance.new("BillboardGui", container)
             bb.AlwaysOnTop = true
             bb.Size = UDim2.new(0, 200, 0, 50)
             bb.StudsOffset = Vector3.new(0, 4.5, 0)
             bb.Adornee = hrp
+            
             local tl = Instance.new("TextLabel", bb)
             tl.Size = UDim2.new(1, 0, 1, 0)
             tl.BackgroundTransparency = 1
             tl.TextColor3 = hl.FillColor
-            tl.TextSize = 22
+            tl.TextSize = 18
             tl.Font = Enum.Font.SourceSansBold
-            
-            task.spawn(function()
-                while espActive and plr.Character and hrp and container.Parent do
-                    local myChar = Players.LocalPlayer.Character
-                    local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
-                    tl.Text = myHrp and string.format("%s [%sm]", plr.DisplayName, math.floor((hrp.Position - myHrp.Position).Magnitude)) or plr.DisplayName
-                    task.wait(0.2)
-                end
-            end)
+            tl.Text = string.format("%s [0m]", plr.DisplayName) -- Hiện tên ngay lập tức
         end
     end
-    plr.CharacterAdded:Connect(function() task.wait(0.5); addHighlight() end)
+    plr.CharacterAdded:Connect(function() if espActive then task.wait(0.1); addHighlight() end end)
     addHighlight()
 end
+
+-- Tối ưu hóa cập nhật khoảng cách liên tục trên khung hình Heartbeat (Không bị delay tên)
+RunService.Heartbeat:Connect(function()
+    if not espActive then return end
+    local myChar = LocalPlayer.Character
+    local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
+    if not myHrp then return end
+    
+    for _, plr in pairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer and plr.Character then
+            local container = espStorage:FindFirstChild(plr.Name)
+            if container then
+                local bb = container:FindFirstChildWhichIsA("BillboardGui")
+                local tl = bb and bb:FindFirstChildWhichIsA("TextLabel")
+                local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
+                if tl and hrp then
+                    local dist = math.floor((hrp.Position - myHrp.Position).Magnitude)
+                    tl.Text = string.format("%s [%sm]", plr.DisplayName, dist)
+                end
+            else
+                -- Nếu phát hiện player thiếu gói ESP thì tạo ngay lập tức không trễ
+                createEsp(plr)
+            end
+        end
+    end
+end)
 
 EspToggle.MouseButton1Click:Connect(function()
     espActive = not espActive
     EspToggle.Text = espActive and "ESP: ON" or "ESP: OFF"
     EspToggle.BackgroundColor3 = espActive and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(55, 55, 55)
     espStorage:ClearAllChildren()
-    if espActive then for _, p in pairs(Players:GetPlayers()) do createEsp(p) end end
+    if espActive then 
+        for _, p in pairs(Players:GetPlayers()) do createEsp(p) end 
+    end
 end)
 
--- === TAB 4: VIEW & FLING ===
+-- TAB 4: VIEW & FLING
 local t4 = tabs[4]
 local FlingToggle = Instance.new("TextButton", t4)
 FlingToggle.Size = UDim2.new(1, -10, 0, 30)
 FlingToggle.Position = UDim2.new(0, 5, 0, 5)
 FlingToggle.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
 FlingToggle.Text = "WalkFling: OFF"
-styleLabel(FlingToggle, 16)
+styleLabel(FlingToggle, 14)
 
 local FlingInput = Instance.new("TextBox", t4)
 FlingInput.Size = UDim2.new(1, -10, 0, 30)
@@ -454,7 +545,7 @@ FlingToggle.MouseButton1Click:Connect(function()
     if fActive then
         nActive = false
         fConn = RunService.Heartbeat:Connect(function()
-            local hrp = Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
             if hrp then
                 local p = tonumber(FlingInput.Text) or 99999
                 hrp.RotVelocity = Vector3.new(p, p, p)
@@ -471,7 +562,7 @@ local ViewInput = Instance.new("TextBox", t4)
 ViewInput.Size = UDim2.new(1, -10, 0, 30)
 ViewInput.Position = UDim2.new(0, 5, 0, 80)
 ViewInput.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-ViewInput.PlaceholderText = "View Player Name..."
+ViewInput.PlaceholderText = "Xem góc nhìn Player..."
 styleTextBox(ViewInput)
 ViewInput.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
 
@@ -479,15 +570,15 @@ local ViewBtn = Instance.new("TextButton", t4)
 ViewBtn.Size = UDim2.new(0, 120, 0, 30)
 ViewBtn.Position = UDim2.new(0, 5, 0, 115)
 ViewBtn.BackgroundColor3 = Color3.fromRGB(35, 120, 240)
-ViewBtn.Text = "View"
-styleLabel(ViewBtn, 16)
+ViewBtn.Text = "Xem (View)"
+styleLabel(ViewBtn, 14)
 
 local UnviewBtn = Instance.new("TextButton", t4)
 UnviewBtn.Size = UDim2.new(0, 120, 0, 30)
 UnviewBtn.Position = UDim2.new(0, 130, 0, 115)
 UnviewBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-UnviewBtn.Text = "Unview"
-styleLabel(UnviewBtn, 16)
+UnviewBtn.Text = "Hủy Xem"
+styleLabel(UnviewBtn, 14)
 
 local ViewStatusLabel = Instance.new("TextLabel", ScreenGui)
 ViewStatusLabel.Size = UDim2.new(1, 0, 0, 30)
@@ -495,13 +586,13 @@ ViewStatusLabel.Position = UDim2.new(0, 0, 0, 5)
 ViewStatusLabel.BackgroundTransparency = 1
 ViewStatusLabel.Text = ""
 ViewStatusLabel.TextColor3 = Color3.fromRGB(255, 230, 0)
-styleLabel(ViewStatusLabel, 18)
+styleLabel(ViewStatusLabel, 16)
 ViewStatusLabel.Visible = false
 
 local viewConn = nil
 local function resetCamera()
     if viewConn then viewConn:Disconnect() viewConn = nil end
-    local hum = Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChildWhichIsA("Humanoid")
+    local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildWhichIsA("Humanoid")
     if hum then CurrentCamera.CameraSubject = hum end
     ViewStatusLabel.Visible = false
 end
