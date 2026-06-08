@@ -28,6 +28,9 @@ local function resetCharacterAnimation()
     end
 end
 
+-- Xuất hàm ra môi trường toàn cục để Đoạn 2 gọi được mà không gây lỗi
+_G.PremiumMenuResetAnim = resetCharacterAnimation
+
 -- ====================================================================
 -- [1. NÚT MENU ICON "💀" - DI CHUYỂN TỰ DO]
 -- ====================================================================
@@ -150,12 +153,16 @@ createTab("Noclip", 2)
 createTab("ESP & TP", 3)
 createTab("View/Fling", 4)
 
+-- Xuất bảng chứa các Tab ra môi trường chung để đoạn 2 nhận diện giao diện
+_G.PremiumMenuTabs = tabs
+
 local function styleLabel(obj, size)
     obj.Font = Enum.Font.SourceSansBold
     obj.TextSize = size or 15
     obj.TextColor3 = Color3.fromRGB(255, 255, 255)
     obj.ZIndex = 15
 end
+_G.PremiumMenuStyleLabel = styleLabel
 
 local function styleTextBox(obj)
     obj.Font = Enum.Font.SourceSansBold
@@ -165,6 +172,7 @@ local function styleTextBox(obj)
     obj.BorderColor3 = Color3.fromRGB(100, 100, 100)
     obj.ZIndex = 15
 end
+_G.PremiumMenuStyleTextBox = styleTextBox
 
 -- ====================================================================
 -- [TAB 1: MOVEMENT CONFIG]
@@ -219,12 +227,13 @@ FloatTitle.Text = "--- Float (Thảm Ảo Đuổi Chân) ---"
 FloatTitle.BackgroundTransparency = 1
 styleLabel(FloatTitle, 14)
 
-local FloatToggle = Instance.new("TextButton", t1)
-FloatToggle.Size = UDim2.new(1, -10, 0, 30)
-FloatToggle.Position = UDim2.new(0, 0, 0, 215)
-FloatToggle.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
-FloatToggle.Text = "Float: OFF"
-styleLabel(FloatToggle, 14)
+-- Xuất nút FloatToggle ra toàn cục để Đoạn 2 gắn tính năng mà không đổi cấu trúc UI ban đầu
+_G.PremiumFloatToggle = Instance.new("TextButton", t1)
+_G.PremiumFloatToggle.Size = UDim2.new(1, -10, 0, 30)
+_G.PremiumFloatToggle.Position = UDim2.new(0, 0, 0, 215)
+_G.PremiumFloatToggle.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+_G.PremiumFloatToggle.Text = "Float: OFF"
+styleLabel(_G.PremiumFloatToggle, 14)
 
 -- Logic WalkSpeed
 local sActive = false
@@ -263,6 +272,7 @@ FlyToggle.MouseButton1Click:Connect(function()
         hum.PlatformStand = true
         FlyBV = Instance.new("BodyVelocity", root)
         FlyBV.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+        FlyBV.Velocity = Vector3.zero
         FlyBG = Instance.new("BodyGyro", root)
         FlyBG.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
     else
@@ -290,9 +300,23 @@ RunService.RenderStepped:Connect(function()
         end
     end
 end)
+-- Chờ đồng bộ môi trường từ Đoạn 1 để lấy liên kết UI
+repeat task.wait(0.1) until _G.PremiumMenuTabs and _G.PremiumFloatToggle
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+local LocalPlayer = Players.LocalPlayer
+local CurrentCamera = Workspace.CurrentCamera
+
+local tabs = _G.PremiumMenuTabs
+local styleLabel = _G.PremiumMenuStyleLabel
+local styleTextBox = _G.PremiumMenuStyleTextBox
+local resetCharacterAnimation = _G.PremiumMenuResetAnim
+local FloatToggle = _G.PremiumFloatToggle
 
 -- ====================================================================
--- THUẬT TOÁN ĐỒNG BỘ "THẢM ẢO SIÊU TỐC ĐỘ" TỪ CODE CỦA MÀY (ĐÃ FIX LỖI GIẬT)
+-- FIX Ổ GÀ: THUẬT TOÁN ĐỒNG BỘ POSITION QUA LUỒNG VẬT LÝ STEPPED 
 -- ====================================================================
 local Floating = false
 local platform = nil
@@ -304,52 +328,45 @@ local function cleanUpFloat()
 end
 
 FloatToggle.MouseButton1Click:Connect(function()
+    if not LocalPlayer.Character then return end
+    local root = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    local hum = LocalPlayer.Character:FindFirstChildWhichIsA("Humanoid")
+    if not root or not hum then return end
+    
     Floating = not Floating
     FloatToggle.Text = Floating and "Float: ON" or "Float: OFF"
     FloatToggle.BackgroundColor3 = Floating and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(55, 55, 55)
     
-    local char = LocalPlayer.Character
-    local root = char and char:FindFirstChild("HumanoidRootPart")
-    local hum = char and char:FindFirstChildWhichIsA("Humanoid")
-    if not root or not hum then return end
-    
-    resetCharacterAnimation()
+    if type(resetCharacterAnimation) == "function" then resetCharacterAnimation() end
     
     if Floating then
-        -- Khởi tạo thảm tàng hình vật lý chuẩn kích thước IY
+        -- Thảm ảo kích cỡ tối ưu (6x6) bám cực tốt chống hụt chân gây khựng vật lý
         platform = Instance.new("Part")
         platform.Name = "IY_InvisiblePlatform"
-        platform.Size = Vector3.new(5, 0.6, 5)
-        platform.Transparency = 1 -- 1 = Tàng hình hoàn toàn
+        platform.Size = Vector3.new(6, 0.5, 6)
+        platform.Transparency = 1 
         platform.Anchored = true
         platform.CanCollide = true
-        platform.Material = Enum.Material.Plastic -- Đảm bảo ma sát tốt tạo âm thanh chân
+        platform.Material = Enum.Material.Plastic
         platform.Parent = Workspace
         
-        local targetY = root.Position.Y - 3.25
-        platform.CFrame = CFrame.new(root.Position.X, targetY, root.Position.Z)
+        local targetY = root.Position.Y - 3.3
+        platform.Position = Vector3.new(root.Position.X, targetY, root.Position.Z)
         
-        -- Dùng chuỗi Heartbeat cập nhật mượt ngay sau luồng vật lý để triệt tiêu lỗi ổ gà
-        renderConnection = RunService.Heartbeat:Connect(function()
+        -- SỬA Ổ GÀ: Đưa vào luồng Stepped chạy đồng bộ trước chu kỳ vẽ khung hình vật lý
+        renderConnection = RunService.Stepped:Connect(function()
             local currentCharacter = LocalPlayer.Character
             local currentRoot = currentCharacter and currentCharacter:FindFirstChild("HumanoidRootPart")
             local currentHumanoid = currentCharacter and currentCharacter:FindFirstChildWhichIsA("Humanoid")
             if not currentRoot or not currentHumanoid or not platform then return end
             
             local state = currentHumanoid:GetState()
-            
-            -- Nếu đang nhảy hoặc rơi, cập nhật ngay lập tức mốc chiều cao mới theo chân với tốc độ ngang
             if state == Enum.HumanoidStateType.Jumping or state == Enum.HumanoidStateType.Freefall or currentHumanoid.Jump then
-                targetY = currentRoot.Position.Y - 3.25
+                targetY = currentRoot.Position.Y - 3.3
             end
             
-            -- Cập nhật đồng bộ tọa độ X, Z theo phím chạy, và Y theo độ cao nhảy mà không làm méo góc xoay nhân vật
-            platform.CFrame = CFrame.new(currentRoot.Position.X, targetY, currentRoot.Position.Z)
-            
-            -- Sửa lỗi đơ hoạt ảnh chân: Nếu đứng im trên thảm, chuyển sang Air để tránh xung đột hoạt ảnh
-            if currentHumanoid.MoveDirection.Magnitude > 0 then
-                currentHumanoid.FloorMaterial = Enum.Material.Plastic
-            end
+            -- DIỆT TẬN GỐC: Chỉ khóa tọa độ bằng .Position, giữ nguyên CFrame tự nhiên của người
+            platform.Position = Vector3.new(currentRoot.Position.X, targetY, currentRoot.Position.Z)
         end)
     else
         cleanUpFloat()
@@ -357,14 +374,16 @@ FloatToggle.MouseButton1Click:Connect(function()
     end
 end)
 
--- Tự động dọn dẹp khi chết hoặc hồi sinh
 LocalPlayer.CharacterAdded:Connect(function()
     Floating = false
     cleanUpFloat()
     FloatToggle.Text = "Float: OFF"
     FloatToggle.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
 end)
--- Chạy nối tiếp đoạn này ngay sau khi chạy xong đoạn 1
+
+-- ====================================================================
+-- TAB 2: NOCLIP KHÓA VA CHẠM
+-- ====================================================================
 local t2 = tabs[2]
 local NoclipToggle = Instance.new("TextButton", t2)
 NoclipToggle.Size = UDim2.new(1, -10, 0, 45)
@@ -374,7 +393,6 @@ NoclipToggle.Text = "Noclip: OFF"
 styleLabel(NoclipToggle, 15)
 
 local nActive = false
--- Lắng nghe RenderStepped liên tục để tắt va chạm chân thực nhất
 RunService.RenderStepped:Connect(function()
     if nActive and LocalPlayer.Character then
         for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
@@ -387,9 +405,8 @@ NoclipToggle.MouseButton1Click:Connect(function()
     nActive = not nActive
     NoclipToggle.Text = nActive and "Noclip: ON" or "Noclip: OFF"
     NoclipToggle.BackgroundColor3 = nActive and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(55, 55, 55)
-    resetCharacterAnimation()
+    if type(resetCharacterAnimation) == "function" then resetCharacterAnimation() end
     
-    -- SỬA LỖI: Khi TẮT Noclip, ép toàn bộ Part cơ thể hồi lại va chạm ngay lập tức
     if not nActive and LocalPlayer.Character then
         for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
             if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then 
@@ -399,7 +416,9 @@ NoclipToggle.MouseButton1Click:Connect(function()
     end
 end)
 
+-- ====================================================================
 -- TAB 3: ESP SIÊU TỐC & TELEPORT
+-- ====================================================================
 local t3 = tabs[3]
 local EspToggle = Instance.new("TextButton", t3)
 EspToggle.Size = UDim2.new(1, -10, 0, 35)
@@ -462,7 +481,6 @@ local function createEsp(plr)
         hl.FillColor = (plr.Team ~= LocalPlayer.Team) and Color3.fromRGB(255, 30, 30) or Color3.fromRGB(0, 255, 100)
         hl.FillTransparency = 0.5
         
-        -- SỬA LỖI TRỄ: Lấy nhanh HRP không dùng WaitForChild chặn luồng
         local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
         if hrp then
             local bb = Instance.new("BillboardGui", container)
@@ -477,14 +495,13 @@ local function createEsp(plr)
             tl.TextColor3 = hl.FillColor
             tl.TextSize = 18
             tl.Font = Enum.Font.SourceSansBold
-            tl.Text = string.format("%s [0m]", plr.DisplayName) -- Hiện tên ngay lập tức
+            tl.Text = string.format("%s [0m]", plr.DisplayName)
         end
     end
     plr.CharacterAdded:Connect(function() if espActive then task.wait(0.1); addHighlight() end end)
     addHighlight()
 end
 
--- Tối ưu hóa cập nhật khoảng cách liên tục trên khung hình Heartbeat (Không bị delay tên)
 RunService.Heartbeat:Connect(function()
     if not espActive then return end
     local myChar = LocalPlayer.Character
@@ -503,7 +520,6 @@ RunService.Heartbeat:Connect(function()
                     tl.Text = string.format("%s [%sm]", plr.DisplayName, dist)
                 end
             else
-                -- Nếu phát hiện player thiếu gói ESP thì tạo ngay lập tức không trễ
                 createEsp(plr)
             end
         end
@@ -520,7 +536,9 @@ EspToggle.MouseButton1Click:Connect(function()
     end
 end)
 
+-- ====================================================================
 -- TAB 4: VIEW & FLING
+-- ====================================================================
 local t4 = tabs[4]
 local FlingToggle = Instance.new("TextButton", t4)
 FlingToggle.Size = UDim2.new(1, -10, 0, 30)
@@ -580,23 +598,7 @@ UnviewBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
 UnviewBtn.Text = "Hủy Xem"
 styleLabel(UnviewBtn, 14)
 
-local ViewStatusLabel = Instance.new("TextLabel", ScreenGui)
-ViewStatusLabel.Size = UDim2.new(1, 0, 0, 30)
-ViewStatusLabel.Position = UDim2.new(0, 0, 0, 5)
-ViewStatusLabel.BackgroundTransparency = 1
-ViewStatusLabel.Text = ""
-ViewStatusLabel.TextColor3 = Color3.fromRGB(255, 230, 0)
-styleLabel(ViewStatusLabel, 16)
-ViewStatusLabel.Visible = false
-
 local viewConn = nil
-local function resetCamera()
-    if viewConn then viewConn:Disconnect() viewConn = nil end
-    local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildWhichIsA("Humanoid")
-    if hum then CurrentCamera.CameraSubject = hum end
-    ViewStatusLabel.Visible = false
-end
-
 ViewBtn.MouseButton1Click:Connect(function()
     local target = findPlr(ViewInput.Text)
     if target and target.Character then
@@ -604,9 +606,12 @@ ViewBtn.MouseButton1Click:Connect(function()
         if tHum then
             if viewConn then viewConn:Disconnect() end
             CurrentCamera.CameraSubject = tHum
-            ViewStatusLabel.Text = "Viewing: " .. target.DisplayName
-            ViewStatusLabel.Visible = true
         end
     end
 end)
-UnviewBtn.MouseButton1Click:Connect(resetCamera)
+
+UnviewBtn.MouseButton1Click:Connect(function()
+    if viewConn then viewConn:Disconnect() viewConn = nil end
+    local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildWhichIsA("Humanoid")
+    if hum then CurrentCamera.CameraSubject = hum end
+end)
