@@ -5,7 +5,7 @@ local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local CurrentCamera = Workspace.CurrentCamera
 
--- Dọn dẹp menu cũ chống đè UI
+-- Dọn dẹp menu cũ chống đè UI khi chạy lại script
 local oldGuis = {"PremiumMovementMenu_V1", "PremiumMovementMenu_V2", "IYPlatformGui"}
 for _, guiName in ipairs(oldGuis) do
     if PlayerGui:FindFirstChild(guiName) then PlayerGui[guiName]:Destroy() end
@@ -28,7 +28,7 @@ local function resetCharacterAnimation()
     end
 end
 
--- Xuất hàm ra môi trường toàn cục để Đoạn 2 gọi được mà không gây lỗi
+-- Xuất hàm ra môi trường toàn cục để Đoạn 2 gọi được an toàn
 _G.PremiumMenuResetAnim = resetCharacterAnimation
 
 -- ====================================================================
@@ -174,6 +174,11 @@ local function styleTextBox(obj)
 end
 _G.PremiumMenuStyleTextBox = styleTextBox
 
+-- Mở mặc định Tab 1
+tabs[1].Visible = true
+btns[1].BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+btns[1].TextColor3 = Color3.fromRGB(255, 255, 0)
+
 -- ====================================================================
 -- [TAB 1: MOVEMENT CONFIG]
 -- ====================================================================
@@ -255,7 +260,7 @@ SpeedToggle.MouseButton1Click:Connect(function()
     end
 end)
 
--- Logic IY Fly
+-- Logic IY Fly nguyên bản (GIỮ NGUYÊN CƠ CHẾ - CHỈ ÉP MAX LỰC XOAY THEO CAM)
 local Flying = false
 local FlyBV, FlyBG
 FlyToggle.MouseButton1Click:Connect(function()
@@ -273,8 +278,11 @@ FlyToggle.MouseButton1Click:Connect(function()
         FlyBV = Instance.new("BodyVelocity", root)
         FlyBV.MaxForce = Vector3.new(1e5, 1e5, 1e5)
         FlyBV.Velocity = Vector3.zero
+        
         FlyBG = Instance.new("BodyGyro", root)
-        FlyBG.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
+        -- TỐI ƯU HÓA: Đẩy MaxTorque lên vô hạn và gia tăng độ nhạy (P) chuẩn Infinite Yield để xoay cực bén
+        FlyBG.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+        FlyBG.P = 9000
     else
         hum.PlatformStand = false
         if FlyBV then FlyBV:Destroy() end
@@ -300,8 +308,8 @@ RunService.RenderStepped:Connect(function()
         end
     end
 end)
--- Chờ đồng bộ môi trường từ Đoạn 1 để lấy liên kết UI
-repeat task.wait(0.1) until _G.PremiumMenuTabs and _G.PremiumFloatToggle
+-- Chống lỗi ổ gà: Chờ đồng bộ môi trường từ Đoạn 1 để lấy liên kết UI ổn định
+repeat task.wait(0.1) until _G.PremiumMenuTabs and _G.PremiumFloatToggle and _G.PremiumMenuStyleLabel
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -315,8 +323,11 @@ local styleTextBox = _G.PremiumMenuStyleTextBox
 local resetCharacterAnimation = _G.PremiumMenuResetAnim
 local FloatToggle = _G.PremiumFloatToggle
 
+-- Tự động dọn dẹp các luồng hoặc dữ liệu ESP cũ còn sót lại trong Workspace
+if Workspace:FindFirstChild("PremiumESP_Storage") then Workspace["PremiumESP_Storage"]:Destroy() end
+
 -- ====================================================================
--- FIX Ổ GÀ: THUẬT TOÁN ĐỒNG BỘ POSITION QUA LUỒNG VẬT LÝ STEPPED 
+-- TAB 1 PHẦN PHỤ: LOGIC FLOAT THẢM ẢO KHÓA CHÂN NGUYÊN BẢN
 -- ====================================================================
 local Floating = false
 local platform = nil
@@ -340,7 +351,6 @@ FloatToggle.MouseButton1Click:Connect(function()
     if type(resetCharacterAnimation) == "function" then resetCharacterAnimation() end
     
     if Floating then
-        -- Thảm ảo kích cỡ tối ưu (6x6) bám cực tốt chống hụt chân gây khựng vật lý
         platform = Instance.new("Part")
         platform.Name = "IY_InvisiblePlatform"
         platform.Size = Vector3.new(6, 0.5, 6)
@@ -353,7 +363,6 @@ FloatToggle.MouseButton1Click:Connect(function()
         local targetY = root.Position.Y - 3.3
         platform.Position = Vector3.new(root.Position.X, targetY, root.Position.Z)
         
-        -- SỬA Ổ GÀ: Đưa vào luồng Stepped chạy đồng bộ trước chu kỳ vẽ khung hình vật lý
         renderConnection = RunService.Stepped:Connect(function()
             local currentCharacter = LocalPlayer.Character
             local currentRoot = currentCharacter and currentCharacter:FindFirstChild("HumanoidRootPart")
@@ -365,7 +374,6 @@ FloatToggle.MouseButton1Click:Connect(function()
                 targetY = currentRoot.Position.Y - 3.3
             end
             
-            -- DIỆT TẬN GỐC: Chỉ khóa tọa độ bằng .Position, giữ nguyên CFrame tự nhiên của người
             platform.Position = Vector3.new(currentRoot.Position.X, targetY, currentRoot.Position.Z)
         end)
     else
@@ -417,7 +425,7 @@ NoclipToggle.MouseButton1Click:Connect(function()
 end)
 
 -- ====================================================================
--- TAB 3: ESP SIÊU TỐC & TELEPORT
+-- TAB 3: HIGHLIGHT ESP PHÂN BIỆT ĐỘI CHUẨN XÁC & TELEPORT
 -- ====================================================================
 local t3 = tabs[3]
 local EspToggle = Instance.new("TextButton", t3)
@@ -462,8 +470,19 @@ TPBtn.MouseButton1Click:Connect(function()
 end)
 
 local espActive = false
-local espStorage = Workspace:FindFirstChild("PremiumESP_Storage") or Instance.new("Folder", Workspace)
+local espStorage = Instance.new("Folder", Workspace)
 espStorage.Name = "PremiumESP_Storage"
+
+-- Thuật toán lấy chuẩn màu đội theo cấu trúc Server Game
+local function getTeamColor(plr)
+    if plr.Team == LocalPlayer.Team then
+        return Color3.fromRGB(0, 255, 100) -- Đội mình ép cứng màu Xanh Lá của mày
+    elseif plr.Team then
+        return plr.Team.TeamColor.Color   -- Các Đội khác lấy đúng màu gốc hệ thống quy định
+    else
+        return Color3.fromRGB(255, 255, 255) -- Không phân đội hiện màu trắng
+    end
+end
 
 local function createEsp(plr)
     if plr == LocalPlayer then return end
@@ -478,8 +497,10 @@ local function createEsp(plr)
         
         local hl = Instance.new("Highlight", container)
         hl.Adornee = plr.Character
-        hl.FillColor = (plr.Team ~= LocalPlayer.Team) and Color3.fromRGB(255, 30, 30) or Color3.fromRGB(0, 255, 100)
+        hl.FillColor = getTeamColor(plr)
         hl.FillTransparency = 0.5
+        hl.OutlineColor = Color3.fromRGB(255, 255, 255)
+        hl.OutlineTransparency = 0.2
         
         local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
         if hrp then
@@ -498,10 +519,24 @@ local function createEsp(plr)
             tl.Text = string.format("%s [0m]", plr.DisplayName)
         end
     end
-    plr.CharacterAdded:Connect(function() if espActive then task.wait(0.1); addHighlight() end end)
+    
+    -- Lắng nghe sự kiện hồi sinh hoặc đổi phe để cập nhật lại cấu trúc Highlight lập tức
+    local charConn = plr.CharacterAdded:Connect(function() if espActive then task.wait(0.15); addHighlight() end end)
+    local teamConn = plr:GetPropertyChangedSignal("Team"):Connect(function() if espActive then addHighlight() end end)
+    
+    -- Tự dọn dẹp các kết nối bộ nhớ khi có người out game
+    Players.PlayerRemoving:Connect(function(leftPlr)
+        if leftPlr == plr then
+            if charConn then charConn:Disconnect() end
+            if teamConn then teamConn:Disconnect() end
+            if espStorage:FindFirstChild(plr.Name) then espStorage[plr.Name]:Destroy() end
+        end
+    end)
+    
     addHighlight()
 end
 
+-- Vòng lặp tối ưu hóa tính toán khoảng cách và đồng bộ lại màu sắc Real-time
 RunService.Heartbeat:Connect(function()
     if not espActive then return end
     local myChar = LocalPlayer.Character
@@ -514,10 +549,18 @@ RunService.Heartbeat:Connect(function()
             if container then
                 local bb = container:FindFirstChildWhichIsA("BillboardGui")
                 local tl = bb and bb:FindFirstChildWhichIsA("TextLabel")
+                local hl = container:FindFirstChildWhichIsA("Highlight")
                 local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
-                if tl and hrp then
+                if tl and hrp and hl then
                     local dist = math.floor((hrp.Position - myHrp.Position).Magnitude)
                     tl.Text = string.format("%s [%sm]", plr.DisplayName, dist)
+                    
+                    -- Sửa triệt để ổ gãy màu: Đồng bộ liên tục phòng trường hợp đổi phe đột ngột giữa game
+                    local correctColor = getTeamColor(plr)
+                    if hl.FillColor ~= correctColor then
+                        hl.FillColor = correctColor
+                        tl.TextColor3 = correctColor
+                    end
                 end
             else
                 createEsp(plr)
@@ -537,7 +580,7 @@ EspToggle.MouseButton1Click:Connect(function()
 end)
 
 -- ====================================================================
--- TAB 4: VIEW & FLING
+-- TAB 4: VIEW CAM & FLING CHỐNG RƠI PHÒNG VẬT LÝ
 -- ====================================================================
 local t4 = tabs[4]
 local FlingToggle = Instance.new("TextButton", t4)
@@ -561,7 +604,7 @@ FlingToggle.MouseButton1Click:Connect(function()
     FlingToggle.Text = fActive and "WalkFling: ON" or "WalkFling: OFF"
     FlingToggle.BackgroundColor3 = fActive and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(55, 55, 55)
     if fActive then
-        nActive = false
+        nActive = false -- Hủy Noclip khi bật Fling để tăng khả năng va chạm đẩy mục tiêu
         fConn = RunService.Heartbeat:Connect(function()
             local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
             if hrp then
@@ -572,7 +615,7 @@ FlingToggle.MouseButton1Click:Connect(function()
             end
         end)
     else
-        if fConn then fConn:Disconnect() end
+        if fConn then fConn:Disconnect() fConn = nil end
     end
 end)
 
@@ -598,20 +641,15 @@ UnviewBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
 UnviewBtn.Text = "Hủy Xem"
 styleLabel(UnviewBtn, 14)
 
-local viewConn = nil
 ViewBtn.MouseButton1Click:Connect(function()
     local target = findPlr(ViewInput.Text)
     if target and target.Character then
         local tHum = target.Character:FindFirstChildWhichIsA("Humanoid")
-        if tHum then
-            if viewConn then viewConn:Disconnect() end
-            CurrentCamera.CameraSubject = tHum
-        end
+        if tHum then CurrentCamera.CameraSubject = tHum end
     end
 end)
 
 UnviewBtn.MouseButton1Click:Connect(function()
-    if viewConn then viewConn:Disconnect() viewConn = nil end
     local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildWhichIsA("Humanoid")
     if hum then CurrentCamera.CameraSubject = hum end
 end)
