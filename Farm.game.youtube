@@ -2,7 +2,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CoreGui = game:GetService("CoreGui")
 
-local localPlayer = Players:FindFirstChild("cankandz")
+local localPlayer = Players.LocalPlayers
 local eventsFolder = ReplicatedStorage:WaitForChild("events")
 
 -- Các Remote của game
