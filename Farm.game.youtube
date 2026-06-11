@@ -3,6 +3,10 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CoreGui = game:GetService("CoreGui")
 
 local localPlayer = Players.LocalPlayer
+
+if localPlayer.Name ~= ("cankandz") then
+     return
+end
 local eventsFolder = ReplicatedStorage:WaitForChild("events")
 
 -- Các Remote của game
