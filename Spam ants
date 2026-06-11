@@ -1,0 +1,283 @@
+-- [[ SCRIPT AUTO SPAM TRỨNG CO CHẾ DẤU TÍCH ✅ + MENU DỌC - DELTA MOBILE ]] --
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- Xóa GUI cũ để tránh trùng lặp
+if playerGui:FindFirstChild("AntSpammerMenuGui") then
+	playerGui.AntSpammerMenuGui:Destroy()
+end
+
+-- ==========================================
+-- CẤU HÌNH & THÔNG SỐ GAME
+-- ==========================================
+local TARGET_NAME = "candandz" 
+local COOLDOWN = 0.1 
+
+-- Remote Events chuẩn 100% của bro
+local workerEgg = ReplicatedStorage:WaitForChild("WorkerEgg")
+local droneEgg = ReplicatedStorage:WaitForChild("DroneEgg")
+local queenEgg = ReplicatedStorage:WaitForChild("MajorEgg") 
+
+local targetPlayer = Players:WaitForChild(TARGET_NAME)
+
+-- Trạng thái Tích chọn (✅)
+local tickWorker = false
+local tickQueen = false
+local tickDrone = false
+
+-- Trạng thái kích hoạt chạy Auto chung
+local isAutoRunning = false
+local autoUnstuck = true -- Luôn bật chống kẹt chạy ngầm cho kiến
+
+-- Giá tiền
+local PRICE_WORKER = 5
+local PRICE_QUEEN = 10
+local PRICE_DRONE = 1
+
+-- Hàm kiểm tra thực phẩm
+local function getThucPham()
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if leaderstats then
+		local food = leaderstats:FindFirstChild("Thực phẩm") or leaderstats:FindFirstChild("Food") or leaderstats:FindFirstChild("Points")
+		if food then return food.Value end
+	end
+	return 999999 
+end
+
+-- ==========================================
+-- GIAO DIỆN MENU DỌC HIỆN ĐỦ NÚT (DẤU TÍCH ✅)
+-- ==========================================
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "AntSpammerMenuGui"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = playerGui
+
+-- NÚT TRÒN "🐜" (DI CHUYỂN ĐỘC LẬP)
+local toggleMenuBtn = Instance.new("TextButton")
+toggleMenuBtn.Name = "ToggleMenuBtn"
+toggleMenuBtn.Size = UDim2.new(0, 55, 0, 55)
+toggleMenuBtn.Position = UDim2.new(0.05, 0, 0.4, 0) 
+toggleMenuBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+toggleMenuBtn.BackgroundTransparency = 0.1
+toggleMenuBtn.Text = "🐜" 
+toggleMenuBtn.TextSize = 25
+toggleMenuBtn.ZIndex = 10
+toggleMenuBtn.Parent = screenGui
+
+local btnCorner = Instance.new("UICorner")
+btnCorner.CornerRadius = UDim.new(1, 0) 
+btnCorner.Parent = toggleMenuBtn
+
+local btnStroke = Instance.new("UIStroke")
+btnStroke.Thickness = 2
+btnStroke.Color = Color3.fromRGB(0, 255, 255) 
+btnStroke.Parent = toggleMenuBtn
+
+-- KHUNG MENU CHÍNH DẠNG DỌC (Hiện đầy đủ các nút)
+local menuFrame = Instance.new("Frame")
+menuFrame.Name = "MenuFrame"
+menuFrame.Size = UDim2.new(0, 160, 0, 260) -- Tăng chiều cao lên 260 để hiện đủ full nút không lo bị ẩn
+menuFrame.Position = UDim2.new(0.4, 0, 0.2, 0) 
+menuFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+menuFrame.BackgroundTransparency = 0.15
+menuFrame.ZIndex = 9
+menuFrame.Parent = screenGui
+
+local menuCorner = Instance.new("UICorner")
+menuCorner.CornerRadius = UDim.new(0, 12)
+menuCorner.Parent = menuFrame
+
+-- Tự động xếp các nút thẳng hàng từ trên xuống
+local uiListLayout = Instance.new("UIListLayout")
+uiListLayout.Parent = menuFrame
+uiListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+uiListLayout.Padding = UDim.new(0, 8)
+uiListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+local padding = Instance.new("UIPadding")
+padding.PaddingTop = UDim.new(0, 10)
+padding.Parent = menuFrame
+
+-- Hàm tạo nút tích chọn ✅
+local function createTickButton(name, text, order)
+	local btn = Instance.new("TextButton")
+	btn.Name = name
+	btn.Size = UDim2.new(1, -16, 0, 42) 
+	btn.BackgroundColor3 = Color3.fromRGB(45, 45, 45) -- Màu xám ban đầu khi chưa tích
+	btn.Text = "❌ " .. text
+	btn.TextColor3 = Color3.fromRGB(200, 200, 200)
+	btn.Font = Enum.Font.SourceSansBold
+	btn.TextSize = 13
+	btn.LayoutOrder = order
+	btn.ZIndex = 10
+	btn.Parent = menuFrame
+	
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 6)
+	corner.Parent = btn
+	return btn
+end
+
+-- Tạo 3 nút tích chọn loại trứng
+local btnWorker = createTickButton("BtnWorker", "TRỨNG CÔNG NHÂN", 1)
+local btnQueen = createTickButton("BtnQueen", "TRỨNG CHÍNH", 2)
+local btnDrone = createTickButton("BtnDrone", "TRỨNG DRONE", 3)
+
+-- NÚT TO NHẤT Ở DƯỚI ĐỂ BẤM KÍCH HOẠT AUTO CHUNG
+local btnStartAuto = Instance.new("TextButton")
+btnStartAuto.Name = "BtnStartAuto"
+btnStartAuto.Size = UDim2.new(1, -16, 0, 48)
+btnStartAuto.BackgroundColor3 = Color3.fromRGB(255, 75, 75) -- Màu đỏ báo hiệu đang tắt
+btnStartAuto.Text = "[BẤM ĐỂ CHẠY AUTO]"
+btnStartAuto.TextColor3 = Color3.fromRGB(255, 255, 255)
+btnStartAuto.Font = Enum.Font.SourceSansBold
+btnStartAuto.TextSize = 13
+btnStartAuto.LayoutOrder = 4
+btnStartAuto.ZIndex = 10
+btnStartAuto.Parent = menuFrame
+
+local autoCorner = Instance.new("UICorner")
+autoCorner.CornerRadius = UDim.new(0, 8)
+autoCorner.Parent = btnStartAuto
+
+-- ==========================================
+-- HỆ THỐNG KÉO THẢ DRAGGABLE RIÊNG BIỆT
+-- ==========================================
+local function makeDraggable(guiObject)
+	local dragging, dragInput, dragStart, startPos
+	guiObject.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			dragging = true
+			dragStart = input.Position
+			startPos = guiObject.Position
+			input.Changed:Connect(function()
+				if input.UserInputState == Enum.UserInputState.End then dragging = false end
+			end)
+		end
+	end)
+	guiObject.InputChanged:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end
+	end)
+	UserInputService.InputChanged:Connect(function(input)
+		if input == dragInput and dragging then
+			local delta = input.Position - dragStart
+			guiObject.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+		end
+	end)
+end
+
+makeDraggable(toggleMenuBtn)
+makeDraggable(menuFrame)
+
+toggleMenuBtn.MouseButton1Click:Connect(function()
+	isMenuOpen = not isMenuOpen
+	menuFrame.Visible = isMenuOpen
+end)
+
+-- ==========================================
+-- LOGIC TÍCH CHỌN ĐỔI ICON DẤU TÍCH ✅
+-- ==========================================
+local function updateTickVisual(button, state, labelText)
+	if state then
+		button.Text = "✅ " .. labelText
+		button.TextColor3 = Color3.fromRGB(255, 255, 255)
+		TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(34, 139, 34)}):Play() -- Đổi sang màu xanh lá khi tick
+	else
+		button.Text = "❌ " .. labelText
+		button.TextColor3 = Color3.fromRGB(200, 200, 200)
+		TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(45, 45, 45)}):Play() -- Về lại màu xám
+	end
+end
+
+btnWorker.MouseButton1Click:Connect(function()
+	tickWorker = not tickWorker
+	updateTickVisual(btnWorker, tickWorker, "TRỨNG CÔNG NHÂN")
+end)
+
+btnQueen.MouseButton1Click:Connect(function()
+	tickQueen = not tickQueen
+	updateTickVisual(btnQueen, tickQueen, "TRỨNG CHÍNH")
+end)
+
+btnDrone.MouseButton1Click:Connect(function()
+	tickDrone = not tickDrone
+	updateTickVisual(btnDrone, tickDrone, "TRỨNG DRONE")
+end)
+
+-- LOGIC KHI BẤM NÚT AUTO CHUNG
+btnStartAuto.MouseButton1Click:Connect(function()
+	isAutoRunning = not isAutoRunning
+	if isAutoRunning then
+		btnStartAuto.Text = "[⚡ ĐANG CHẠY AUTO ⚡]"
+		TweenService:Create(btnStartAuto, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(0, 180, 216)}):Play() -- Màu xanh neon rực rỡ khi chạy
+	else
+		btnStartAuto.Text = "[BẤM ĐỂ CHẠY AUTO]"
+		TweenService:Create(btnStartAuto, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255, 75, 75)}):Play()
+	end
+end)
+
+-- ==========================================
+-- VÒNG LẶP KIỂM TRA ĐỦ THỰC PHẨM MỚI SPAM
+-- ==========================================
+
+-- 1. Auto Công nhân (Chỉ chạy khi có cả Tích ✅ và nút Auto chung đang bật)
+task.spawn(function()
+	while true do
+		if isAutoRunning and tickWorker and targetPlayer and workerEgg then 
+			if getThucPham() >= PRICE_WORKER then workerEgg:FireServer(targetPlayer) end
+		end
+		task.wait(COOLDOWN)
+	end
+end)
+
+-- 2. Auto Chính
+task.spawn(function()
+	while true do
+		if isAutoRunning and tickQueen and targetPlayer and queenEgg then 
+			if getThucPham() >= PRICE_QUEEN then queenEgg:FireServer(targetPlayer) end
+		end
+		task.wait(COOLDOWN)
+	end
+end)
+
+-- 3. Auto Drone
+task.spawn(function()
+	while true do
+		if isAutoRunning and tickDrone and targetPlayer and droneEgg then 
+			if getThucPham() >= PRICE_DRONE then droneEgg:FireServer(targetPlayer) end
+		end
+		task.wait(COOLDOWN)
+	end
+end)
+
+-- ==========================================
+-- HỆ THỐNG TỰ ĐỘNG CHỐNG KẸT KIẾN (UNSTUCK)
+-- ==========================================
+task.spawn(function()
+	while true do
+		if autoUnstuck then
+			pcall(function()
+				for _, obj in pairs(workspace:GetChildren()) do
+					if obj:IsA("Model") and (obj.Name:lower():find("ant") or obj:FindFirstChild("Humanoid")) then
+						local hrp = obj:FindFirstChild("HumanoidRootPart")
+						local humanoid = obj:FindFirstChild("Humanoid")
+						
+						if hrp and humanoid and hrp.AssemblyLinearVelocity.Magnitude < 0.5 then
+							hrp.CFrame = hrp.CFrame + Vector3.new(0, 0.5, 0)
+							if humanoid.WalkDirection.Magnitude > 0 then
+								humanoid:Move(Vector3.new(math.random(-1,1), 0, math.random(-1,1)))
+							end
+						end
+					end
+				end
+			end)
+		end
+		task.wait(1.5)
+	end
+end)
