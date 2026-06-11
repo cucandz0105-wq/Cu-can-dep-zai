@@ -1,4 +1,4 @@
--- [[ SCRIPT AUTO SPAM TRỨNG CO CHẾ DẤU TÍCH ✅ + MENU DỌC - DELTA MOBILE ]] --
+-- [[ SCRIPT AUTO SPAM TRỨNG ✅ + MENU DỌC + FIX LỖI GIẬT NHÂN VẬT CHỦ ]] --
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -79,10 +79,10 @@ btnStroke.Thickness = 2
 btnStroke.Color = Color3.fromRGB(0, 255, 255) 
 btnStroke.Parent = toggleMenuBtn
 
--- KHUNG MENU CHÍNH DẠNG DỌC (Hiện đầy đủ các nút)
+-- KHUNG MENU CHÍNH DẠNG DỌC
 local menuFrame = Instance.new("Frame")
 menuFrame.Name = "MenuFrame"
-menuFrame.Size = UDim2.new(0, 160, 0, 260) -- Tăng chiều cao lên 260 để hiện đủ full nút không lo bị ẩn
+menuFrame.Size = UDim2.new(0, 160, 0, 260) 
 menuFrame.Position = UDim2.new(0.4, 0, 0.2, 0) 
 menuFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 menuFrame.BackgroundTransparency = 0.15
@@ -109,7 +109,7 @@ local function createTickButton(name, text, order)
 	local btn = Instance.new("TextButton")
 	btn.Name = name
 	btn.Size = UDim2.new(1, -16, 0, 42) 
-	btn.BackgroundColor3 = Color3.fromRGB(45, 45, 45) -- Màu xám ban đầu khi chưa tích
+	btn.BackgroundColor3 = Color3.fromRGB(45, 45, 45) 
 	btn.Text = "❌ " .. text
 	btn.TextColor3 = Color3.fromRGB(200, 200, 200)
 	btn.Font = Enum.Font.SourceSansBold
@@ -129,11 +129,11 @@ local btnWorker = createTickButton("BtnWorker", "TRỨNG CÔNG NHÂN", 1)
 local btnQueen = createTickButton("BtnQueen", "TRỨNG CHÍNH", 2)
 local btnDrone = createTickButton("BtnDrone", "TRỨNG DRONE", 3)
 
--- NÚT TO NHẤT Ở DƯỚI ĐỂ BẤM KÍCH HOẠT AUTO CHUNG
+-- NÚT TO NHẤT Ở DƯỚI ĐỂ BẤM KÍCH HOẠTH AUTO CHUNG
 local btnStartAuto = Instance.new("TextButton")
 btnStartAuto.Name = "BtnStartAuto"
 btnStartAuto.Size = UDim2.new(1, -16, 0, 48)
-btnStartAuto.BackgroundColor3 = Color3.fromRGB(255, 75, 75) -- Màu đỏ báo hiệu đang tắt
+btnStartAuto.BackgroundColor3 = Color3.fromRGB(255, 75, 75) 
 btnStartAuto.Text = "[BẤM ĐỂ CHẠY AUTO]"
 btnStartAuto.TextColor3 = Color3.fromRGB(255, 255, 255)
 btnStartAuto.Font = Enum.Font.SourceSansBold
@@ -175,6 +175,7 @@ end
 makeDraggable(toggleMenuBtn)
 makeDraggable(menuFrame)
 
+local isMenuOpen = true
 toggleMenuBtn.MouseButton1Click:Connect(function()
 	isMenuOpen = not isMenuOpen
 	menuFrame.Visible = isMenuOpen
@@ -187,11 +188,11 @@ local function updateTickVisual(button, state, labelText)
 	if state then
 		button.Text = "✅ " .. labelText
 		button.TextColor3 = Color3.fromRGB(255, 255, 255)
-		TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(34, 139, 34)}):Play() -- Đổi sang màu xanh lá khi tick
+		TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(34, 139, 34)}):Play() 
 	else
 		button.Text = "❌ " .. labelText
 		button.TextColor3 = Color3.fromRGB(200, 200, 200)
-		TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(45, 45, 45)}):Play() -- Về lại màu xám
+		TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(45, 45, 45)}):Play() 
 	end
 end
 
@@ -210,12 +211,11 @@ btnDrone.MouseButton1Click:Connect(function()
 	updateTickVisual(btnDrone, tickDrone, "TRỨNG DRONE")
 end)
 
--- LOGIC KHI BẤM NÚT AUTO CHUNG
 btnStartAuto.MouseButton1Click:Connect(function()
 	isAutoRunning = not isAutoRunning
 	if isAutoRunning then
 		btnStartAuto.Text = "[⚡ ĐANG CHẠY AUTO ⚡]"
-		TweenService:Create(btnStartAuto, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(0, 180, 216)}):Play() -- Màu xanh neon rực rỡ khi chạy
+		TweenService:Create(btnStartAuto, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(0, 180, 216)}):Play() 
 	else
 		btnStartAuto.Text = "[BẤM ĐỂ CHẠY AUTO]"
 		TweenService:Create(btnStartAuto, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255, 75, 75)}):Play()
@@ -225,8 +225,6 @@ end)
 -- ==========================================
 -- VÒNG LẶP KIỂM TRA ĐỦ THỰC PHẨM MỚI SPAM
 -- ==========================================
-
--- 1. Auto Công nhân (Chỉ chạy khi có cả Tích ✅ và nút Auto chung đang bật)
 task.spawn(function()
 	while true do
 		if isAutoRunning and tickWorker and targetPlayer and workerEgg then 
@@ -236,7 +234,6 @@ task.spawn(function()
 	end
 end)
 
--- 2. Auto Chính
 task.spawn(function()
 	while true do
 		if isAutoRunning and tickQueen and targetPlayer and queenEgg then 
@@ -246,7 +243,6 @@ task.spawn(function()
 	end
 end)
 
--- 3. Auto Drone
 task.spawn(function()
 	while true do
 		if isAutoRunning and tickDrone and targetPlayer and droneEgg then 
@@ -257,27 +253,41 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- HỆ THỐNG TỰ ĐỘNG CHỐNG KẸT KIẾN (UNSTUCK)
+-- HỆ THỐNG TỰ ĐỘNG CHỐNG KẸT + ĐI THEO CHỦ (ĐÃ FIX GIẬT CHỦ)
 -- ==========================================
 task.spawn(function()
 	while true do
 		if autoUnstuck then
 			pcall(function()
+				local myChar = player.Character
+				local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
+				
 				for _, obj in pairs(workspace:GetChildren()) do
-					if obj:IsA("Model") and (obj.Name:lower():find("ant") or obj:FindFirstChild("Humanoid")) then
+					-- ĐIỀU KIỆN QUAN TRỌNG: Model đó phải khác với nhân vật chính của bro (obj ~= myChar)
+					if obj ~= myChar and obj:IsA("Model") and (obj.Name:lower():find("ant") or obj:FindFirstChild("Humanoid")) then
 						local hrp = obj:FindFirstChild("HumanoidRootPart")
 						local humanoid = obj:FindFirstChild("Humanoid")
 						
-						if hrp and humanoid and hrp.AssemblyLinearVelocity.Magnitude < 0.5 then
-							hrp.CFrame = hrp.CFrame + Vector3.new(0, 0.5, 0)
-							if humanoid.WalkDirection.Magnitude > 0 then
-								humanoid:Move(Vector3.new(math.random(-1,1), 0, math.random(-1,1)))
+						if hrp and humanoid then
+							-- 1. Xử lý chống kẹt cho kiến đệ tử
+							if hrp.AssemblyLinearVelocity.Magnitude < 0.5 then
+								hrp.CFrame = hrp.CFrame + Vector3.new(0, 0.6, 0)
+								if myHrp then
+									local direction = (myHrp.Position - hrp.Position).Unit
+									humanoid:Move(direction)
+								end
+							end
+							
+							-- 2. Xử lý bắt kiến đệ tử đi theo chủ
+							if myHrp and (hrp.Position - myHrp.Position).Magnitude > 25 then 
+								local lookAtOwner = (myHrp.Position - hrp.Position).Unit
+								humanoid:Move(lookAtOwner)
 							end
 						end
 					end
 				end
 			end)
 		end
-		task.wait(1.5)
+		task.wait(1.2)
 	end
 end)
