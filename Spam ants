@@ -1,4 +1,4 @@
--- [[ SCRIPT AUTO SPAM TRỨNG ✅ + MENU DỌC GỌN + ÉP KIẾN ĐI THEO + NÚT ESP KIỂU MỚI 😎 ]] --
+-- [[ SCRIPT AUTO SPAM TRỨNG ✅ + ESP XANH LÁ + MENU DỌC NGUYÊN BẢN SẠCH SẼ 190 ]] --
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -29,7 +29,6 @@ local tickQueen = false
 local tickDrone = false
 
 local isAutoRunning = false
-local autoFollowEnabled = false 
 local espEnabled = false 
 
 local PRICE_WORKER = 5
@@ -46,7 +45,7 @@ local function getThucPham()
 end
 
 -- ==========================================
--- GIAO DIỆN MENU DỌC SIÊU MI NHON (CHIỀU CAO 220)
+-- GIAO DIỆN MENU DỌC NGUYÊN BẢN (CHIỀU CAO 190)
 -- ==========================================
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "AntSpammerMenuGui"
@@ -75,7 +74,7 @@ btnStroke.Parent = toggleMenuBtn
 
 local menuFrame = Instance.new("Frame")
 menuFrame.Name = "MenuFrame"
-menuFrame.Size = UDim2.new(0, 150, 0, 220) 
+menuFrame.Size = UDim2.new(0, 150, 0, 190) 
 menuFrame.Position = UDim2.new(0.4, 0, 0.2, 0) 
 menuFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 menuFrame.BackgroundTransparency = 0.15
@@ -89,11 +88,11 @@ menuCorner.Parent = menuFrame
 local uiListLayout = Instance.new("UIListLayout")
 uiListLayout.Parent = menuFrame
 uiListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-uiListLayout.Padding = UDim.new(0, 4) 
+uiListLayout.Padding = UDim.new(0, 5) 
 uiListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 
 local padding = Instance.new("UIPadding")
-padding.PaddingTop = UDim.new(0, 6)
+padding.PaddingTop = UDim.new(0, 8)
 padding.Parent = menuFrame
 
 local function createTickButton(name, text, order)
@@ -115,13 +114,10 @@ local function createTickButton(name, text, order)
 	return btn
 end
 
--- Khởi tạo các nút (Nút ESP được tách thiết kế riêng)
 local btnWorker = createTickButton("BtnWorker", "TRỨNG CÔNG NHÂN", 1)
 local btnQueen = createTickButton("BtnQueen", "TRỨNG CHÍNH", 2)
 local btnDrone = createTickButton("BtnDrone", "TRỨNG DRONE", 3)
-local btnFollow = createTickButton("BtnFollow", "ÉP KIẾN ĐI THEO", 4)
 
--- 🌟 THIẾT KẾ RIÊNG CHO NÚT ESP KIỂU ON/OFF
 local btnToggleESP = Instance.new("TextButton")
 btnToggleESP.Name = "BtnToggleESP"
 btnToggleESP.Size = UDim2.new(1, -12, 0, 28)
@@ -130,7 +126,7 @@ btnToggleESP.Text = "[ ESP KIẾN TA: OFF ]"
 btnToggleESP.TextColor3 = Color3.fromRGB(180, 180, 180)
 btnToggleESP.Font = Enum.Font.SourceSansBold
 btnToggleESP.TextSize = 10
-btnToggleESP.LayoutOrder = 5
+btnToggleESP.LayoutOrder = 4
 btnToggleESP.ZIndex = 10
 btnToggleESP.Parent = menuFrame
 
@@ -140,13 +136,13 @@ espCorner.Parent = btnToggleESP
 
 local btnStartAuto = Instance.new("TextButton")
 btnStartAuto.Name = "BtnStartAuto"
-btnStartAuto.Size = UDim2.new(1, -12, 0, 32) 
+btnStartAuto.Size = UDim2.new(1, -12, 0, 34) 
 btnStartAuto.BackgroundColor3 = Color3.fromRGB(255, 75, 75) 
 btnStartAuto.Text = "[BẤM ĐỂ CHẠY AUTO]"
 btnStartAuto.TextColor3 = Color3.fromRGB(255, 255, 255)
 btnStartAuto.Font = Enum.Font.SourceSansBold
 btnStartAuto.TextSize = 11
-btnStartAuto.LayoutOrder = 6
+btnStartAuto.LayoutOrder = 5
 btnStartAuto.ZIndex = 10
 btnStartAuto.Parent = menuFrame
 
@@ -219,18 +215,12 @@ btnDrone.MouseButton1Click:Connect(function()
 	updateTickVisual(btnDrone, tickDrone, "TRỨNG DRONE")
 end)
 
-btnFollow.MouseButton1Click:Connect(function()
-	autoFollowEnabled = not autoFollowEnabled
-	updateTickVisual(btnFollow, autoFollowEnabled, "ÉP KIẾN ĐI THEO")
-end)
-
--- Hiệu ứng bật/tắt ON/OFF mượt mà cho nút ESP riêng biệt
 btnToggleESP.MouseButton1Click:Connect(function()
 	espEnabled = not espEnabled
 	if espEnabled then
 		btnToggleESP.Text = "[ ESP KIẾN TA: ON ]"
 		btnToggleESP.TextColor3 = Color3.fromRGB(255, 255, 255)
-		TweenService:Create(btnToggleESP, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(0, 128, 0)}):Play() -- Đổi sang màu xanh lá đậm cực đẹp
+		TweenService:Create(btnToggleESP, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(0, 128, 0)}):Play() 
 	else
 		btnToggleESP.Text = "[ ESP KIẾN TA: OFF ]"
 		btnToggleESP.TextColor3 = Color3.fromRGB(180, 180, 180)
@@ -280,21 +270,18 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- HỆ THỐNG ĐIỀU KHIỂN ĐƯỜNG ĐI KIẾN + ESP XANH LÁ
+-- VÒNG LẶP CHẠY NGẦM: CHỈ QUẢN LÝ ESP XANH LÁ
 -- ==========================================
 task.spawn(function()
 	while true do
 		pcall(function()
 			local myChar = player.Character
-			local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
-			
-			if myHrp then
+			if myChar then
 				for _, obj in pairs(workspace:GetChildren()) do
 					if obj ~= myChar and obj:IsA("Model") and (obj.Name:lower():find("ant") or obj:FindFirstChildOfClass("Humanoid")) then
-						local humanoid = obj:FindFirstChildOfClass("Humanoid")
 						local hrp = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("PrimaryPart")
 						
-						if humanoid and hrp then
+						if hrp then
 							local isMyAnt = false
 							for _, child in pairs(obj:GetDescendants()) do
 								if child:IsA("TextLabel") or child:IsA("TextBox") then
@@ -305,12 +292,9 @@ task.spawn(function()
 									end
 								end
 							end
-							
-							if obj.Name:lower():find(TARGET_NAME:lower()) then
-								isMyAnt = true
-							end
+							if obj.Name:lower():find(TARGET_NAME:lower()) then isMyAnt = true end
 
-							-- Xử lý hiển thị ESP Xanh Lá
+							-- Xử lý hiển thị ESP Xanh Lá cho kiến chính chủ
 							local existingHighlight = obj:FindFirstChild("AntESPHighlight")
 							if espEnabled and isMyAnt then
 								if not existingHighlight then
@@ -326,21 +310,11 @@ task.spawn(function()
 							else
 								if existingHighlight then existingHighlight:Destroy() end
 							end
-
-							-- Cơ chế ép chạy theo chủ nhân (Khóa nhảy, khóa đi bậy)
-							if autoFollowEnabled and isMyAnt then
-								humanoid.Jump = false
-								local distance = (hrp.Position - myHrp.Position).Magnitude
-								if distance > 6 then
-									humanoid:MoveTo(myHrp.Position)
-								end
-							end
-							
 						end
 					end
 				end
 			end
 		end)
-		task.wait(0.1)
+		task.wait(0.3) -- Giảm tần suất quét xuống 0.3s để cực kỳ nhẹ máy
 	end
 end)
