@@ -1,4 +1,4 @@
--- [[ SCRIPT AUTO SPAM TRỨNG ✅ + MENU DỌC + FIX LỖI GIẬT NHÂN VẬT CHỦ ]] --
+-- [[ SCRIPT AUTO SPAM TRỨNG ✅ + MENU DỌC GỌN + NÚT BÁM ĐUÔI CƯỠNG BỨC (LƯỚT TRÊN MẶT ĐẤT) + ESP XANH ]] --
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -8,39 +8,35 @@ local UserInputService = game:GetService("UserInputService")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
--- Xóa GUI cũ để tránh trùng lặp
 if playerGui:FindFirstChild("AntSpammerMenuGui") then
 	playerGui.AntSpammerMenuGui:Destroy()
 end
 
 -- ==========================================
--- CẤU HÌNH & THÔNG SỐ GAME
+-- CẤU HÌNH & THÔNG SỐ GAME (ĐÃ FIX TỰ ĐỘNG NHẬN DIỆN CHỦ SỞ HỮU)
 -- ==========================================
-local TARGET_NAME = "candandz" 
+local TARGET_NAME = player.Name -- 🛠️ FIX CHUẨN: Tự động lấy tên của bất kỳ ai chạy Script này
 local COOLDOWN = 0.1 
+local PULL_SPEED = 35 -- Tốc độ kéo lướt kiến về phía chủ nhân
 
--- Remote Events chuẩn 100% của bro
 local workerEgg = ReplicatedStorage:WaitForChild("WorkerEgg")
 local droneEgg = ReplicatedStorage:WaitForChild("DroneEgg")
 local queenEgg = ReplicatedStorage:WaitForChild("MajorEgg") 
 
 local targetPlayer = Players:WaitForChild(TARGET_NAME)
 
--- Trạng thái Tích chọn (✅)
 local tickWorker = false
 local tickQueen = false
 local tickDrone = false
 
--- Trạng thái kích hoạt chạy Auto chung
 local isAutoRunning = false
-local autoUnstuck = true -- Luôn bật chống kẹt chạy ngầm cho kiến
+local autoPullEnabled = false -- Nút bám đuôi cưỡng bức riêng biệt
+local espEnabled = false 
 
--- Giá tiền
 local PRICE_WORKER = 5
 local PRICE_QUEEN = 10
 local PRICE_DRONE = 1
 
--- Hàm kiểm tra thực phẩm
 local function getThucPham()
 	local leaderstats = player:FindFirstChild("leaderstats")
 	if leaderstats then
@@ -51,22 +47,21 @@ local function getThucPham()
 end
 
 -- ==========================================
--- GIAO DIỆN MENU DỌC HIỆN ĐỦ NÚT (DẤU TÍCH ✅)
+-- GIAO DIỆN MENU DỌC SIÊU MI NHON (TỐI ƯU CHIỀU CAO 220)
 -- ==========================================
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "AntSpammerMenuGui"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
--- NÚT TRÒN "🐜" (DI CHUYỂN ĐỘC LẬP)
 local toggleMenuBtn = Instance.new("TextButton")
 toggleMenuBtn.Name = "ToggleMenuBtn"
-toggleMenuBtn.Size = UDim2.new(0, 55, 0, 55)
+toggleMenuBtn.Size = UDim2.new(0, 50, 0, 50)
 toggleMenuBtn.Position = UDim2.new(0.05, 0, 0.4, 0) 
 toggleMenuBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 toggleMenuBtn.BackgroundTransparency = 0.1
 toggleMenuBtn.Text = "🐜" 
-toggleMenuBtn.TextSize = 25
+toggleMenuBtn.TextSize = 22
 toggleMenuBtn.ZIndex = 10
 toggleMenuBtn.Parent = screenGui
 
@@ -79,10 +74,9 @@ btnStroke.Thickness = 2
 btnStroke.Color = Color3.fromRGB(0, 255, 255) 
 btnStroke.Parent = toggleMenuBtn
 
--- KHUNG MENU CHÍNH DẠNG DỌC
 local menuFrame = Instance.new("Frame")
 menuFrame.Name = "MenuFrame"
-menuFrame.Size = UDim2.new(0, 160, 0, 260) 
+menuFrame.Size = UDim2.new(0, 150, 0, 220) 
 menuFrame.Position = UDim2.new(0.4, 0, 0.2, 0) 
 menuFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 menuFrame.BackgroundTransparency = 0.15
@@ -90,64 +84,62 @@ menuFrame.ZIndex = 9
 menuFrame.Parent = screenGui
 
 local menuCorner = Instance.new("UICorner")
-menuCorner.CornerRadius = UDim.new(0, 12)
+menuCorner.CornerRadius = UDim.new(0, 10)
 menuCorner.Parent = menuFrame
 
--- Tự động xếp các nút thẳng hàng từ trên xuống
 local uiListLayout = Instance.new("UIListLayout")
 uiListLayout.Parent = menuFrame
 uiListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-uiListLayout.Padding = UDim.new(0, 8)
+uiListLayout.Padding = UDim.new(0, 4) 
 uiListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 
 local padding = Instance.new("UIPadding")
-padding.PaddingTop = UDim.new(0, 10)
+padding.PaddingTop = UDim.new(0, 6)
 padding.Parent = menuFrame
 
--- Hàm tạo nút tích chọn ✅
 local function createTickButton(name, text, order)
 	local btn = Instance.new("TextButton")
 	btn.Name = name
-	btn.Size = UDim2.new(1, -16, 0, 42) 
+	btn.Size = UDim2.new(1, -12, 0, 28) 
 	btn.BackgroundColor3 = Color3.fromRGB(45, 45, 45) 
 	btn.Text = "❌ " .. text
 	btn.TextColor3 = Color3.fromRGB(200, 200, 200)
 	btn.Font = Enum.Font.SourceSansBold
-	btn.TextSize = 13
+	btn.TextSize = 10 
 	btn.LayoutOrder = order
 	btn.ZIndex = 10
 	btn.Parent = menuFrame
 	
 	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 6)
+	corner.CornerRadius = UDim.new(0, 5)
 	corner.Parent = btn
 	return btn
 end
 
--- Tạo 3 nút tích chọn loại trứng
 local btnWorker = createTickButton("BtnWorker", "TRỨNG CÔNG NHÂN", 1)
 local btnQueen = createTickButton("BtnQueen", "TRỨNG CHÍNH", 2)
 local btnDrone = createTickButton("BtnDrone", "TRỨNG DRONE", 3)
+local btnPull = createTickButton("BtnPull", "KÉO KIẾN CƯỠNG BỨC", 4)
+local btnToggleESP = createTickButton("BtnToggleESP", "ESP KIẾN TA", 5)
 
--- NÚT TO NHẤT Ở DƯỚI ĐỂ BẤM KÍCH HOẠTH AUTO CHUNG
 local btnStartAuto = Instance.new("TextButton")
 btnStartAuto.Name = "BtnStartAuto"
-btnStartAuto.Size = UDim2.new(1, -16, 0, 48)
+btnStartAuto.Size = UDim2.new(1, -12, 0, 32) 
 btnStartAuto.BackgroundColor3 = Color3.fromRGB(255, 75, 75) 
 btnStartAuto.Text = "[BẤM ĐỂ CHẠY AUTO]"
 btnStartAuto.TextColor3 = Color3.fromRGB(255, 255, 255)
 btnStartAuto.Font = Enum.Font.SourceSansBold
-btnStartAuto.TextSize = 13
-btnStartAuto.LayoutOrder = 4
+btnStartAuto.TextSize = 11
+btnStartAuto.LayoutOrder = 6
 btnStartAuto.ZIndex = 10
 btnStartAuto.Parent = menuFrame
 
 local autoCorner = Instance.new("UICorner")
-autoCorner.CornerRadius = UDim.new(0, 8)
+autoCorner.CornerRadius = UDim.new(0, 6)
 autoCorner.Parent = btnStartAuto
 
 -- ==========================================
--- HỆ THỐNG KÉO THẢ DRAGGABLE RIÊNG BIỆT
+-- HỆ THỐNG KÉO THẢ DRAGGABLE
 -- ==========================================
 local function makeDraggable(guiObject)
 	local dragging, dragInput, dragStart, startPos
@@ -182,7 +174,7 @@ toggleMenuBtn.MouseButton1Click:Connect(function()
 end)
 
 -- ==========================================
--- LOGIC TÍCH CHỌN ĐỔI ICON DẤU TÍCH ✅
+-- LOGIC ĐỔI TRẠNG THÁI NÚT BẤM
 -- ==========================================
 local function updateTickVisual(button, state, labelText)
 	if state then
@@ -211,6 +203,16 @@ btnDrone.MouseButton1Click:Connect(function()
 	updateTickVisual(btnDrone, tickDrone, "TRỨNG DRONE")
 end)
 
+btnPull.MouseButton1Click:Connect(function()
+	autoPullEnabled = not autoPullEnabled
+	updateTickVisual(btnPull, autoPullEnabled, "KÉO KIẾN CƯỠNG BỨC")
+end)
+
+btnToggleESP.MouseButton1Click:Connect(function()
+	espEnabled = not espEnabled
+	updateTickVisual(btnToggleESP, espEnabled, "ESP KIẾN TA")
+end)
+
 btnStartAuto.MouseButton1Click:Connect(function()
 	isAutoRunning = not isAutoRunning
 	if isAutoRunning then
@@ -223,7 +225,7 @@ btnStartAuto.MouseButton1Click:Connect(function()
 end)
 
 -- ==========================================
--- VÒNG LẶP KIỂM TRA ĐỦ THỰC PHẨM MỚI SPAM
+-- VÒNG LẶP AUTO SPAM TRỨNG
 -- ==========================================
 task.spawn(function()
 	while true do
@@ -253,41 +255,67 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- HỆ THỐNG TỰ ĐỘNG CHỐNG KẸT + ĐI THEO CHỦ (ĐÃ FIX GIẬT CHỦ)
+-- HỆ THỐNG KÉO KIẾN TRƯỢT MẶT ĐẤT (CƯỠNG BỨC) + ESP XANH LÁ
 -- ==========================================
 task.spawn(function()
 	while true do
-		if autoUnstuck then
-			pcall(function()
-				local myChar = player.Character
-				local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
-				
+		pcall(function()
+			local myChar = player.Character
+			local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
+			
+			if myHrp then
 				for _, obj in pairs(workspace:GetChildren()) do
-					-- ĐIỀU KIỆN QUAN TRỌNG: Model đó phải khác với nhân vật chính của bro (obj ~= myChar)
-					if obj ~= myChar and obj:IsA("Model") and (obj.Name:lower():find("ant") or obj:FindFirstChild("Humanoid")) then
-						local hrp = obj:FindFirstChild("HumanoidRootPart")
-						local humanoid = obj:FindFirstChild("Humanoid")
+					if obj ~= myChar and obj:IsA("Model") and (obj.Name:lower():find("ant") or obj:FindFirstChildOfClass("Humanoid")) then
+						local hrp = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("PrimaryPart")
 						
-						if hrp and humanoid then
-							-- 1. Xử lý chống kẹt cho kiến đệ tử
-							if hrp.AssemblyLinearVelocity.Magnitude < 0.5 then
-								hrp.CFrame = hrp.CFrame + Vector3.new(0, 0.6, 0)
-								if myHrp then
-									local direction = (myHrp.Position - hrp.Position).Unit
-									humanoid:Move(direction)
+						if hrp then
+							-- Đồng bộ nhận diện NameTag theo TARGET_NAME tự động
+							local isMyAnt = false
+							for _, child in pairs(obj:GetDescendants()) do
+								if child:IsA("TextLabel") or child:IsA("TextBox") then
+									local text = child.Text:lower()
+									if text:find(TARGET_NAME:lower()) or text:find(player.DisplayName:lower()) then
+										isMyAnt = true
+										break
+									end
 								end
 							end
 							
-							-- 2. Xử lý bắt kiến đệ tử đi theo chủ
-							if myHrp and (hrp.Position - myHrp.Position).Magnitude > 25 then 
-								local lookAtOwner = (myHrp.Position - hrp.Position).Unit
-								humanoid:Move(lookAtOwner)
+							if obj.Name:lower():find(TARGET_NAME:lower()) then
+								isMyAnt = true
 							end
+
+							-- Xử lý ESP Viền Xanh cho kiến chính chủ
+							local existingHighlight = obj:FindFirstChild("AntESPHighlight")
+							if espEnabled and isMyAnt then
+								if not existingHighlight then
+									local highlight = Instance.new("Highlight")
+									highlight.Name = "AntESPHighlight"
+									highlight.FillTransparency = 1 
+									highlight.OutlineColor = Color3.fromRGB(0, 255, 0)
+									highlight.OutlineTransparency = 0.05
+									highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+									highlight.Adornee = obj
+									highlight.Parent = obj
+								end
+							else
+								if existingHighlight then existingHighlight:Destroy() end
+							end
+
+							-- Cơ chế kéo cưỡng bức mượt mà theo chủ nhân
+							if autoPullEnabled and isMyAnt then
+								local distance = (hrp.Position - myHrp.Position).Magnitude
+								if distance > 14 then 
+									local direction = (myHrp.Position - hrp.Position).Unit
+									hrp.Velocity = Vector3.new(direction.X * PULL_SPEED, hrp.Velocity.Y, direction.Z * PULL_SPEED)
+								end
+							end
+							
 						end
 					end
 				end
-			end)
-		end
-		task.wait(1.2)
+			end
+		end)
+		task.wait(0.05)
 	end
 end)
