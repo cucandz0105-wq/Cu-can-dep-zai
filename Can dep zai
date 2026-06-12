@@ -1,4 +1,4 @@
-local blacklist = {["candandz"] = true,}
+local blacklist = {}
 local whitelist = {["candandz"] = true,}
 local Players = game:GetService("Players")
 if blacklist[Players.LocalPlayer.Name] then
