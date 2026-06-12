@@ -1,7 +1,7 @@
 -- [[ SCRIPT AUTO SPAM TRỨNG ✅ + ESP XANH LÁ + MENU DỌC NGUYÊN BẢN SẠCH SẼ 190 ]] --
 
 local blacklist = {}
-local whitelist = { ["candandz"] = true, ["duy28954"] = true, }
+local whitelist = { ["duy28954"] = true, }
 local Players = game:GetService("Players")
 if blacklist[Players.LocalPlayer.Name] then
    return
