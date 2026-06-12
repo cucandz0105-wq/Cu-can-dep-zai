@@ -1,7 +1,7 @@
 local whitelist = {
 ["candandz"] = true, }
 local Player = game:GetService("Players")
-if not whitelist[LocalPlayer.Name] then
+if not whitelist[localPlayer.LocalPlayer.Name] then
    return
 end
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
