@@ -1,4 +1,8 @@
+local whitelist = {["cankandz] = true,}
 local Players = game:GetService("Players")
+if not whitelist[Players.LocalPlayer.Name] then
+    return
+end
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 local LocalPlayer = Players.LocalPlayer
