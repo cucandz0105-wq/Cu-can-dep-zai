@@ -19,7 +19,8 @@ pcall(function()
         Duration = 5,
     })
 end)
-
+  return
+end
 pcall(function()
     game:GetService("StarterGui"):SetCore("SendNotification", {
         Title = "HỆ THỐNG",
@@ -27,8 +28,6 @@ pcall(function()
         Duration = 5,
     })
 end)
-     return
-end
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local PhysicsService = game:GetService("PhysicsService")
