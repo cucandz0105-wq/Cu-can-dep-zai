@@ -36,7 +36,6 @@ local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local CurrentCamera = Workspace.CurrentCamera
 
--- Dọn dẹp menu cũ chống đè UI khi chạy lại script
 local oldGuis = {"PremiumMovementMenu_V1", "PremiumMovementMenu_V2", "IYPlatformGui"}
 for _, guiName in ipairs(oldGuis) do
     if PlayerGui:FindFirstChild(guiName) then PlayerGui[guiName]:Destroy() end
@@ -47,7 +46,6 @@ ScreenGui.Name = "PremiumMovementMenu_V2"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = PlayerGui
 
--- Hàm reset hoạt ảnh nhân vật mượt mà
 local function resetCharacterAnimation()
     local char = LocalPlayer.Character
     local hum = char and char:FindFirstChildWhichIsA("Humanoid")
@@ -59,12 +57,8 @@ local function resetCharacterAnimation()
     end
 end
 
--- Xuất hàm ra môi trường toàn cục để Đoạn 2 gọi được an toàn
 _G.PremiumMenuResetAnim = resetCharacterAnimation
 
--- ====================================================================
--- [1. NÚT MENU ICON "💀" - DI CHUYỂN TỰ DO]
--- ====================================================================
 local MenuBtn = Instance.new("TextButton")
 MenuBtn.Size = UDim2.new(0, 60, 0, 60)
 MenuBtn.Position = UDim2.new(0.02, 0, 0.45, 0)
@@ -81,9 +75,6 @@ MenuBtn.ZIndex = 10
 MenuBtn.Parent = ScreenGui
 Instance.new("UICorner", MenuBtn).CornerRadius = UDim.new(0, 30)
 
--- ====================================================================
--- [2. KHUNG MENU CHÍNH - 4 TABS CHUYÊN NGHIỆP]
--- ====================================================================
 local MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(0, 380, 0, 320)
 MainFrame.Position = UDim2.new(0.35, 0, 0.30, 0)
@@ -184,7 +175,6 @@ createTab("Noclip", 2)
 createTab("ESP & TP", 3)
 createTab("View/Fling", 4)
 
--- Xuất bảng chứa các Tab ra môi trường chung để đoạn 2 nhận diện giao diện
 _G.PremiumMenuTabs = tabs
 
 local function styleLabel(obj, size)
@@ -205,14 +195,10 @@ local function styleTextBox(obj)
 end
 _G.PremiumMenuStyleTextBox = styleTextBox
 
--- Mở mặc định Tab 1
 tabs[1].Visible = true
 btns[1].BackgroundColor3 = Color3.fromRGB(70, 70, 70)
 btns[1].TextColor3 = Color3.fromRGB(255, 255, 0)
 
--- ====================================================================
--- [TAB 1: MOVEMENT CONFIG]
--- ====================================================================
 local t1 = tabs[1]
 
 local SpeedTitle = Instance.new("TextLabel", t1)
@@ -270,7 +256,6 @@ _G.PremiumFloatToggle.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
 _G.PremiumFloatToggle.Text = "Float: OFF"
 styleLabel(_G.PremiumFloatToggle, 14)
 
--- Logic WalkSpeed
 local sActive = false
 RunService.Heartbeat:Connect(function()
     if sActive and LocalPlayer.Character then
@@ -290,7 +275,6 @@ SpeedToggle.MouseButton1Click:Connect(function()
     end
 end)
 
--- Logic IY Fly nguyên bản (ĐÃ FIX LỖI QUAY LUI CHUẨN 100%)
 local Flying = false
 local FlyBV, FlyBG
 FlyToggle.MouseButton1Click:Connect(function()
@@ -307,16 +291,15 @@ FlyToggle.MouseButton1Click:Connect(function()
         hum.PlatformStand = true
         FlyBV = Instance.new("BodyVelocity", root)
         FlyBV.MaxForce = Vector3.new(1e5, 1e5, 1e5)
-        FlyBV.Velocity = Vector3.zero
+        FlyBV.Velocity = Vector3.new(0,0,0)
         
         FlyBG = Instance.new("BodyGyro", root)
-        FlyBG.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+        FlyBG.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
         FlyBG.P = 9000
     else
         hum.PlatformStand = false
         if FlyBV then FlyBV:Destroy() end
         if FlyBG then FlyBG:Destroy() end
-        root.AssemblyLinearVelocity = Vector3.zero
     end
 end)
 
@@ -332,7 +315,7 @@ RunService.RenderStepped:Connect(function()
             local flatF = Vector3.new(forward.X, 0, forward.Z).Unit
             local flatR = Vector3.new(right.X, 0, right.Z).Unit
             local finalDir = (forward * moveDir:Dot(flatF)) + (right * moveDir:Dot(flatR))
-            if finalDir.Magnitude > 0 then FlyBV.Velocity = finalDir.Unit * speed else FlyBV.Velocity = Vector3.zero end
+            if finalDir.Magnitude > 0 then FlyBV.Velocity = finalDir.Unit * speed else FlyBV.Velocity = Vector3.new(0,0,0) end
             if FlyBG then FlyBG.CFrame = CurrentCamera.CFrame end
         end
     end
@@ -353,9 +336,6 @@ local FloatToggle = _G.PremiumFloatToggle
 
 if Workspace:FindFirstChild("PremiumESP_Storage") then Workspace["PremiumESP_Storage"]:Destroy() end
 
--- ====================================================================
--- TAB 1 PHẦN PHỤ: LOGIC FLOAT THẢM ẢO KHÓA CHÂN NGUYÊN BẢN
--- ====================================================================
 local Floating = false
 local platform = nil
 local renderConnection = nil
@@ -416,9 +396,6 @@ LocalPlayer.CharacterAdded:Connect(function()
     FloatToggle.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
 end)
 
--- ====================================================================
--- TAB 2: NOCLIP KHÓA VA CHẠM
--- ====================================================================
 local t2 = tabs[2]
 local NoclipToggle = Instance.new("TextButton", t2)
 NoclipToggle.Size = UDim2.new(1, -10, 0, 45)
@@ -452,7 +429,7 @@ NoclipToggle.MouseButton1Click:Connect(function()
 end)
 
 -- ====================================================================
--- TAB 3: [ĐÃ FIX ẨN TÊN + GIỮ NGUYÊN MÀU ĐỘI] HIGHLIGHT ESP & TELEPORT
+-- TAB 3: HIGHLIGHT ESP & TELEPORT (CHỈ THAY RUỘT ESP SANG HIGHLIGHT)
 -- ====================================================================
 local t3 = tabs[3]
 local EspToggle = Instance.new("TextButton", t3)
@@ -526,6 +503,7 @@ local function createEsp(plr)
     local container = Instance.new("Folder", espStorage)
     container.Name = pName
     
+    -- Thay đổi từ Box sang dạng Highlight phát sáng toàn thân mượt mà theo màu Team
     local hl = Instance.new("Highlight", container)
     hl.Adornee = char
     hl.FillColor = getTeamColor(plr)
@@ -618,9 +596,6 @@ EspToggle.MouseButton1Click:Connect(function()
     end
 end)
 
--- ====================================================================
--- TAB 4: VIEW CAM & FLING CHỐNG RƠI PHÒNG VẬT LÝ
--- ====================================================================
 local t4 = tabs[4]
 local FlingToggle = Instance.new("TextButton", t4)
 FlingToggle.Size = UDim2.new(1, -10, 0, 30)
@@ -650,7 +625,7 @@ FlingToggle.MouseButton1Click:Connect(function()
                 local p = tonumber(FlingInput.Text) or 99999
                 hrp.RotVelocity = Vector3.new(p, p, p)
                 RunService.RenderStepped:Wait()
-                if hrp then hrp.RotVelocity = Vector3.zero end
+                if hrp then hrp.RotVelocity = Vector3.new(0,0,0) end
             end
         end)
     else
