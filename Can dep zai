@@ -263,7 +263,6 @@ FloatTitle.Text = "--- Float (Thảm Ảo Đuổi Chân) ---"
 FloatTitle.BackgroundTransparency = 1
 styleLabel(FloatTitle, 14)
 
--- Xuất nút FloatToggle ra toàn cục để Đoạn 2 gắn tính năng mà không đổi cấu trúc UI ban đầu
 _G.PremiumFloatToggle = Instance.new("TextButton", t1)
 _G.PremiumFloatToggle.Size = UDim2.new(1, -10, 0, 30)
 _G.PremiumFloatToggle.Position = UDim2.new(0, 0, 0, 215)
@@ -291,7 +290,7 @@ SpeedToggle.MouseButton1Click:Connect(function()
     end
 end)
 
--- Logic IY Fly nguyên bản (GIỮ NGUYÊN CƠ CHẾ - CHỈ ÉP MAX LỰC XOAY THEO CAM)
+-- Logic IY Fly nguyên bản (ĐÃ FIX LỖI QUAY LUI CHUẨN 100%)
 local Flying = false
 local FlyBV, FlyBG
 FlyToggle.MouseButton1Click:Connect(function()
@@ -311,7 +310,6 @@ FlyToggle.MouseButton1Click:Connect(function()
         FlyBV.Velocity = Vector3.zero
         
         FlyBG = Instance.new("BodyGyro", root)
-        -- TỐI ƯU HÓA: Đẩy MaxTorque lên vô hạn và gia tăng độ nhạy (P) chuẩn Infinite Yield để xoay cực bén
         FlyBG.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
         FlyBG.P = 9000
     else
@@ -335,11 +333,10 @@ RunService.RenderStepped:Connect(function()
             local flatR = Vector3.new(right.X, 0, right.Z).Unit
             local finalDir = (forward * moveDir:Dot(flatF)) + (right * moveDir:Dot(flatR))
             if finalDir.Magnitude > 0 then FlyBV.Velocity = finalDir.Unit * speed else FlyBV.Velocity = Vector3.zero end
-            FlyBG.CFrame = CurrentCamera.CFrame
+            if FlyBG then FlyBG.CFrame = CurrentCamera.CFrame end
         end
     end
 end)
--- Chống lỗi ổ gà: Chờ đồng bộ môi trường từ Đoạn 1 để lấy liên kết UI ổn định
 repeat task.wait(0.1) until _G.PremiumMenuTabs and _G.PremiumFloatToggle and _G.PremiumMenuStyleLabel
 
 local Players = game:GetService("Players")
@@ -354,7 +351,6 @@ local styleTextBox = _G.PremiumMenuStyleTextBox
 local resetCharacterAnimation = _G.PremiumMenuResetAnim
 local FloatToggle = _G.PremiumFloatToggle
 
--- Tự động dọn dẹp các luồng hoặc dữ liệu ESP cũ còn sót lại trong Workspace
 if Workspace:FindFirstChild("PremiumESP_Storage") then Workspace["PremiumESP_Storage"]:Destroy() end
 
 -- ====================================================================
@@ -456,7 +452,7 @@ NoclipToggle.MouseButton1Click:Connect(function()
 end)
 
 -- ====================================================================
--- TAB 3: HIGHLIGHT ESP PHÂN BIỆT ĐỘI CHUẨN XÁC & TELEPORT
+-- TAB 3: [ĐÃ FIX ẨN TÊN + GIỮ NGUYÊN MÀU ĐỘI] HIGHLIGHT ESP & TELEPORT
 -- ====================================================================
 local t3 = tabs[3]
 local EspToggle = Instance.new("TextButton", t3)
@@ -501,103 +497,115 @@ TPBtn.MouseButton1Click:Connect(function()
 end)
 
 local espActive = false
-local espStorage = Instance.new("Folder", Workspace)
+local espStorage = Workspace:FindFirstChild("PremiumESP_Storage") or Instance.new("Folder", Workspace)
 espStorage.Name = "PremiumESP_Storage"
 
--- Thuật toán lấy chuẩn màu đội theo cấu trúc Server Game
 local function getTeamColor(plr)
     if plr.Team == LocalPlayer.Team then
-        return Color3.fromRGB(0, 255, 100) -- Đội mình ép cứng màu Xanh Lá của mày
+        return Color3.fromRGB(0, 255, 100) 
     elseif plr.Team then
-        return plr.Team.TeamColor.Color   -- Các Đội khác lấy đúng màu gốc hệ thống quy định
+        return plr.Team.TeamColor.Color   
     else
-        return Color3.fromRGB(255, 255, 255) -- Không phân đội hiện màu trắng
+        return Color3.fromRGB(255, 255, 255) 
     end
 end
 
 local function createEsp(plr)
-    if plr == LocalPlayer then return end
+    if plr == LocalPlayer or not espActive then return end
     
-    local function addHighlight()
-        if not espActive or not plr.Character then return end
-        local pName = plr.Name
-        if espStorage:FindFirstChild(pName) then espStorage[pName]:Destroy() end
-        
-        local container = Instance.new("Folder", espStorage)
-        container.Name = pName
-        
-        local hl = Instance.new("Highlight", container)
-        hl.Adornee = plr.Character
-        hl.FillColor = getTeamColor(plr)
-        hl.FillTransparency = 0.5
-        hl.OutlineColor = Color3.fromRGB(255, 255, 255)
-        hl.OutlineTransparency = 0.2
-        
-        local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
-        if hrp then
-            local bb = Instance.new("BillboardGui", container)
-            bb.AlwaysOnTop = true
-            bb.Size = UDim2.new(0, 200, 0, 50)
-            bb.StudsOffset = Vector3.new(0, 4.5, 0)
-            bb.Adornee = hrp
-            
-            local tl = Instance.new("TextLabel", bb)
-            tl.Size = UDim2.new(1, 0, 1, 0)
-            tl.BackgroundTransparency = 1
-            tl.TextColor3 = hl.FillColor
-            tl.TextSize = 18
-            tl.Font = Enum.Font.SourceSansBold
-            tl.Text = string.format("%s [0m]", plr.DisplayName)
-        end
-    end
+    local pName = plr.Name
+    if espStorage:FindFirstChild(pName) then espStorage[pName]:Destroy() end
     
-    -- Lắng nghe sự kiện hồi sinh hoặc đổi phe để cập nhật lại cấu trúc Highlight lập tức
-    local charConn = plr.CharacterAdded:Connect(function() if espActive then task.wait(0.15); addHighlight() end end)
-    local teamConn = plr:GetPropertyChangedSignal("Team"):Connect(function() if espActive then addHighlight() end end)
+    local char = plr.Character
+    if not char then return end
     
-    -- Tự dọn dẹp các kết nối bộ nhớ khi có người out game
-    Players.PlayerRemoving:Connect(function(leftPlr)
-        if leftPlr == plr then
-            if charConn then charConn:Disconnect() end
-            if teamConn then teamConn:Disconnect() end
-            if espStorage:FindFirstChild(plr.Name) then espStorage[plr.Name]:Destroy() end
-        end
-    end)
+    local hrp = char:WaitForChild("HumanoidRootPart", 5)
+    local hum = char:WaitForChild("Humanoid", 5)
+    if not hrp or not hum or hum.Health <= 0 then return end
     
-    addHighlight()
+    local container = Instance.new("Folder", espStorage)
+    container.Name = pName
+    
+    local hl = Instance.new("Highlight", container)
+    hl.Adornee = char
+    hl.FillColor = getTeamColor(plr)
+    hl.FillTransparency = 0.5
+    hl.OutlineColor = Color3.fromRGB(255, 255, 255)
+    hl.OutlineTransparency = 0.2
+    
+    local bb = Instance.new("BillboardGui", container)
+    bb.Name = "EspNameTag"
+    bb.AlwaysOnTop = true
+    bb.Size = UDim2.new(0, 200, 0, 50)
+    bb.StudsOffset = Vector3.new(0, 4.5, 0)
+    bb.Adornee = hrp
+    
+    local tl = Instance.new("TextLabel", bb)
+    tl.Size = UDim2.new(1, 0, 1, 0)
+    tl.BackgroundTransparency = 1
+    tl.TextColor3 = hl.FillColor
+    tl.TextSize = 18
+    tl.Font = Enum.Font.SourceSansBold
+    tl.Text = string.format("%s [Tính toán...]", plr.DisplayName)
 end
 
--- Vòng lặp tối ưu hóa tính toán khoảng cách và đồng bộ lại màu sắc Real-time
-RunService.Heartbeat:Connect(function()
-    if not espActive then return end
-    local myChar = LocalPlayer.Character
-    local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
-    if not myHrp then return end
-    
-    for _, plr in pairs(Players:GetPlayers()) do
-        if plr ~= LocalPlayer and plr.Character then
-            local container = espStorage:FindFirstChild(plr.Name)
-            if container then
-                local bb = container:FindFirstChildWhichIsA("BillboardGui")
-                local tl = bb and bb:FindFirstChildWhichIsA("TextLabel")
-                local hl = container:FindFirstChildWhichIsA("Highlight")
-                local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
-                if tl and hrp and hl then
-                    local dist = math.floor((hrp.Position - myHrp.Position).Magnitude)
-                    tl.Text = string.format("%s [%sm]", plr.DisplayName, dist)
+task.spawn(function()
+    while true do
+        task.wait(0.25)
+        if espActive then
+            local myChar = LocalPlayer.Character
+            local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
+            
+            for _, plr in pairs(Players:GetPlayers()) do
+                if plr ~= LocalPlayer then
+                    local container = espStorage:FindFirstChild(plr.Name)
+                    local char = plr.Character
                     
-                    -- Sửa triệt để ổ gãy màu: Đồng bộ liên tục phòng trường hợp đổi phe đột ngột giữa game
-                    local correctColor = getTeamColor(plr)
-                    if hl.FillColor ~= correctColor then
-                        hl.FillColor = correctColor
-                        tl.TextColor3 = correctColor
+                    if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChild("Humanoid") and char.Humanoid.Health > 0 then
+                        if container then
+                            local bb = container:FindFirstChild("EspNameTag")
+                            local tl = bb and bb:FindFirstChildWhichIsA("TextLabel")
+                            local hl = container:FindFirstChildWhichIsA("Highlight")
+                            local hrp = char.HumanoidRootPart
+                            
+                            if tl and hrp and hl and myHrp then
+                                local dist = math.floor((hrp.Position - myHrp.Position).Magnitude)
+                                tl.Text = string.format("%s [%sm]", plr.DisplayName, dist)
+                                
+                                local correctColor = getTeamColor(plr)
+                                if hl.FillColor ~= correctColor then
+                                    hl.FillColor = correctColor
+                                    tl.TextColor3 = correctColor
+                                end
+                            end
+                        else
+                            createEsp(plr)
+                        end
+                    else
+                        if container then container:Destroy() end
                     end
                 end
-            else
-                createEsp(plr)
             end
         end
     end
+end)
+
+local connections = {}
+local function trackPlayer(plr)
+    if plr == LocalPlayer then return end
+    connections[plr.UserId] = plr.CharacterAdded:Connect(function()
+        task.wait(0.5)
+        if espActive then createEsp(plr) end
+    end)
+end
+
+print("[HỆ THỐNG ESP] Đã tối ưu hóa bộ tải tên của Gemini")
+Players.PlayerAdded:Connect(trackPlayer)
+for _, p in pairs(Players:GetPlayers()) do trackPlayer(p) end
+
+Players.PlayerRemoving:Connect(function(plr)
+    if connections[plr.UserId] then connections[plr.UserId]:Disconnect() connections[plr.UserId] = nil end
+    if espStorage:FindFirstChild(plr.Name) then espStorage[plr.Name]:Destroy() end
 end)
 
 EspToggle.MouseButton1Click:Connect(function()
@@ -635,7 +643,7 @@ FlingToggle.MouseButton1Click:Connect(function()
     FlingToggle.Text = fActive and "WalkFling: ON" or "WalkFling: OFF"
     FlingToggle.BackgroundColor3 = fActive and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(55, 55, 55)
     if fActive then
-        nActive = false -- Hủy Noclip khi bật Fling để tăng khả năng va chạm đẩy mục tiêu
+        nActive = false 
         fConn = RunService.Heartbeat:Connect(function()
             local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
             if hrp then
