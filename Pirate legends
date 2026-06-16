@@ -95,8 +95,9 @@ MenuButton.ZIndex = 20
 MenuButton.Parent = MainGui
 Instance.new("UICorner", MenuButton).CornerRadius = UDim.new(1, 0)
 
+-- CHỈ TĂNG NHẸ CHIỀU CAO LÊN 225 (Vừa vặn ôm sát các nút, không bị thừa thãi)
 local MainPanel = Instance.new("Frame")
-MainPanel.Size = UDim2.new(0, 215, 0, 250) 
+MainPanel.Size = UDim2.new(0, 215, 0, 225) 
 MainPanel.Position = UDim2.new(0.02, 0, 0.48, 0)
 MainPanel.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 MainPanel.Visible = false
@@ -114,12 +115,13 @@ Title.TextSize = 14
 Title.ZIndex = 16
 Title.Parent = MainPanel
 
+-- Chỉnh lại Canvas kích thước 285 tương ứng cho mượt
 local Container = Instance.new("ScrollingFrame")
 Container.Size = UDim2.new(1, 0, 1, -50)
 Container.Position = UDim2.new(0, 0, 0, 30)
 Container.BackgroundTransparency = 1
 Container.BorderSizePixel = 0
-Container.CanvasSize = UDim2.new(0, 0, 0, 360) 
+Container.CanvasSize = UDim2.new(0, 0, 0, 285) 
 Container.ScrollBarThickness = 4
 Container.ZIndex = 16
 Container.Parent = MainPanel
@@ -129,6 +131,7 @@ UIListLayout.Parent = Container
 UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 UIListLayout.Padding = UDim.new(0, 8)
 UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
 local SpeedInput = Instance.new("TextBox")
 SpeedInput.Size = UDim2.new(1, -20, 0, 35)
 SpeedInput.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
@@ -200,28 +203,6 @@ DownBtn.ZIndex = 17
 DownBtn.Parent = FlyGroup
 Instance.new("UICorner", DownBtn).CornerRadius = UDim.new(0, 6)
 
-local LockButton = Instance.new("TextButton")
-LockButton.Size = UDim2.new(1, -20, 0, 45)
-LockButton.BackgroundColor3 = Color3.fromRGB(120, 60, 10)
-LockButton.Text = "📍 Bước 1: Ghim Vị Trí"
-LockButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-LockButton.Font = Enum.Font.SourceSansBold
-LockButton.TextSize = 12
-LockButton.ZIndex = 17
-LockButton.Parent = Container
-Instance.new("UICorner", LockButton).CornerRadius = UDim.new(0, 8)
-
-local DropButton = Instance.new("TextButton")
-DropButton.Size = UDim2.new(1, -20, 0, 45)
-DropButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-DropButton.Text = "Bước 2: Auto Thả Đơn: OFF"
-DropButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-DropButton.Font = Enum.Font.SourceSansBold
-DropButton.TextSize = 12
-DropButton.ZIndex = 17
-DropButton.Parent = Container
-Instance.new("UICorner", DropButton).CornerRadius = UDim.new(0, 8)
-
 local ToggleAimVisibleBtn = Instance.new("TextButton")
 ToggleAimVisibleBtn.Size = UDim2.new(1, -20, 0, 45)
 ToggleAimVisibleBtn.BackgroundColor3 = Color3.fromRGB(0, 128, 0)
@@ -250,8 +231,7 @@ makeDraggable(MainPanel)
 MenuButton.MouseButton1Click:Connect(function()
     MainPanel.Visible = not MainPanel.Visible
 end)
-
--- KHỞI TẠO NÚT AIM TỔNG
+-- BẢO TOÀN NÚT AIM TRÒN ĐÀNG HOÀNG (Size 85x85, CornerRadius 42)
 local AimBtn = Instance.new("TextButton")
 AimBtn.Size = UDim2.new(0, 85, 0, 85)
 AimBtn.Position = UDim2.new(0.82, 0, 0.45, 0)
@@ -266,6 +246,7 @@ AimBtn.ZIndex = 10
 AimBtn.Parent = MainGui
 Instance.new("UICorner", AimBtn).CornerRadius = UDim.new(0, 42)
 makeDraggable(AimBtn)
+
 local ToggleMenuBtn = Instance.new("TextButton")
 ToggleMenuBtn.Size = UDim2.new(0, 40, 0, 40)
 ToggleMenuBtn.Position = UDim2.new(0, -45, 0, 22)
@@ -371,78 +352,6 @@ ToggleAimVisibleBtn.MouseButton1Click:Connect(function()
         MenuFrame.Visible = false 
         menuOpen = false
         ToggleMenuBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    end
-end)
-
--- LOGIC AUTO DROPPING CHEST
-local SavedCFrame = nil
-_G.SyncDropActive = false
-local DropRemote = game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("DropChest")
-
-LockButton.MouseButton1Click:Connect(function()
-    local char = LocalPlayer.Character
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    if hrp then
-        SavedCFrame = hrp.CFrame
-        LockButton.Text = "✅ Đã Ghim Tọa Độ Thuyền!"
-        LockButton.BackgroundColor3 = Color3.fromRGB(0, 100, 0)
-        task.wait(1)
-        LockButton.Text = "📍 Cập Nhật Lại Vị Trí Thuyền"
-    end
-end)
-
-local function OnCharacterChildAdded(child)
-    if not _G.SyncDropActive or not SavedCFrame then return end
-    if child:IsA("Tool") or child:IsA("Model") then
-        local char = LocalPlayer.Character
-        local hrp = char and char:FindFirstChild("HumanoidRootPart")
-        if hrp then
-            local oldCFrame = hrp.CFrame
-            local targetCFrame = SavedCFrame * CFrame.new(0, 2.5, 0) 
-            local isDropping = true
-            local connection
-            connection = RunService.Heartbeat:Connect(function()
-                if isDropping then
-                    hrp.CFrame = targetCFrame
-                    hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-                    hrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
-                else
-                    connection:Disconnect()
-                end
-            end)
-            task.wait(0.12)
-            pcall(function() DropRemote:FireServer() end)
-            task.wait(0.08)
-            isDropping = false
-            pcall(function()
-                hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-                hrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
-                hrp.CFrame = oldCFrame
-            end)
-        end
-    end
-end
-
-local function SetupCharacterConnection(char)
-    if char then char.ChildAdded:Connect(OnCharacterChildAdded) end
-end
-LocalPlayer.CharacterAdded:Connect(SetupCharacterConnection)
-if LocalPlayer.Character then SetupCharacterConnection(LocalPlayer.Character) end
-
-DropButton.MouseButton1Click:Connect(function()
-    if not SavedCFrame then
-        DropButton.Text = "❌ CHƯA GHIM VỊ TRÍ!"
-        task.wait(1)
-        DropButton.Text = "Bước 2: Auto Thả Đơn: OFF"
-        return
-    end
-    _G.SyncDropActive = not _G.SyncDropActive
-    if _G.SyncDropActive then
-        DropButton.Text = "Auto Thả: ON 🚢✨"
-        DropButton.BackgroundColor3 = Color3.fromRGB(0, 128, 128)
-    else
-        DropButton.Text = "Bước 2: Auto Thả Đơn: OFF"
-        DropButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
     end
 end)
 
