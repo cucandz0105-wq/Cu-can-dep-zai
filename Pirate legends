@@ -95,7 +95,6 @@ MenuButton.ZIndex = 20
 MenuButton.Parent = MainGui
 Instance.new("UICorner", MenuButton).CornerRadius = UDim.new(1, 0)
 
--- CHỈ TĂNG NHẸ CHIỀU CAO LÊN 225 (Vừa vặn ôm sát các nút, không bị thừa thãi)
 local MainPanel = Instance.new("Frame")
 MainPanel.Size = UDim2.new(0, 215, 0, 225) 
 MainPanel.Position = UDim2.new(0.02, 0, 0.48, 0)
@@ -115,7 +114,6 @@ Title.TextSize = 14
 Title.ZIndex = 16
 Title.Parent = MainPanel
 
--- Chỉnh lại Canvas kích thước 285 tương ứng cho mượt
 local Container = Instance.new("ScrollingFrame")
 Container.Size = UDim2.new(1, 0, 1, -50)
 Container.Position = UDim2.new(0, 0, 0, 30)
@@ -235,7 +233,6 @@ end)
 -- PHẦN 2A: FIX UI CHUẨN PHÂN TẦNG ZINDEX 100%
 -- =======================================================
 
--- 🎯 TÂM AIM TRÒN (LỚP DƯỚI)
 local AimBtn = Instance.new("TextButton")
 AimBtn.Size = UDim2.new(0, 85, 0, 85)
 AimBtn.Position = UDim2.new(0.82, 0, 0.45, 0)
@@ -246,12 +243,11 @@ AimBtn.Text = "🎯\nHYPER AIM\nv12.1"
 AimBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 AimBtn.Font = Enum.Font.SourceSansBold
 AimBtn.TextSize = 11
-AimBtn.ZIndex = 10 -- Đặt giá trị nhỏ để nằm dưới cùng
+AimBtn.ZIndex = 10 
 AimBtn.Active = true
 AimBtn.Parent = MainGui
 Instance.new("UICorner", AimBtn).CornerRadius = UDim.new(0, 42)
 
--- ⚙️ NÚT BÁNH RĂNG MENU (TÁCH KHỎI AIMBTN ĐỂ ĐẢO ZINDEX CHUẨN)
 local ToggleMenuBtn = Instance.new("TextButton")
 ToggleMenuBtn.Size = UDim2.new(0, 40, 0, 40)
 ToggleMenuBtn.Position = UDim2.new(0.82, -45, 0.45, 22) 
@@ -262,12 +258,11 @@ ToggleMenuBtn.Text = "⚙️"
 ToggleMenuBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 ToggleMenuBtn.Font = Enum.Font.SourceSansBold
 ToggleMenuBtn.TextSize = 18
-ToggleMenuBtn.ZIndex = 11 -- Nằm trên Aim một chút nhưng vẫn dưới Menu hoàn toàn
+ToggleMenuBtn.ZIndex = 11 
 ToggleMenuBtn.Active = true
 ToggleMenuBtn.Parent = MainGui
 Instance.new("UICorner", ToggleMenuBtn).CornerRadius = UDim.new(0, 8)
 
--- 🔄 ĐỒNG BỘ VỊ TRÍ KHI KÉO THẢ (Vẫn đi cùng nhau chuẩn bài)
 pcall(function()
     makeDraggable(AimBtn)
     AimBtn:GetPropertyChangedSignal("Position"):Connect(function()
@@ -275,7 +270,6 @@ pcall(function()
     end)
 end)
 
--- 📋 KHUNG MENU CHỨC NĂNG (ĐÈ LÊN TRÊN HOÀN TOÀN)
 local MenuFrame = Instance.new("Frame")
 MenuFrame.Size = UDim2.new(0, 200, 0, 155)
 MenuFrame.Position = UDim2.new(0.82, -250, 0.45, -35)
@@ -284,7 +278,7 @@ MenuFrame.BackgroundTransparency = 0.05
 MenuFrame.BorderSizePixel = 2
 MenuFrame.BorderColor3 = Color3.fromRGB(255, 255, 255)
 MenuFrame.Visible = false
-MenuFrame.ZIndex = 100 -- Đẩy ZIndex lên cao hẳn ở cùng cấp phân cấp để che hoàn toàn 2 nút
+MenuFrame.ZIndex = 100 
 MenuFrame.Active = true
 MenuFrame.Parent = MainGui
 Instance.new("UICorner", MenuFrame).CornerRadius = UDim.new(0, 8)
@@ -353,7 +347,6 @@ StatusLabel.TextSize = 9
 StatusLabel.ZIndex = 101
 StatusLabel.Parent = MenuFrame
 
--- ⚙️ SỰ KIỆN NÚT MENU (Đảm bảo đóng mở mượt mà và đổi màu nền trực quan)
 local menuOpen = false
 ToggleMenuBtn.MouseButton1Click:Connect(function()
     menuOpen = not menuOpen
@@ -377,11 +370,11 @@ if ToggleAimVisibleBtn then
         end
     end)
 end
+
 -- =======================================================
--- PHẦN 2B: QUẢN LÝ THẢM FLOAT MƯỢT MÀ & CORE HYPER AIM
+-- PHẦN 2B: QUẢN LÝ THẢM FLOAT MƯỢT MÀ & SIÊU TỐC ĐỘ NHẤN GIỮ
 -- =======================================================
 
--- 🛡️ QUẢN LÝ VA CHẠM KHỐI
 pcall(function()
     PhysicsService:RegisterCollisionGroup("PlayerBoatGroup")
     PhysicsService:RegisterCollisionGroup("GhostCarpetGroup")
@@ -391,13 +384,16 @@ end)
 
 _G.SuperSailActive = false
 _G.BoatFlyActive = false
-_G.BoostMultiplier = 200 -- Tốc độ tối ưu ổn định chống giật lật thảm
+_G.BoostMultiplier = 200 
 _G.ManualOffset = 0 
 _G.BaseFloatLevel = nil
 
 local activeVelocity = nil
 local activeAttachment = nil
 local RealCarpet = nil 
+
+local currentBoatCache = {}
+local lastCachedSeat = nil
 
 if SpeedInput then
     SpeedInput.FocusLost:Connect(function()
@@ -417,10 +413,19 @@ end
 local function getAbsoluteBoatBottom(seat)
     local boat = seat.Parent
     local lowestY = seat.Position.Y
-    if boat then
-        for _, part in pairs(boat:GetDescendants()) do
-            if part:IsA("BasePart") and part.Name ~= "RealNeonBottomCarpet" then
-                if part.Position.Y < lowestY then lowestY = part.Position.Y end
+    if boat and boat == lastCachedSeat then
+        for _, part in ipairs(currentBoatCache) do
+            if part and part.Parent and part.Name ~= "RealNeonBottomCarpet" then
+                local y = part.Position.Y
+                if y < lowestY then lowestY = y end
+            end
+        end
+    else
+        if boat then
+            for _, part in pairs(boat:GetDescendants()) do
+                if part:IsA("BasePart") and part.Name ~= "RealNeonBottomCarpet" then
+                    if part.Position.Y < lowestY then lowestY = part.Position.Y end
+                end
             end
         end
     end
@@ -431,14 +436,14 @@ local function createRealCarpet()
     if RealCarpet then RealCarpet:Destroy() end
     RealCarpet = Instance.new("Part")
     RealCarpet.Name = "RealNeonBottomCarpet"
-    RealCarpet.Size = Vector3.new(450, 3, 450) -- Thảm siêu rộng chống hụt góc
+    RealCarpet.Size = Vector3.new(450, 3, 450) 
     RealCarpet.Transparency = 1
     RealCarpet.Color = Color3.fromRGB(0, 255, 128)
     RealCarpet.Material = Enum.Material.Neon
     RealCarpet.Anchored = true 
     RealCarpet.CanCollide = true
     RealCarpet.CollisionGroup = "GhostCarpetGroup"
-    RealCarpet.CustomPhysicalProperties = PhysicalProperties.new(0, 0, 0, 0, 0) -- Không ma sát
+    RealCarpet.CustomPhysicalProperties = PhysicalProperties.new(0, 0, 0, 0, 0) 
     RealCarpet.Parent = workspace
 end
 
@@ -446,24 +451,69 @@ local function cleanUpForces()
     if activeVelocity then activeVelocity:Destroy() activeVelocity = nil end
     if activeAttachment then activeAttachment:Destroy() activeAttachment = nil end
     if RealCarpet then RealCarpet:Destroy() RealCarpet = nil end
+    currentBoatCache = {}
+    lastCachedSeat = nil
 end
 
-if UpBtn then UpBtn.MouseButton1Click:Connect(function() if _G.BoatFlyActive then _G.ManualOffset = _G.ManualOffset + 4 end end) end
-if DownBtn then DownBtn.MouseButton1Click:Connect(function() if _G.BoatFlyActive then _G.ManualOffset = _G.ManualOffset - 4 end end) end
+-- 🛰️ UP/DOWN SIÊU TỐC ĐỘ KHI ĐÈ GIỮ (ĐÃ FIX TỐC ĐỘ CHẠY BĂNG BĂNG)
+local holdingUp = false
+local holdingDown = false
+local changeInterval = 0.015 -- Giảm cực thấp để tốc độ lướt siêu nhanh
+local changeAmount = 1.5     -- Tăng chỉ số nhảy bậc độ cao mỗi nhịp
 
--- 🛰️ HÀM CẤY KHÓA CHỐNG TRANH CHẤP MẠNG (Chở nhiều người nút thảm vẫn chạy ngầm)
+if UpBtn then
+    UpBtn.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            holdingUp = true
+            task.spawn(function()
+                while holdingUp and _G.BoatFlyActive do
+                    _G.ManualOffset = _G.ManualOffset + changeAmount
+                    task.wait(changeInterval)
+                end
+            end)
+        end
+    end)
+    UpBtn.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            holdingUp = false
+        end
+    end)
+end
+
+if DownBtn then
+    DownBtn.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            holdingDown = true
+            task.spawn(function()
+                while holdingDown and _G.BoatFlyActive do
+                    _G.ManualOffset = _G.ManualOffset - changeAmount
+                    task.wait(changeInterval)
+                end
+            end)
+        end
+    end)
+    DownBtn.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            holdingDown = false
+        end
+    end)
+end
+
+-- FIX TRIỆT ĐỂ LAG: Chỉ gán và cập nhật phân quyền 1 lần duy nhất lúc vừa ngồi vào ghế lái
 local function assignBoatToGroup(seat)
     local boat = seat.Parent
-    if boat then
+    if not boat then return end
+    
+    if lastCachedSeat ~= boat then
+        currentBoatCache = {}
+        lastCachedSeat = boat
         for _, part in pairs(boat:GetDescendants()) do
             if part:IsA("BasePart") and part.Name ~= "RealNeonBottomCarpet" then
+                table.insert(currentBoatCache, part)
                 pcall(function() 
                     part.CollisionGroup = "PlayerBoatGroup"
-                    -- Ép NetworkOwner liên tục về máy mình nếu có người khác trèo lên làm nhiễu vật lý
-                    if part.ReceiveAge > 0.1 or part:GetNetworkOwner() ~= LocalPlayer then
-                        if part:CanSetNetworkOwnership() then
-                            part:SetNetworkOwner(LocalPlayer)
-                        end
+                    if part:CanSetNetworkOwnership() then
+                        part:SetNetworkOwner(LocalPlayer)
                     end
                 end)
             end
@@ -495,8 +545,10 @@ RunService.PreSimulation:Connect(function()
                 createRealCarpet() 
             end
             
-            -- LERP mượt trục Y theo tàu, triệt tiêu gia tốc thừa chống rung giật
-            local targetCFrame = CFrame.new(seat.Position.X, targetCarpetY, seat.Position.Z)
+            local _, rotY, _ = seat.CFrame:ToEulerAnglesYXZ()
+            local flatRotation = CFrame.fromEulerAnglesYXZ(0, rotY, 0)
+            local targetCFrame = CFrame.new(seat.Position.X, targetCarpetY, seat.Position.Z) * flatRotation
+            
             RealCarpet.CFrame = RealCarpet.CFrame:Lerp(targetCFrame, 0.25)
         else
             if RealCarpet then RealCarpet:Destroy() RealCarpet = nil end
@@ -528,7 +580,6 @@ RunService.PreSimulation:Connect(function()
         if HeightLabel then HeightLabel.Text = "Độ Cao Thảm: Tắt" end
     end
 end)
-
 if BoatBoostBtn then
     BoatBoostBtn.MouseButton1Click:Connect(function()
         _G.SuperSailActive = not _G.SuperSailActive
@@ -546,10 +597,9 @@ if BoatFlyBtn then
     end)
 end
 
--- 🔒 CORE HYPER AIM LOCK
 local TargetKeywords = {}
 local NpcScanningEnabled = false
-local LastPositions = {}
+local lastPositions = {}
 
 local function updateStatusText()
     if #TargetKeywords > 0 then
@@ -669,13 +719,13 @@ task.spawn(function()
         for _, p in pairs(Players:GetPlayers()) do
             if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
                 local root = p.Character.HumanoidRootPart
-                if not LastPositions[p.UserId] then
-                    LastPositions[p.UserId] = {Pos = root.Position, Time = os.clock()}
+                if not lastPositions[p.UserId] then
+                    lastPositions[p.UserId] = {Pos = root.Position, Time = os.clock()}
                 else
-                    local oldData = LastPositions[p.UserId]
+                    local oldData = lastPositions[p.UserId]
                     local dt = os.clock() - oldData.Time
                     if dt > 0 then
-                        LastPositions[p.UserId] = {Pos = root.Position, Time = os.clock(), Vel = (root.Position - oldData.Pos) / dt}
+                        lastPositions[p.UserId] = {Pos = root.Position, Time = os.clock(), Vel = (root.Position - oldData.Pos) / dt}
                     end
                 end
             end
@@ -706,8 +756,8 @@ AimBtn.MouseButton1Click:Connect(function()
         if targetPart then
             local targetPosition = targetPart.Position
             local pTarget = Players:GetPlayerFromCharacter(targetModel)
-            if pTarget and LastPositions[pTarget.UserId] and LastPositions[pTarget.UserId].Vel then
-                local realVel = LastPositions[pTarget.UserId].Vel
+            if pTarget and lastPositions[pTarget.UserId] and lastPositions[pTarget.UserId].Vel then
+                local realVel = lastPositions[pTarget.UserId].Vel
                 local pFactor = math.clamp(0.075 + (distance * 0.0018), 0.075, 0.25)
                 targetPosition = targetPosition + (realVel * pFactor)
             end
