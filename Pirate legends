@@ -54,10 +54,10 @@ for _, guiName in ipairs(oldGuis) do
     end
 end
 
-local MainGui = Instance.new("ScreenGui")
-MainGui.Name = "BoatMenuMobileGui"
-MainGui.ResetOnSpawn = false
-MainGui.Parent = PlayerGui
+_G.MainGui = Instance.new("ScreenGui")
+_G.MainGui.Name = "BoatMenuMobileGui"
+_G.MainGui.ResetOnSpawn = false
+_G.MainGui.Parent = PlayerGui
 
 local function makeDraggable(guiObject)
     local dragging = false
@@ -92,7 +92,7 @@ MenuButton.Text = "🏴‍☠️"
 MenuButton.TextSize = 25
 MenuButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 MenuButton.ZIndex = 20
-MenuButton.Parent = MainGui
+MenuButton.Parent = _G.MainGui
 Instance.new("UICorner", MenuButton).CornerRadius = UDim.new(1, 0)
 
 local MainPanel = Instance.new("Frame")
@@ -101,7 +101,7 @@ MainPanel.Position = UDim2.new(0.02, 0, 0.48, 0)
 MainPanel.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 MainPanel.Visible = false
 MainPanel.ZIndex = 15
-MainPanel.Parent = MainGui
+MainPanel.Parent = _G.MainGui
 Instance.new("UICorner", MainPanel).CornerRadius = UDim.new(0, 10)
 
 local Title = Instance.new("TextLabel")
@@ -130,39 +130,39 @@ UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 UIListLayout.Padding = UDim.new(0, 8)
 UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 
-local SpeedInput = Instance.new("TextBox")
-SpeedInput.Size = UDim2.new(1, -20, 0, 35)
-SpeedInput.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-SpeedInput.Text = "200"
-SpeedInput.PlaceholderText = "Nhập tốc độ vật lý (50-300)..."
-SpeedInput.TextColor3 = Color3.fromRGB(0, 255, 255)
-SpeedInput.Font = Enum.Font.SourceSansBold
-SpeedInput.TextSize = 14
-SpeedInput.ZIndex = 17
-SpeedInput.Parent = Container
-Instance.new("UICorner", SpeedInput).CornerRadius = UDim.new(0, 6)
+_G.SpeedInput = Instance.new("TextBox")
+_G.SpeedInput.Size = UDim2.new(1, -20, 0, 35)
+_G.SpeedInput.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+_G.SpeedInput.Text = "200"
+_G.SpeedInput.PlaceholderText = "Nhập tốc độ vật lý (50-300)..."
+_G.SpeedInput.TextColor3 = Color3.fromRGB(0, 255, 255)
+_G.SpeedInput.Font = Enum.Font.SourceSansBold
+_G.SpeedInput.TextSize = 14
+_G.SpeedInput.ZIndex = 17
+_G.SpeedInput.Parent = Container
+Instance.new("UICorner", _G.SpeedInput).CornerRadius = UDim.new(0, 6)
 
-local BoatBoostBtn = Instance.new("TextButton")
-BoatBoostBtn.Size = UDim2.new(1, -20, 0, 45)
-BoatBoostBtn.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
-BoatBoostBtn.Text = "Tốc Độ Thuyền: OFF"
-BoatBoostBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-BoatBoostBtn.Font = Enum.Font.SourceSansBold
-BoatBoostBtn.TextSize = 14
-BoatBoostBtn.ZIndex = 17
-BoatBoostBtn.Parent = Container
-Instance.new("UICorner", BoatBoostBtn).CornerRadius = UDim.new(0, 8)
+_G.BoatBoostBtn = Instance.new("TextButton")
+_G.BoatBoostBtn.Size = UDim2.new(1, -20, 0, 45)
+_G.BoatBoostBtn.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+_G.BoatBoostBtn.Text = "Tốc Độ Thuyền: OFF"
+_G.BoatBoostBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+_G.BoatBoostBtn.Font = Enum.Font.SourceSansBold
+_G.BoatBoostBtn.TextSize = 14
+_G.BoatBoostBtn.ZIndex = 17
+_G.BoatBoostBtn.Parent = Container
+Instance.new("UICorner", _G.BoatBoostBtn).CornerRadius = UDim.new(0, 8)
 
-local HeightLabel = Instance.new("TextLabel")
-HeightLabel.Size = UDim2.new(1, -20, 0, 30)
-HeightLabel.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-HeightLabel.Text = "Độ Cao Thảm: Tắt"
-HeightLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
-HeightLabel.Font = Enum.Font.SourceSansBold
-HeightLabel.TextSize = 14
-HeightLabel.ZIndex = 17
-HeightLabel.Parent = Container
-Instance.new("UICorner", HeightLabel).CornerRadius = UDim.new(0, 6)
+_G.HeightLabel = Instance.new("TextLabel")
+_G.HeightLabel.Size = UDim2.new(1, -20, 0, 30)
+_G.HeightLabel.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+_G.HeightLabel.Text = "Độ Cao Thảm: Tắt"
+_G.HeightLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
+_G.HeightLabel.Font = Enum.Font.SourceSansBold
+_G.HeightLabel.TextSize = 14
+_G.HeightLabel.ZIndex = 17
+_G.HeightLabel.Parent = Container
+Instance.new("UICorner", _G.HeightLabel).CornerRadius = UDim.new(0, 6)
 
 local FlyGroup = Instance.new("Frame")
 FlyGroup.Size = UDim2.new(1, -20, 0, 45)
@@ -170,47 +170,47 @@ FlyGroup.BackgroundTransparency = 1
 FlyGroup.ZIndex = 17
 FlyGroup.Parent = Container
 
-local BoatFlyBtn = Instance.new("TextButton")
-BoatFlyBtn.Size = UDim2.new(0, 115, 0, 45)
-BoatFlyBtn.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
-BoatFlyBtn.Text = "Thảm Nước: OFF"
-BoatFlyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-BoatFlyBtn.Font = Enum.Font.SourceSansBold
-BoatFlyBtn.TextSize = 13
-BoatFlyBtn.ZIndex = 17
-BoatFlyBtn.Parent = FlyGroup
-Instance.new("UICorner", BoatFlyBtn).CornerRadius = UDim.new(0, 8)
+_G.BoatFlyBtn = Instance.new("TextButton")
+_G.BoatFlyBtn.Size = UDim2.new(0, 115, 0, 45)
+_G.BoatFlyBtn.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+_G.BoatFlyBtn.Text = "Thảm Nước: OFF"
+_G.BoatFlyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+_G.BoatFlyBtn.Font = Enum.Font.SourceSansBold
+_G.BoatFlyBtn.TextSize = 13
+_G.BoatFlyBtn.ZIndex = 17
+_G.BoatFlyBtn.Parent = FlyGroup
+Instance.new("UICorner", _G.BoatFlyBtn).CornerRadius = UDim.new(0, 8)
 
-local UpBtn = Instance.new("TextButton")
-UpBtn.Size = UDim2.new(0, 35, 0, 45)
-UpBtn.Position = UDim2.new(0, 122, 0, 0)
-UpBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-UpBtn.Text = "🔼"
-UpBtn.TextSize = 14
-UpBtn.ZIndex = 17
-UpBtn.Parent = FlyGroup
-Instance.new("UICorner", UpBtn).CornerRadius = UDim.new(0, 6)
+_G.UpBtn = Instance.new("TextButton")
+_G.UpBtn.Size = UDim2.new(0, 35, 0, 45)
+_G.UpBtn.Position = UDim2.new(0, 122, 0, 0)
+_G.UpBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+_G.UpBtn.Text = "🔼"
+_G.UpBtn.TextSize = 14
+_G.UpBtn.ZIndex = 17
+_G.UpBtn.Parent = FlyGroup
+Instance.new("UICorner", _G.UpBtn).CornerRadius = UDim.new(0, 6)
 
-local DownBtn = Instance.new("TextButton")
-DownBtn.Size = UDim2.new(0, 35, 0, 45)
-DownBtn.Position = UDim2.new(0, 160, 0, 0)
-DownBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-DownBtn.Text = "🔽"
-DownBtn.TextSize = 14
-DownBtn.ZIndex = 17
-DownBtn.Parent = FlyGroup
-Instance.new("UICorner", DownBtn).CornerRadius = UDim.new(0, 6)
+_G.DownBtn = Instance.new("TextButton")
+_G.DownBtn.Size = UDim2.new(0, 35, 0, 45)
+_G.DownBtn.Position = UDim2.new(0, 160, 0, 0)
+_G.DownBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+_G.DownBtn.Text = "🔽"
+_G.DownBtn.TextSize = 14
+_G.DownBtn.ZIndex = 17
+_G.DownBtn.Parent = FlyGroup
+Instance.new("UICorner", _G.DownBtn).CornerRadius = UDim.new(0, 6)
 
-local ToggleAimVisibleBtn = Instance.new("TextButton")
-ToggleAimVisibleBtn.Size = UDim2.new(1, -20, 0, 45)
-ToggleAimVisibleBtn.BackgroundColor3 = Color3.fromRGB(0, 128, 0)
-ToggleAimVisibleBtn.Text = "🎯 Tâm Bắn: ON"
-ToggleAimVisibleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-ToggleAimVisibleBtn.Font = Enum.Font.SourceSansBold
-ToggleAimVisibleBtn.TextSize = 14
-ToggleAimVisibleBtn.ZIndex = 17
-ToggleAimVisibleBtn.Parent = Container
-Instance.new("UICorner", ToggleAimVisibleBtn).CornerRadius = UDim.new(0, 8)
+_G.ToggleAimVisibleBtn = Instance.new("TextButton")
+_G.ToggleAimVisibleBtn.Size = UDim2.new(1, -20, 0, 45)
+_G.ToggleAimVisibleBtn.BackgroundColor3 = Color3.fromRGB(0, 128, 0)
+_G.ToggleAimVisibleBtn.Text = "🎯 Tâm Bắn: ON"
+_G.ToggleAimVisibleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+_G.ToggleAimVisibleBtn.Font = Enum.Font.SourceSansBold
+_G.ToggleAimVisibleBtn.TextSize = 14
+_G.ToggleAimVisibleBtn.ZIndex = 17
+_G.ToggleAimVisibleBtn.Parent = Container
+Instance.new("UICorner", _G.ToggleAimVisibleBtn).CornerRadius = UDim.new(0, 8)
 
 local CreditsLabel = Instance.new("TextLabel")
 CreditsLabel.Size = UDim2.new(1, 0, 0, 20)
@@ -229,9 +229,35 @@ makeDraggable(MainPanel)
 MenuButton.MouseButton1Click:Connect(function()
     MainPanel.Visible = not MainPanel.Visible
 end)
--- =======================================================
--- PHẦN 2A: FIX UI CHUẨN PHÂN TẦNG ZINDEX 100%
--- =======================================================
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local LocalPlayer = Players.LocalPlayer
+local Camera = Workspace.CurrentCamera
+local MainGui = LocalPlayer.PlayerGui:WaitForChild("BoatMenuMobileGui")
+
+local function makeDraggable(guiObject)
+    local dragging = false
+    local dragInput, dragStart, startPos
+    guiObject.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = guiObject.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then dragging = false end
+            end)
+        end
+    end)
+    guiObject.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end
+    end)
+    game:GetService("UserInputService").InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - dragStart
+            guiObject.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+end
 
 local AimBtn = Instance.new("TextButton")
 AimBtn.Size = UDim2.new(0, 85, 0, 85)
@@ -354,246 +380,20 @@ ToggleMenuBtn.MouseButton1Click:Connect(function()
     ToggleMenuBtn.BackgroundColor3 = menuOpen and Color3.fromRGB(0, 0, 0) or Color3.fromRGB(30, 30, 30)
 end)
 
-if ToggleAimVisibleBtn then
-    ToggleAimVisibleBtn.MouseButton1Click:Connect(function()
+if _G.ToggleAimVisibleBtn then
+    _G.ToggleAimVisibleBtn.MouseButton1Click:Connect(function()
         AimBtn.Visible = not AimBtn.Visible
         ToggleMenuBtn.Visible = AimBtn.Visible
         if AimBtn.Visible then
-            ToggleAimVisibleBtn.Text = "🎯 Tâm Bắn: ON"
-            ToggleAimVisibleBtn.BackgroundColor3 = Color3.fromRGB(0, 128, 0)
+            _G.ToggleAimVisibleBtn.Text = "🎯 Tâm Bắn: ON"
+            _G.ToggleAimVisibleBtn.BackgroundColor3 = Color3.fromRGB(0, 128, 0)
         else
-            ToggleAimVisibleBtn.Text = "🎯 Tâm Bắn: OFF"
-            ToggleAimVisibleBtn.BackgroundColor3 = Color3.fromRGB(150, 40, 40)
+            _G.ToggleAimVisibleBtn.Text = "🎯 Tâm Bắn: OFF"
+            _G.ToggleAimVisibleBtn.BackgroundColor3 = Color3.fromRGB(150, 40, 40)
             MenuFrame.Visible = false 
             menuOpen = false
             ToggleMenuBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
         end
-    end)
-end
-
--- =======================================================
--- PHẦN 2B: QUẢN LÝ THẢM FLOAT MƯỢT MÀ & SIÊU TỐC ĐỘ NHẤN GIỮ
--- =======================================================
-
-pcall(function()
-    PhysicsService:RegisterCollisionGroup("PlayerBoatGroup")
-    PhysicsService:RegisterCollisionGroup("GhostCarpetGroup")
-    PhysicsService:CollisionGroupSetCollidable("PlayerBoatGroup", "GhostCarpetGroup", true)
-    PhysicsService:CollisionGroupSetCollidable("Default", "GhostCarpetGroup", false)
-end)
-
-_G.SuperSailActive = false
-_G.BoatFlyActive = false
-_G.BoostMultiplier = 200 
-_G.ManualOffset = 0 
-_G.BaseFloatLevel = nil
-
-local activeVelocity = nil
-local activeAttachment = nil
-local RealCarpet = nil 
-
-local currentBoatCache = {}
-local lastCachedSeat = nil
-
-if SpeedInput then
-    SpeedInput.FocusLost:Connect(function()
-        local num = tonumber(SpeedInput.Text)
-        if num then _G.BoostMultiplier = num else SpeedInput.Text = tostring(_G.BoostMultiplier) end
-    end)
-end
-
-local function getDrivenSeat()
-    local char = LocalPlayer.Character
-    if not char then return nil end
-    local humanoid = char:FindFirstChildWhichIsA("Humanoid")
-    if humanoid and humanoid.SeatPart and humanoid.SeatPart:IsA("VehicleSeat") then return humanoid.SeatPart end
-    return nil
-end
-
-local function getAbsoluteBoatBottom(seat)
-    local boat = seat.Parent
-    local lowestY = seat.Position.Y
-    if boat and boat == lastCachedSeat then
-        for _, part in ipairs(currentBoatCache) do
-            if part and part.Parent and part.Name ~= "RealNeonBottomCarpet" then
-                local y = part.Position.Y
-                if y < lowestY then lowestY = y end
-            end
-        end
-    else
-        if boat then
-            for _, part in pairs(boat:GetDescendants()) do
-                if part:IsA("BasePart") and part.Name ~= "RealNeonBottomCarpet" then
-                    if part.Position.Y < lowestY then lowestY = part.Position.Y end
-                end
-            end
-        end
-    end
-    return lowestY
-end
-
-local function createRealCarpet()
-    if RealCarpet then RealCarpet:Destroy() end
-    RealCarpet = Instance.new("Part")
-    RealCarpet.Name = "RealNeonBottomCarpet"
-    RealCarpet.Size = Vector3.new(450, 3, 450) 
-    RealCarpet.Transparency = 1
-    RealCarpet.Color = Color3.fromRGB(0, 255, 128)
-    RealCarpet.Material = Enum.Material.Neon
-    RealCarpet.Anchored = true 
-    RealCarpet.CanCollide = true
-    RealCarpet.CollisionGroup = "GhostCarpetGroup"
-    RealCarpet.CustomPhysicalProperties = PhysicalProperties.new(0, 0, 0, 0, 0) 
-    RealCarpet.Parent = workspace
-end
-
-local function cleanUpForces()
-    if activeVelocity then activeVelocity:Destroy() activeVelocity = nil end
-    if activeAttachment then activeAttachment:Destroy() activeAttachment = nil end
-    if RealCarpet then RealCarpet:Destroy() RealCarpet = nil end
-    currentBoatCache = {}
-    lastCachedSeat = nil
-end
-
--- 🛰️ UP/DOWN SIÊU TỐC ĐỘ KHI ĐÈ GIỮ (ĐÃ FIX TỐC ĐỘ CHẠY BĂNG BĂNG)
-local holdingUp = false
-local holdingDown = false
-local changeInterval = 0.015 -- Giảm cực thấp để tốc độ lướt siêu nhanh
-local changeAmount = 1.5     -- Tăng chỉ số nhảy bậc độ cao mỗi nhịp
-
-if UpBtn then
-    UpBtn.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            holdingUp = true
-            task.spawn(function()
-                while holdingUp and _G.BoatFlyActive do
-                    _G.ManualOffset = _G.ManualOffset + changeAmount
-                    task.wait(changeInterval)
-                end
-            end)
-        end
-    end)
-    UpBtn.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            holdingUp = false
-        end
-    end)
-end
-
-if DownBtn then
-    DownBtn.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            holdingDown = true
-            task.spawn(function()
-                while holdingDown and _G.BoatFlyActive do
-                    _G.ManualOffset = _G.ManualOffset - changeAmount
-                    task.wait(changeInterval)
-                end
-            end)
-        end
-    end)
-    DownBtn.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            holdingDown = false
-        end
-    end)
-end
-
--- FIX TRIỆT ĐỂ LAG: Chỉ gán và cập nhật phân quyền 1 lần duy nhất lúc vừa ngồi vào ghế lái
-local function assignBoatToGroup(seat)
-    local boat = seat.Parent
-    if not boat then return end
-    
-    if lastCachedSeat ~= boat then
-        currentBoatCache = {}
-        lastCachedSeat = boat
-        for _, part in pairs(boat:GetDescendants()) do
-            if part:IsA("BasePart") and part.Name ~= "RealNeonBottomCarpet" then
-                table.insert(currentBoatCache, part)
-                pcall(function() 
-                    part.CollisionGroup = "PlayerBoatGroup"
-                    if part:CanSetNetworkOwnership() then
-                        part:SetNetworkOwner(LocalPlayer)
-                    end
-                end)
-            end
-        end
-    end
-end
-
-RunService.PreSimulation:Connect(function()
-    local seat = getDrivenSeat()
-    if seat then
-        assignBoatToGroup(seat)
-        
-        if _G.BoatFlyActive then
-            local currentBottomY = getAbsoluteBoatBottom(seat)
-            
-            if not _G.BaseFloatLevel then 
-                _G.BaseFloatLevel = currentBottomY - 2
-            end
-            
-            local targetCarpetY = _G.BaseFloatLevel + _G.ManualOffset
-            
-            if targetCarpetY > (currentBottomY - 1.2) then
-                targetCarpetY = currentBottomY - 1.2
-            end
-            
-            if HeightLabel then HeightLabel.Text = "Cao độ thảm Y: " .. tostring(math.floor(targetCarpetY)) end
-            
-            if not RealCarpet then 
-                createRealCarpet() 
-            end
-            
-            local _, rotY, _ = seat.CFrame:ToEulerAnglesYXZ()
-            local flatRotation = CFrame.fromEulerAnglesYXZ(0, rotY, 0)
-            local targetCFrame = CFrame.new(seat.Position.X, targetCarpetY, seat.Position.Z) * flatRotation
-            
-            RealCarpet.CFrame = RealCarpet.CFrame:Lerp(targetCFrame, 0.25)
-        else
-            if RealCarpet then RealCarpet:Destroy() RealCarpet = nil end
-            if _G.BaseFloatLevel then if HeightLabel then HeightLabel.Text = "Độ Cao Thảm: Tắt" end _G.BaseFloatLevel = nil end
-        end
-
-        if _G.SuperSailActive then
-            if not activeAttachment or activeAttachment.Parent ~= seat then
-                if activeAttachment then activeAttachment:Destroy() end
-                activeAttachment = Instance.new("Attachment")
-                activeAttachment.Parent = seat
-            end
-            if not activeVelocity or activeVelocity.Parent ~= seat then
-                if activeVelocity then activeVelocity:Destroy() end
-                activeVelocity = Instance.new("LinearVelocity")
-                activeVelocity.Attachment0 = activeAttachment
-                activeVelocity.MaxForce = math.huge
-                activeVelocity.VelocityConstraintMode = Enum.VelocityConstraintMode.Vector
-                activeVelocity.Parent = seat
-            end
-            local forward = seat.CFrame.LookVector
-            activeVelocity.VectorVelocity = Vector3.new(forward.X, 0, forward.Z).Unit * _G.BoostMultiplier
-        else
-            if activeVelocity then activeVelocity:Destroy() activeVelocity = nil end
-        end
-    else
-        cleanUpForces()
-        _G.BaseFloatLevel = nil
-        if HeightLabel then HeightLabel.Text = "Độ Cao Thảm: Tắt" end
-    end
-end)
-if BoatBoostBtn then
-    BoatBoostBtn.MouseButton1Click:Connect(function()
-        _G.SuperSailActive = not _G.SuperSailActive
-        BoatBoostBtn.Text = _G.SuperSailActive and "Tốc Độ Thuyền: ON 🚀" or "Tốc Độ Thuyền: OFF"
-        BoatBoostBtn.BackgroundColor3 = _G.SuperSailActive and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(55, 55, 55)
-    end)
-end
-
-if BoatFlyBtn then
-    BoatFlyBtn.MouseButton1Click:Connect(function()
-        _G.BoatFlyActive = not _G.BoatFlyActive
-        BoatFlyBtn.Text = _G.BoatFlyActive and "Thảm Nước: ON 🌊" or "Thảm Nước: OFF"
-        BoatFlyBtn.BackgroundColor3 = _G.BoatFlyActive and Color3.fromRGB(0, 120, 255) or Color3.fromRGB(55, 55, 55)
-        if not _G.BoatFlyActive then _G.ManualOffset = 0 end
     end)
 end
 
@@ -771,3 +571,223 @@ AimBtn.MouseButton1Click:Connect(function()
         AimBtn.Text = "🔍\nNO TARGET" task.wait(0.15) AimBtn.Text = "🎯\nHYPER AIM\nv12.1"
     end
 end)
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local PhysicsService = game:GetService("PhysicsService")
+local Workspace = game:GetService("Workspace")
+local LocalPlayer = Players.LocalPlayer
+
+pcall(function()
+    PhysicsService:RegisterCollisionGroup("PlayerBoatGroup")
+    PhysicsService:RegisterCollisionGroup("GhostCarpetGroup")
+    PhysicsService:CollisionGroupSetCollidable("PlayerBoatGroup", "GhostCarpetGroup", true)
+    PhysicsService:CollisionGroupSetCollidable("Default", "GhostCarpetGroup", false)
+end)
+
+_G.SuperSailActive = false
+_G.BoatFlyActive = false
+_G.BoostMultiplier = 200 
+_G.ManualOffset = 0 
+_G.BaseFloatLevel = nil
+
+local activeVelocity = nil
+local activeAttachment = nil
+local RealCarpet = nil 
+
+local currentBoatCache = {}
+local lastCachedSeat = nil
+
+if _G.SpeedInput then
+    _G.SpeedInput.FocusLost:Connect(function()
+        local num = tonumber(_G.SpeedInput.Text)
+        if num then _G.BoostMultiplier = num else _G.SpeedInput.Text = tostring(_G.BoostMultiplier) end
+    end)
+end
+
+local function getDrivenSeat()
+    local char = LocalPlayer.Character
+    if not char then return nil end
+    local humanoid = char:FindFirstChildWhichIsA("Humanoid")
+    if humanoid and humanoid.SeatPart and humanoid.SeatPart:IsA("VehicleSeat") then return humanoid.SeatPart end
+    return nil
+end
+
+local function getAbsoluteBoatBottom(seat)
+    local boat = seat.Parent
+    local lowestY = seat.Position.Y
+    if boat and boat == lastCachedSeat then
+        for _, part in ipairs(currentBoatCache) do
+            if part and part.Parent and part.Name ~= "RealNeonBottomCarpet" then
+                local y = part.Position.Y
+                if y < lowestY then lowestY = y end
+            end
+        end
+    else
+        if boat then
+            for _, part in pairs(boat:GetDescendants()) do
+                if part:IsA("BasePart") and part.Name ~= "RealNeonBottomCarpet" then
+                    if part.Position.Y < lowestY then lowestY = part.Position.Y end
+                end
+            end
+        end
+    end
+    return lowestY
+end
+
+local function createRealCarpet()
+    if RealCarpet then RealCarpet:Destroy() end
+    RealCarpet = Instance.new("Part")
+    RealCarpet.Name = "RealNeonBottomCarpet"
+    RealCarpet.Size = Vector3.new(450, 4, 450)
+    RealCarpet.Transparency = 1
+    RealCarpet.Color = Color3.fromRGB(0, 255, 128)
+    RealCarpet.Material = Enum.Material.Neon
+    RealCarpet.Anchored = true 
+    RealCarpet.CanCollide = true
+    RealCarpet.CollisionGroup = "GhostCarpetGroup"
+    RealCarpet.CustomPhysicalProperties = PhysicalProperties.new(0, 0, 0, 0, 0) -- Triệt tiêu lực ghì ma sát
+    RealCarpet.Parent = Workspace
+end
+
+local function cleanUpForces()
+    if activeVelocity then activeVelocity:Destroy() activeVelocity = nil end
+    if activeAttachment then activeAttachment:Destroy() activeAttachment = nil end
+    if RealCarpet then RealCarpet:Destroy() RealCarpet = nil end
+    currentBoatCache = {}
+    lastCachedSeat = nil
+end
+
+-- 🛠 ĐÃ HẠ XUỐNG 2.5: Tránh bị tình trạng giật lên/xuống quá nhanh làm lệch tàu
+local holdingUp = false
+local holdingDown = false
+local changeInterval = 0.01 
+local changeAmount = 2.5     
+
+if _G.UpBtn then
+    _G.UpBtn.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            holdingUp = true
+            task.spawn(function()
+                while holdingUp and _G.BoatFlyActive do
+                    _G.ManualOffset = _G.ManualOffset + changeAmount
+                    task.wait(changeInterval)
+                end
+            end)
+        end
+    end)
+    _G.UpBtn.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then holdingUp = false end
+    end)
+end
+
+if _G.DownBtn then
+    _G.DownBtn.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            holdingDown = true
+            task.spawn(function()
+                while holdingDown and _G.BoatFlyActive do
+                    _G.ManualOffset = _G.ManualOffset - changeAmount
+                    task.wait(changeInterval)
+                end
+            end)
+        end
+    end)
+    _G.DownBtn.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then holdingDown = false end
+    end)
+end
+
+local function assignBoatToGroup(seat)
+    local boat = seat.Parent
+    if not boat then return end
+    if lastCachedSeat ~= boat then
+        currentBoatCache = {}
+        lastCachedSeat = boat
+        for _, part in pairs(boat:GetDescendants()) do
+            if part:IsA("BasePart") and part.Name ~= "RealNeonBottomCarpet" then
+                table.insert(currentBoatCache, part)
+                pcall(function() 
+                    part.CollisionGroup = "PlayerBoatGroup"
+                    if part:CanSetNetworkOwnership() then part:SetNetworkOwner(LocalPlayer) end
+                end)
+            end
+        end
+    end
+end
+
+RunService.PreSimulation:Connect(function()
+    local seat = getDrivenSeat()
+    if seat then
+        assignBoatToGroup(seat)
+        
+        if _G.BoatFlyActive then
+            local currentBottomY = getAbsoluteBoatBottom(seat)
+            
+            if not _G.BaseFloatLevel then 
+                _G.BaseFloatLevel = currentBottomY - 2
+            end
+            
+            local targetCarpetY = _G.BaseFloatLevel + _G.ManualOffset
+            
+            if targetCarpetY > (currentBottomY - 1.2) then
+                targetCarpetY = currentBottomY - 1.2
+            end
+            
+            if _G.HeightLabel then _G.HeightLabel.Text = "Cao độ thảm Y: " .. tostring(math.floor(targetCarpetY)) end
+            
+            if not RealCarpet then 
+                createRealCarpet() 
+            end
+            
+            local _, rotY, _ = seat.CFrame:ToEulerAnglesYXZ()
+            local flatRotation = CFrame.fromEulerAnglesYXZ(0, rotY, 0)
+            local targetCFrame = CFrame.new(seat.Position.X, targetCarpetY, seat.Position.Z) * flatRotation
+            
+            RealCarpet.CFrame = RealCarpet.CFrame:Lerp(targetCFrame, 0.85) -- Lerp nhạy để thảm bám khít đáy tàu
+        else
+            if RealCarpet then RealCarpet:Destroy() RealCarpet = nil end
+            if _G.BaseFloatLevel then if _G.HeightLabel then _G.HeightLabel.Text = "Độ Cao Thảm: Tắt" end _G.BaseFloatLevel = nil end
+        end
+
+        if _G.SuperSailActive then
+            if not activeAttachment or activeAttachment.Parent ~= seat then
+                if activeAttachment then activeAttachment:Destroy() end
+                activeAttachment = Instance.new("Attachment")
+                activeAttachment.Parent = seat
+            end
+            if not activeVelocity or activeVelocity.Parent ~= seat then
+                if activeVelocity then activeVelocity:Destroy() end
+                activeVelocity = Instance.new("LinearVelocity")
+                activeVelocity.Attachment0 = activeAttachment
+                activeVelocity.MaxForce = math.huge
+                activeVelocity.VelocityConstraintMode = Enum.VelocityConstraintMode.Vector
+                activeVelocity.Parent = seat
+            end
+            local forward = seat.CFrame.LookVector
+            activeVelocity.VectorVelocity = Vector3.new(forward.X, 0, forward.Z).Unit * _G.BoostMultiplier
+        else
+            if activeVelocity then activeVelocity:Destroy() activeVelocity = nil end
+        end
+    else
+        cleanUpForces()
+        _G.BaseFloatLevel = nil
+        if _G.HeightLabel then _G.HeightLabel.Text = "Độ Cao Thảm: Tắt" end
+    end
+end)
+
+if _G.BoatBoostBtn then
+    _G.BoatBoostBtn.MouseButton1Click:Connect(function()
+        _G.SuperSailActive = not _G.SuperSailActive
+        _G.BoatBoostBtn.Text = _G.SuperSailActive and "Tốc Độ Thuyền: ON 🚀" or "Tốc Độ Thuyền: OFF"
+        _G.BoatBoostBtn.BackgroundColor3 = _G.SuperSailActive and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(55, 55, 55)
+    end)
+end
+
+if _G.BoatFlyBtn then
+    _G.BoatFlyBtn.MouseButton1Click:Connect(function()
+        _G.BoatFlyActive = not _G.BoatFlyActive
+        _G.BoatFlyBtn.Text = _G.BoatFlyActive and "Thảm Nước: ON 🌊" or "Thảm Nước: OFF"
+        _G.BoatFlyBtn.BackgroundColor3 = _G.BoatFlyActive and Color3.fromRGB(0, 120, 255) or Color3.fromRGB(55, 55, 55)
+        if not _G.BoatFlyActive then _G.ManualOffset = 0 end
+    end)
+end
