@@ -1,0 +1,110 @@
+local TeleportService = game:GetService("TeleportService")
+local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
+
+local LocalPlayer = Players.LocalPlayer
+local PlaceId = game.PlaceId
+local JobId = game.JobId
+
+-- Đợi game load xong PlayerGui cho chắc chắn
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui", 10)
+if not PlayerGui then return end
+
+-- Xóa bảng cũ nếu có để tránh trùng lặp
+if PlayerGui:FindFirstChild("BoMayChapHone") then
+    PlayerGui:FindFirstChild("BoMayChapHone"):Destroy()
+end
+
+-- TẠO GIAO DIỆN
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "BoMayChapHone"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = PlayerGui
+
+-- KHUNG CHÍNH
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 250, 0, 110)
+MainFrame.Position = UDim2.new(0.4, 0, 0.4, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.Parent = ScreenGui
+
+local FrameCorner = Instance.new("UICorner")
+FrameCorner.CornerRadius = UDim.new(0, 10)
+FrameCorner.Parent = MainFrame
+
+-- TIÊU ĐỀ
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 0, 40)
+Title.Text = "BỐ MÀY CHẤP 🗿"
+Title.TextColor3 = Color3.fromRGB(255, 255, 0)
+Title.TextSize = 18
+Title.Font = Enum.Font.SourceSansBold
+Title.BackgroundTransparency = 1
+Title.Parent = MainFrame
+
+-- NÚT ĐỔI SERVER
+local BtnRandom = Instance.new("TextButton")
+BtnRandom.Size = UDim2.new(0, 210, 0, 45)
+BtnRandom.Position = UDim2.new(0, 20, 0, 50)
+BtnRandom.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
+BtnRandom.Text = "Đổi Server Ngẫu Nhiên 🎲"
+BtnRandom.TextColor3 = Color3.fromRGB(255, 255, 255)
+BtnRandom.TextSize = 15
+BtnRandom.Font = Enum.Font.SourceSansBold
+BtnRandom.Parent = MainFrame
+
+local Corner1 = Instance.new("UICorner")
+Corner1.CornerRadius = UDim.new(0, 8)
+Corner1.Parent = BtnRandom
+
+-- BIẾN KHÓA CHỐNG SPAM NHÂN BẢN LỆNH
+local isHopping = false
+
+-- LOGIC HOP SERVER
+BtnRandom.MouseButton1Click:Connect(function()
+    if isHopping then return end
+    isHopping = true
+
+    BtnRandom.Text = "Đang quét map... Đợi tí làm gì căng 🤫"
+    BtnRandom.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+
+    task.wait(0.5)
+
+    local url = "https://games.roblox.com/v1/games/" .. PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
+
+    local success, result = pcall(function()
+        return HttpService:JSONDecode(game:HttpGet(url))
+    end)
+
+    if success and result and result.data then
+        local possibleServers = {}
+
+        for _, server in ipairs(result.data) do
+            if server.id ~= JobId and tonumber(server.playing) < tonumber(server.maxPlayers) then
+                table.insert(possibleServers, server.id)
+            end
+        end
+
+        if #possibleServers > 0 then
+            local chosenServerId = possibleServers[math.random(1, #possibleServers)]
+            BtnRandom.Text = "Tìm thấy rồi! Chuẩn bị bay màu nè 🛫"
+            task.wait(0.5)
+            TeleportService:TeleportToPlaceInstance(PlaceId, chosenServerId, LocalPlayer)
+        else
+            BtnRandom.Text = "Server đầy hết rồi xui vcl 💀"
+            task.wait(1.5)
+            BtnRandom.Text = "Đổi Server Ngẫu Nhiên 🎲"
+            BtnRandom.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
+            isHopping = false
+        end
+    else
+        BtnRandom.Text = "Lỗi API rồi, nạp lần đầu đi 💸"
+        task.wait(1.5)
+        BtnRandom.Text = "Đổi Server Ngẫu Nhiên 🎲"
+        BtnRandom.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
+        isHopping = false
+    end
+end)
