@@ -645,7 +645,7 @@ local function createRealCarpet()
     RealCarpet.Anchored = true 
     RealCarpet.CanCollide = true
     RealCarpet.CollisionGroup = "GhostCarpetGroup"
-    RealCarpet.CustomPhysicalProperties = PhysicalProperties.new(0, 0, 0, 0, 0) -- Triệt tiêu lực ghì ma sát
+    RealCarpet.CustomPhysicalProperties = PhysicalProperties.new(0, 0, 0, 0, 0)
     RealCarpet.Parent = Workspace
 end
 
@@ -657,7 +657,6 @@ local function cleanUpForces()
     lastCachedSeat = nil
 end
 
--- 🛠 ĐÃ HẠ XUỐNG 2.5: Tránh bị tình trạng giật lên/xuống quá nhanh làm lệch tàu
 local holdingUp = false
 local holdingDown = false
 local changeInterval = 0.01 
@@ -720,6 +719,20 @@ RunService.PreSimulation:Connect(function()
     if seat then
         assignBoatToGroup(seat)
         
+        -- ÉP NETWORK OWNERSHIP LIÊN TỤC THEO TỪNG KHUNG HÌNH
+        pcall(function()
+            if seat:CanSetNetworkOwnership() then seat:SetNetworkOwner(LocalPlayer) end
+            for _, part in ipairs(currentBoatCache) do
+                if part and part:CanSetNetworkOwnership() then part:SetNetworkOwner(LocalPlayer) end
+            end
+        end)
+        
+        -- CÂN BẰNG THUYỀN GỐC
+        pcall(function()
+            seat.MaxTorque = Vector3.new(math.huge, 0, math.huge)
+            seat.AngularVelocity = Vector3.new(0, seat.AngularVelocity.Y, 0)
+        end)
+        
         if _G.BoatFlyActive then
             local currentBottomY = getAbsoluteBoatBottom(seat)
             
@@ -739,11 +752,15 @@ RunService.PreSimulation:Connect(function()
                 createRealCarpet() 
             end
             
+            -- 🛠 SỬA ĐỔI QUAN TRỌNG: Lấy góc xoay Y của camera hoặc hướng của ghế nhưng ép chặt Pitch/Roll của thảm về 0.
+            -- Thảm sẽ luôn song song tuyệt đối với mặt nước, không bị lắc lư theo độ nghiêng của thuyền nữa.
             local _, rotY, _ = seat.CFrame:ToEulerAnglesYXZ()
             local flatRotation = CFrame.fromEulerAnglesYXZ(0, rotY, 0)
+            
+            -- CFrame của thảm hoàn toàn không chứa góc nghiêng X và Z của thuyền
             local targetCFrame = CFrame.new(seat.Position.X, targetCarpetY, seat.Position.Z) * flatRotation
             
-            RealCarpet.CFrame = RealCarpet.CFrame:Lerp(targetCFrame, 0.85) -- Lerp nhạy để thảm bám khít đáy tàu
+            RealCarpet.CFrame = RealCarpet.CFrame:Lerp(targetCFrame, 0.85)
         else
             if RealCarpet then RealCarpet:Destroy() RealCarpet = nil end
             if _G.BaseFloatLevel then if _G.HeightLabel then _G.HeightLabel.Text = "Độ Cao Thảm: Tắt" end _G.BaseFloatLevel = nil end
@@ -791,3 +808,4 @@ if _G.BoatFlyBtn then
         if not _G.BoatFlyActive then _G.ManualOffset = 0 end
     end)
 end
+
