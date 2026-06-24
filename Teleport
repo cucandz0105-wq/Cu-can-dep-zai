@@ -1,0 +1,247 @@
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
+-- THAY ĐỔI 1: Chuyển sang lưu trữ dạng mảng tuần tự để giữ nguyên thứ tự trước sau
+_G.SavedPositions = _G.SavedPositions or {}
+
+-- 1. Tạo ScreenGui chính độc lập
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "UniversalTeleportMenu"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.DisplayOrder = 10
+ScreenGui.Parent = PlayerGui
+
+-- Hàm xử lý kéo thả (Draggable) cho UI
+local function makeDraggable(uiComponent)
+    local dragging, dragInput, dragStart, startPos
+    uiComponent.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = uiComponent.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then dragging = false end
+            end)
+        end
+    end)
+    uiComponent.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - dragStart
+            local targetPos = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            TweenService:Create(uiComponent, TweenInfo.new(0.1), {Position = targetPos}):Play()
+        end
+    end)
+end
+
+-- 2. Nút Bật/Tắt Menu thu nhỏ
+local ToggleButton = Instance.new("TextButton")
+ToggleButton.Name = "ToggleButton"
+ToggleButton.Size = UDim2.new(0, 100, 0, 40)
+ToggleButton.Position = UDim2.new(0.05, 0, 0.1, 0)
+ToggleButton.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+ToggleButton.Text = "Mở TP Menu"
+ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleButton.Font = Enum.Font.SourceSansBold
+ToggleButton.TextSize = 14
+ToggleButton.BorderSizePixel = 0
+ToggleButton.ZIndex = 5 
+ToggleButton.Parent = ScreenGui
+
+Instance.new("UICorner", ToggleButton).CornerRadius = UDim.new(0, 6)
+makeDraggable(ToggleButton)
+
+-- 3. Bảng Menu Dịch Chuyển Chính
+local MainMenu = Instance.new("Frame")
+MainMenu.Name = "MainMenu"
+MainMenu.Size = UDim2.new(0, 240, 0, 300)
+MainMenu.Position = UDim2.new(0.5, -120, 0.5, -150)
+MainMenu.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+MainMenu.Visible = false
+MainMenu.BorderSizePixel = 0
+MainMenu.ZIndex = 2
+MainMenu.Parent = ScreenGui
+
+Instance.new("UICorner", MainMenu).CornerRadius = UDim.new(0, 10)
+makeDraggable(MainMenu)
+
+local TitleLabel = Instance.new("TextLabel")
+TitleLabel.Size = UDim2.new(1, 0, 0, 35)
+TitleLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+TitleLabel.Text = "TELEPORT MANAGER"
+TitleLabel.TextColor3 = Color3.fromRGB(0, 255, 128)
+TitleLabel.Font = Enum.Font.SourceSansBold
+TitleLabel.TextSize = 14
+TitleLabel.BorderSizePixel = 0
+TitleLabel.ZIndex = 3
+TitleLabel.Parent = MainMenu
+Instance.new("UICorner", TitleLabel).CornerRadius = UDim.new(0, 10)
+
+-- Ô nhập tên vị trí
+local PosNameInput = Instance.new("TextBox")
+PosNameInput.Size = UDim2.new(1, -120, 0, 32)
+PosNameInput.Position = UDim2.new(0, 10, 0, 45)
+PosNameInput.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+PosNameInput.Text = ""
+PosNameInput.PlaceholderText = "Tên vị trí..."
+PosNameInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+PosNameInput.Font = Enum.Font.SourceSans
+PosNameInput.TextSize = 13
+PosNameInput.ZIndex = 4
+PosNameInput.Parent = MainMenu
+Instance.new("UICorner", PosNameInput).CornerRadius = UDim.new(0, 6)
+
+-- Nút Lưu vị trí hiện tại
+local SavePosButton = Instance.new("TextButton")
+SavePosButton.Size = UDim2.new(0, 45, 0, 32)
+SavePosButton.Position = UDim2.new(1, -105, 0, 45)
+SavePosButton.BackgroundColor3 = Color3.fromRGB(40, 120, 200)
+SavePosButton.Text = "Lưu"
+SavePosButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+SavePosButton.Font = Enum.Font.SourceSansBold
+SavePosButton.TextSize = 13
+SavePosButton.ZIndex = 4
+SavePosButton.Parent = MainMenu
+Instance.new("UICorner", SavePosButton).CornerRadius = UDim.new(0, 6)
+
+-- Nút Xóa tất cả danh sách
+local DeleteAllButton = Instance.new("TextButton")
+DeleteAllButton.Size = UDim2.new(0, 45, 0, 32)
+DeleteAllButton.Position = UDim2.new(1, -55, 0, 45)
+DeleteAllButton.BackgroundColor3 = Color3.fromRGB(160, 40, 40)
+DeleteAllButton.Text = "Xóa"
+DeleteAllButton.TextColor3 = Color3.fromRGB(255, 200, 200)
+DeleteAllButton.Font = Enum.Font.SourceSansBold
+DeleteAllButton.TextSize = 12
+DeleteAllButton.ZIndex = 4
+DeleteAllButton.Parent = MainMenu
+Instance.new("UICorner", DeleteAllButton).CornerRadius = UDim.new(0, 6)
+
+-- Khung cuộn danh sách (ScrollingFrame)
+local PosScrollView = Instance.new("ScrollingFrame")
+PosScrollView.Size = UDim2.new(1, -20, 1, -95)
+PosScrollView.Position = UDim2.new(0, 10, 0, 85)
+PosScrollView.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+PosScrollView.BorderSizePixel = 0
+PosScrollView.ScrollBarThickness = 4
+PosScrollView.CanvasSize = UDim2.new(0, 0, 0, 0)
+PosScrollView.ZIndex = 4
+PosScrollView.Parent = MainMenu
+Instance.new("UICorner", PosScrollView).CornerRadius = UDim.new(0, 6)
+
+local UIListLayout = Instance.new("UIListLayout")
+UIListLayout.Parent = PosScrollView
+-- THAY ĐỔI 2: Đảm bảo UIListLayout sắp xếp các hàng chính xác theo LayoutOrder
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+UIListLayout.Padding = UDim.new(0, 4)
+
+-- ==================== CƠ CHẾ LOGIC DỊCH CHUYỂN CẢI TIẾN ====================
+local function refreshPosList()
+    for _, child in pairs(PosScrollView:GetChildren()) do
+        if child:IsA("Frame") then child:Destroy() end
+    end
+    
+    -- THAY ĐỔI 3: Dùng ipairs() duyệt mảng tuần tự từ 1 đến hết để các dòng thẳng hàng từ trên xuống
+    for index, data in ipairs(_G.SavedPositions) do
+        local itemFrame = Instance.new("Frame")
+        itemFrame.Size = UDim2.new(1, -6, 0, 32)
+        itemFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+        itemFrame.ZIndex = 4
+        itemFrame.LayoutOrder = index -- Ép ô hiển thị đúng vị trí thứ tự được thêm vào
+        itemFrame.Parent = PosScrollView
+        Instance.new("UICorner", itemFrame).CornerRadius = UDim.new(0, 4)
+        
+        local nameLabel = Instance.new("TextLabel")
+        nameLabel.Size = UDim2.new(1, -95, 1, 0)
+        nameLabel.Position = UDim2.new(0, 6, 0, 0)
+        nameLabel.BackgroundTransparency = 1
+        nameLabel.Text = data.Name
+        nameLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
+        nameLabel.Font = Enum.Font.SourceSansBold
+        nameLabel.TextSize = 12
+        nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+        nameLabel.ZIndex = 5
+        nameLabel.Parent = itemFrame
+        
+        -- Nút bấm dịch chuyển đến điểm đã lưu
+        local tpBtn = Instance.new("TextButton")
+        tpBtn.Size = UDim2.new(0, 40, 0, 24)
+        tpBtn.Position = UDim2.new(1, -85, 0.5, -12)
+        tpBtn.BackgroundColor3 = Color3.fromRGB(40, 140, 80)
+        tpBtn.Text = "TP"
+        tpBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        tpBtn.Font = Enum.Font.SourceSansBold
+        tpBtn.TextSize = 11
+        tpBtn.ZIndex = 5
+        tpBtn.Parent = itemFrame
+        Instance.new("UICorner", tpBtn).CornerRadius = UDim.new(0, 4)
+        
+        tpBtn.MouseButton1Click:Connect(function()
+            local char = LocalPlayer.Character
+            local root = char and (char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("PrimaryPart"))
+            if root then root.CFrame = data.CFrame end
+        end)
+        
+        -- Nút xóa điểm đơn lẻ
+        local delBtn = Instance.new("TextButton")
+        delBtn.Size = UDim2.new(0, 40, 0, 24)
+        delBtn.Position = UDim2.new(1, -42, 0.5, -12)
+        delBtn.BackgroundColor3 = Color3.fromRGB(160, 40, 40)
+        delBtn.Text = "Xóa"
+        delBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        delBtn.Font = Enum.Font.SourceSansBold
+        delBtn.TextSize = 11
+        delBtn.ZIndex = 5
+        delBtn.Parent = itemFrame
+        Instance.new("UICorner", delBtn).CornerRadius = UDim.new(0, 4)
+        
+        delBtn.MouseButton1Click:Connect(function()
+            table.remove(_G.SavedPositions, index) -- Xóa phần tử khỏi mảng một cách an toàn
+            refreshPosList()
+        end)
+    end
+    PosScrollView.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y + 10)
+end
+
+-- Lắng nghe sự kiện bấm nút Lưu
+SavePosButton.MouseButton1Click:Connect(function()
+    local char = LocalPlayer.Character
+    local root = char and (char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("PrimaryPart"))
+    if root then
+        local text = PosNameInput.Text
+        local finalName = (text ~= "") and text or ("Vị trí " .. tostring(math.random(100, 999)))
+        
+        -- THAY ĐỔI 4: Đẩy dữ liệu vào dưới dạng một Object nằm trong Array để giữ thứ tự từ trên xuống
+        table.insert(_G.SavedPositions, {
+            Name = finalName,
+            CFrame = root.CFrame
+        })
+        
+        PosNameInput.Text = ""
+        refreshPosList()
+    end
+end)
+
+-- Lắng nghe sự kiện bấm nút Xóa Sạch
+DeleteAllButton.MouseButton1Click:Connect(function()
+    table.clear(_G.SavedPositions)
+    refreshPosList()
+end)
+
+-- Lắng nghe sự kiện Bật/Tắt Menu
+ToggleButton.MouseButton1Click:Connect(function()
+    MainMenu.Visible = not MainMenu.Visible
+    ToggleButton.Text = MainMenu.Visible and "Đóng Menu" or "Mở TP Menu"
+    ToggleButton.TextColor3 = MainMenu.Visible and Color3.fromRGB(255, 100, 100) or Color3.fromRGB(255, 255, 255)
+end)
+
+-- Tải lại danh sách nếu trước đó đã có vị trí lưu sẵn
+refreshPosList()
