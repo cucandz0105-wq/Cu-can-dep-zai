@@ -14,7 +14,8 @@ _G.RocketConfig = {
     FlashAttack = false
 }
 
-_G.SavedPositions = {}
+-- Thay đổi: Khởi tạo dạng Mảng tuần tự để danh sách lưu không bị nhảy lung tung
+_G.SavedPositions = _G.SavedPositions or {}
 _G.ActiveESP = {}
 
 -- 1. Tạo ScreenGui chính
@@ -260,7 +261,7 @@ Instance.new("UICorner", PosScrollView).CornerRadius = UDim.new(0, 6)
 
 local UIListLayout = Instance.new("UIListLayout")
 UIListLayout.Parent = PosScrollView
-UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder -- Ép sắp xếp theo LayoutOrder mã định danh
 UIListLayout.Padding = UDim.new(0, 4)
 
 _G.KamuiUI = {
@@ -281,16 +282,19 @@ local UI = _G.KamuiUI
 
 if not UI then warn("Hãy chạy Đoạn 1 trước!") return end
 
+-- Hàm làm mới danh sách vị trí: Ép hiển thị thẳng hàng theo mảng thứ tự thời gian
 local function refreshPosList()
     for _, child in pairs(UI.PosScrollView:GetChildren()) do
         if child:IsA("Frame") then child:Destroy() end
     end
     
-    for name, cframe in pairs(_G.SavedPositions) do
+    -- Sửa lại: Dùng ipairs để duyệt mảng tuần tự từ trên xuống dưới
+    for index, data in ipairs(_G.SavedPositions) do
         local itemFrame = Instance.new("Frame")
         itemFrame.Size = UDim2.new(1, -6, 0, 32)
         itemFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
         itemFrame.ZIndex = 4
+        itemFrame.LayoutOrder = index -- Gán số thứ tự tăng dần để UI sắp hàng chuẩn
         itemFrame.Parent = UI.PosScrollView
         Instance.new("UICorner", itemFrame).CornerRadius = UDim.new(0, 4)
         
@@ -298,7 +302,7 @@ local function refreshPosList()
         nameLabel.Size = UDim2.new(0, 100, 1, 0)
         nameLabel.Position = UDim2.new(0, 6, 0, 0)
         nameLabel.BackgroundTransparency = 1
-        nameLabel.Text = name
+        nameLabel.Text = data.Name
         nameLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
         nameLabel.Font = Enum.Font.SourceSansBold
         nameLabel.TextSize = 12
@@ -321,7 +325,7 @@ local function refreshPosList()
         tpBtn.MouseButton1Click:Connect(function()
             local char = LocalPlayer.Character
             local root = char and (char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("PrimaryPart"))
-            if root then root.CFrame = cframe end
+            if root then root.CFrame = data.CFrame end
         end)
         
         local delBtn = Instance.new("TextButton")
@@ -337,20 +341,27 @@ local function refreshPosList()
         Instance.new("UICorner", delBtn).CornerRadius = UDim.new(0, 4)
         
         delBtn.MouseButton1Click:Connect(function()
-            _G.SavedPositions[name] = nil
+            table.remove(_G.SavedPositions, index) -- Xóa chuẩn xác theo index mảng
             refreshPosList()
         end)
     end
     UI.PosScrollView.CanvasSize = UDim2.new(0, 0, 0, UI.UIListLayout.AbsoluteContentSize.Y + 10)
 end
 
+-- Sự kiện nhấn Lưu vị trí
 UI.SavePosButton.MouseButton1Click:Connect(function()
     local char = LocalPlayer.Character
     local root = char and (char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("PrimaryPart"))
     if root then
         local text = UI.PosNameInput.Text
         local finalName = (text ~= "") and text or ("Vị trí " .. tostring(math.random(100, 999)))
-        _G.SavedPositions[finalName] = root.CFrame
+        
+        -- Sửa lại: table.insert để đưa dữ liệu vào cuối danh sách hàng đợi mảng
+        table.insert(_G.SavedPositions, {
+            Name = finalName,
+            CFrame = root.CFrame
+        })
+        
         UI.PosNameInput.Text = ""
         refreshPosList()
     end
@@ -391,14 +402,11 @@ UI.FlashButton.MouseButton1Click:Connect(function()
     UI.FlashButton.BackgroundColor3 = RocketConfig.FlashAttack and Color3.fromRGB(50, 180, 100) or Color3.fromRGB(180, 50, 50)
 end)
 
--- ==================== LUỒNG GIẢ LẬP CLICK VẬT LÝ SIÊU TỐC LUÂN HỒI ====================
 RunService.RenderStepped:Connect(function()
     if RocketConfig.FlashAttack then
         local char = LocalPlayer.Character
         local tool = char and char:FindFirstChildOfClass("Tool")
         if tool then
-            -- Bỏ qua Remote trống, click thẳng vào màn hình thông qua bộ engine ảo của Roblox
-            -- Tham số Vector2.new(0,0) chỉ định click trực diện màn hình, kích hoạt liên hoàn Combo đòn
             VirtualUser:Button1Down(Vector2.new(0, 0), Workspace.CurrentCamera.CFrame)
             VirtualUser:Button1Up(Vector2.new(0, 0), Workspace.CurrentCamera.CFrame)
         end
@@ -535,3 +543,6 @@ task.spawn(function()
         task.wait(1.0)
     end
 end)
+
+-- Đồng bộ hiển thị danh sách cũ nếu có sẵn
+refreshPosList()
