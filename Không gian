@@ -1,0 +1,537 @@
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
+-- BẢN GIÁ TRỊ CẤU HÌNH MẶC ĐỊNH
+_G.RocketConfig = {
+    Enabled = false,
+    Speed = 100,
+    GodMode = false,
+    ESPEnabled = false,
+    FlashAttack = false
+}
+
+_G.SavedPositions = {}
+_G.ActiveESP = {}
+
+-- 1. Tạo ScreenGui chính
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "SpaceSailorKamuiMenu"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.DisplayOrder = 10
+ScreenGui.Parent = PlayerGui
+
+-- Hàm xử lý kéo thả (Draggable) độc lập
+local function makeDraggable(uiComponent)
+    local dragging, dragInput, dragStart, startPos
+    uiComponent.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = uiComponent.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then dragging = false end
+            end)
+        end
+    end)
+    uiComponent.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - dragStart
+            local targetPos = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            TweenService:Create(uiComponent, TweenInfo.new(0.1), {Position = targetPos}):Play()
+        end
+    end)
+end
+
+-- 2. Tạo Nút Bật/Tắt hiển thị Menu chính
+local ToggleButton = Instance.new("TextButton")
+ToggleButton.Name = "ToggleButton"
+ToggleButton.Size = UDim2.new(0, 110, 0, 45)
+ToggleButton.Position = UDim2.new(0.05, 0, 0.1, 0)
+ToggleButton.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+ToggleButton.Text = "Mở Menu"
+ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleButton.Font = Enum.Font.SourceSansBold
+ToggleButton.TextSize = 16
+ToggleButton.BorderSizePixel = 0
+ToggleButton.ZIndex = 5 
+ToggleButton.Parent = ScreenGui
+
+Instance.new("UICorner", ToggleButton).CornerRadius = UDim.new(0, 8)
+makeDraggable(ToggleButton)
+
+-- ==================== NÚT SPEED TRÒN BÊN PHẢI MÀN HÌNH ====================
+local QuickSpeedButton = Instance.new("TextButton")
+QuickSpeedButton.Name = "QuickSpeedButton"
+QuickSpeedButton.Size = UDim2.new(0, 55, 0, 55)
+QuickSpeedButton.Position = UDim2.new(0.85, 0, 0.5, -27)
+QuickSpeedButton.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+QuickSpeedButton.Text = "SPEED\nOFF"
+QuickSpeedButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+QuickSpeedButton.Font = Enum.Font.SourceSansBold
+QuickSpeedButton.TextSize = 12
+QuickSpeedButton.ZIndex = 5
+QuickSpeedButton.Parent = ScreenGui
+
+local CircleCorner = Instance.new("UICorner")
+CircleCorner.CornerRadius = UDim.new(1, 0)
+CircleCorner.Parent = QuickSpeedButton
+
+makeDraggable(QuickSpeedButton)
+
+-- 3. BẢNG MENU CHÍNH
+local MainMenu = Instance.new("Frame")
+MainMenu.Name = "MainMenu"
+MainMenu.Size = UDim2.new(0, 440, 0, 320)
+MainMenu.Position = UDim2.new(0.5, -220, 0.5, -160)
+MainMenu.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+MainMenu.Visible = false
+MainMenu.BorderSizePixel = 0
+MainMenu.ZIndex = 2
+MainMenu.Parent = ScreenGui
+
+Instance.new("UICorner", MainMenu).CornerRadius = UDim.new(0, 12)
+
+local TitleLabel = Instance.new("TextLabel")
+TitleLabel.Size = UDim2.new(1, 0, 0, 40)
+TitleLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+TitleLabel.Text = "SPACE SAILOR UTILITIES"
+TitleLabel.TextColor3 = Color3.fromRGB(0, 255, 128)
+TitleLabel.Font = Enum.Font.SourceSansBold
+TitleLabel.TextSize = 15
+TitleLabel.BorderSizePixel = 0
+TitleLabel.ZIndex = 3
+TitleLabel.Parent = MainMenu
+
+Instance.new("UICorner", TitleLabel).CornerRadius = UDim.new(0, 12)
+makeDraggable(MainMenu)
+
+local Divider = Instance.new("Frame")
+Divider.Size = UDim2.new(0, 2, 1, -50)
+Divider.Position = UDim2.new(0.5, -1, 0, 45)
+Divider.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+Divider.BorderSizePixel = 0
+Divider.ZIndex = 3
+Divider.Parent = MainMenu
+
+-- ==================== BÊN TRÁI ====================
+local LeftFrame = Instance.new("Frame")
+LeftFrame.Size = UDim2.new(0.5, -20, 1, -50)
+LeftFrame.Position = UDim2.new(0, 15, 0, 45)
+LeftFrame.BackgroundTransparency = 1
+LeftFrame.ZIndex = 3
+LeftFrame.Parent = MainMenu
+
+local SpeedButton = Instance.new("TextButton")
+SpeedButton.Size = UDim2.new(1, 0, 0, 35)
+SpeedButton.Position = UDim2.new(0, 0, 0, 5)
+SpeedButton.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+SpeedButton.Text = "Rocket Speed: OFF"
+SpeedButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+SpeedButton.Font = Enum.Font.SourceSansBold
+SpeedButton.TextSize = 13
+SpeedButton.ZIndex = 4
+SpeedButton.Parent = LeftFrame
+Instance.new("UICorner", SpeedButton).CornerRadius = UDim.new(0, 6)
+
+local GodButton = Instance.new("TextButton")
+GodButton.Size = UDim2.new(1, 0, 0, 35)
+GodButton.Position = UDim2.new(0, 0, 0, 45)
+GodButton.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+GodButton.Text = "Anti-Crash (God): OFF"
+GodButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+GodButton.Font = Enum.Font.SourceSansBold
+GodButton.TextSize = 13
+GodButton.ZIndex = 4
+GodButton.Parent = LeftFrame
+Instance.new("UICorner", GodButton).CornerRadius = UDim.new(0, 6)
+
+local ESPButton = Instance.new("TextButton")
+ESPButton.Size = UDim2.new(1, 0, 0, 35)
+ESPButton.Position = UDim2.new(0, 0, 0, 85)
+ESPButton.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+ESPButton.Text = "Real Crate ESP: OFF"
+ESPButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+ESPButton.Font = Enum.Font.SourceSansBold
+ESPButton.TextSize = 13
+ESPButton.ZIndex = 4
+ESPButton.Parent = LeftFrame
+Instance.new("UICorner", ESPButton).CornerRadius = UDim.new(0, 6)
+
+local FlashButton = Instance.new("TextButton")
+FlashButton.Size = UDim2.new(1, 0, 0, 35)
+FlashButton.Position = UDim2.new(0, 0, 0, 125)
+FlashButton.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+FlashButton.Text = "Flash Attack (Dig): OFF"
+FlashButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+FlashButton.Font = Enum.Font.SourceSansBold
+FlashButton.TextSize = 13
+FlashButton.ZIndex = 4
+FlashButton.Parent = LeftFrame
+Instance.new("UICorner", FlashButton).CornerRadius = UDim.new(0, 6)
+
+local LeftInputLabel = Instance.new("TextLabel")
+LeftInputLabel.Size = UDim2.new(1, 0, 0, 20)
+LeftInputLabel.Position = UDim2.new(0, 0, 0, 170)
+LeftInputLabel.BackgroundTransparency = 1
+LeftInputLabel.Text = "Giá trị tốc độ tên lửa:"
+LeftInputLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+LeftInputLabel.Font = Enum.Font.SourceSans
+LeftInputLabel.TextSize = 13
+LeftInputLabel.TextXAlignment = Enum.TextXAlignment.Left
+LeftInputLabel.ZIndex = 4
+LeftInputLabel.Parent = LeftFrame
+
+local SpeedInput = Instance.new("TextBox")
+SpeedInput.Size = UDim2.new(1, 0, 0, 35)
+SpeedInput.Position = UDim2.new(0, 0, 0, 195)
+SpeedInput.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+SpeedInput.Text = tostring(_G.RocketConfig.Speed)
+SpeedInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+SpeedInput.Font = Enum.Font.SourceSansBold
+SpeedInput.TextSize = 14
+SpeedInput.ZIndex = 4
+SpeedInput.Parent = LeftFrame
+Instance.new("UICorner", SpeedInput).CornerRadius = UDim.new(0, 6)
+
+-- ==================== BÊN PHẢI ====================
+local RightFrame = Instance.new("Frame")
+RightFrame.Size = UDim2.new(0.5, -20, 1, -50)
+RightFrame.Position = UDim2.new(0.5, 5, 0, 45)
+RightFrame.BackgroundTransparency = 1
+RightFrame.ZIndex = 3
+RightFrame.Parent = MainMenu
+
+local PosNameInput = Instance.new("TextBox")
+PosNameInput.Size = UDim2.new(0, 90, 0, 35)
+PosNameInput.Position = UDim2.new(0, 0, 0, 10)
+PosNameInput.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+PosNameInput.Text = ""
+PosNameInput.PlaceholderText = "Tên vị trí..."
+PosNameInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+PosNameInput.Font = Enum.Font.SourceSans
+PosNameInput.TextSize = 13
+PosNameInput.ZIndex = 4
+PosNameInput.Parent = RightFrame
+Instance.new("UICorner", PosNameInput).CornerRadius = UDim.new(0, 6)
+
+local SavePosButton = Instance.new("TextButton")
+SavePosButton.Size = UDim2.new(0, 55, 0, 35)
+SavePosButton.Position = UDim2.new(0, 95, 0, 10)
+SavePosButton.BackgroundColor3 = Color3.fromRGB(0, 120, 200)
+SavePosButton.Text = "Lưu"
+SavePosButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+SavePosButton.Font = Enum.Font.SourceSansBold
+SavePosButton.TextSize = 13
+SavePosButton.ZIndex = 4
+SavePosButton.Parent = RightFrame
+Instance.new("UICorner", SavePosButton).CornerRadius = UDim.new(0, 6)
+
+local DeleteAllButton = Instance.new("TextButton")
+DeleteAllButton.Size = UDim2.new(0, 55, 0, 35)
+DeleteAllButton.Position = UDim2.new(0, 155, 0, 10)
+DeleteAllButton.BackgroundColor3 = Color3.fromRGB(130, 30, 30)
+DeleteAllButton.Text = "Xóa Hết"
+DeleteAllButton.TextColor3 = Color3.fromRGB(255, 200, 200)
+DeleteAllButton.Font = Enum.Font.SourceSansBold
+DeleteAllButton.TextSize = 11
+DeleteAllButton.ZIndex = 4
+DeleteAllButton.Parent = RightFrame
+Instance.new("UICorner", DeleteAllButton).CornerRadius = UDim.new(0, 6)
+
+local PosScrollView = Instance.new("ScrollingFrame")
+PosScrollView.Size = UDim2.new(1, 0, 0, 175)
+PosScrollView.Position = UDim2.new(0, 0, 0, 55)
+PosScrollView.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+PosScrollView.BorderSizePixel = 0
+PosScrollView.ScrollBarThickness = 4
+PosScrollView.CanvasSize = UDim2.new(0, 0, 0, 0)
+PosScrollView.ZIndex = 4
+PosScrollView.Parent = RightFrame
+Instance.new("UICorner", PosScrollView).CornerRadius = UDim.new(0, 6)
+
+local UIListLayout = Instance.new("UIListLayout")
+UIListLayout.Parent = PosScrollView
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+UIListLayout.Padding = UDim.new(0, 4)
+
+_G.KamuiUI = {
+    ScreenGui = ScreenGui, MainMenu = MainMenu, ToggleButton = ToggleButton,
+    QuickSpeedButton = QuickSpeedButton, SpeedButton = SpeedButton, GodButton = GodButton,
+    ESPButton = ESPButton, FlashButton = FlashButton, SpeedInput = SpeedInput,
+    PosNameInput = PosNameInput, SavePosButton = SavePosButton, DeleteAllButton = DeleteAllButton,
+    PosScrollView = PosScrollView, UIListLayout = UIListLayout
+}
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
+local VirtualUser = game:GetService("VirtualUser")
+
+local LocalPlayer = Players.LocalPlayer
+local RocketConfig = _G.RocketConfig
+local UI = _G.KamuiUI
+
+if not UI then warn("Hãy chạy Đoạn 1 trước!") return end
+
+local function refreshPosList()
+    for _, child in pairs(UI.PosScrollView:GetChildren()) do
+        if child:IsA("Frame") then child:Destroy() end
+    end
+    
+    for name, cframe in pairs(_G.SavedPositions) do
+        local itemFrame = Instance.new("Frame")
+        itemFrame.Size = UDim2.new(1, -6, 0, 32)
+        itemFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+        itemFrame.ZIndex = 4
+        itemFrame.Parent = UI.PosScrollView
+        Instance.new("UICorner", itemFrame).CornerRadius = UDim.new(0, 4)
+        
+        local nameLabel = Instance.new("TextLabel")
+        nameLabel.Size = UDim2.new(0, 100, 1, 0)
+        nameLabel.Position = UDim2.new(0, 6, 0, 0)
+        nameLabel.BackgroundTransparency = 1
+        nameLabel.Text = name
+        nameLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
+        nameLabel.Font = Enum.Font.SourceSansBold
+        nameLabel.TextSize = 12
+        nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+        nameLabel.ZIndex = 5
+        nameLabel.Parent = itemFrame
+        
+        local tpBtn = Instance.new("TextButton")
+        tpBtn.Size = UDim2.new(0, 40, 0, 24)
+        tpBtn.Position = UDim2.new(1, -90, 0.5, -12)
+        tpBtn.BackgroundColor3 = Color3.fromRGB(40, 140, 80)
+        tpBtn.Text = "TP"
+        tpBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        tpBtn.Font = Enum.Font.SourceSansBold
+        tpBtn.TextSize = 11
+        tpBtn.ZIndex = 5
+        tpBtn.Parent = itemFrame
+        Instance.new("UICorner", tpBtn).CornerRadius = UDim.new(0, 4)
+        
+        tpBtn.MouseButton1Click:Connect(function()
+            local char = LocalPlayer.Character
+            local root = char and (char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("PrimaryPart"))
+            if root then root.CFrame = cframe end
+        end)
+        
+        local delBtn = Instance.new("TextButton")
+        delBtn.Size = UDim2.new(0, 40, 0, 24)
+        delBtn.Position = UDim2.new(1, -45, 0.5, -12)
+        delBtn.BackgroundColor3 = Color3.fromRGB(160, 40, 40)
+        delBtn.Text = "Xóa"
+        delBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        delBtn.Font = Enum.Font.SourceSansBold
+        delBtn.TextSize = 11
+        delBtn.ZIndex = 5
+        delBtn.Parent = itemFrame
+        Instance.new("UICorner", delBtn).CornerRadius = UDim.new(0, 4)
+        
+        delBtn.MouseButton1Click:Connect(function()
+            _G.SavedPositions[name] = nil
+            refreshPosList()
+        end)
+    end
+    UI.PosScrollView.CanvasSize = UDim2.new(0, 0, 0, UI.UIListLayout.AbsoluteContentSize.Y + 10)
+end
+
+UI.SavePosButton.MouseButton1Click:Connect(function()
+    local char = LocalPlayer.Character
+    local root = char and (char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("PrimaryPart"))
+    if root then
+        local text = UI.PosNameInput.Text
+        local finalName = (text ~= "") and text or ("Vị trí " .. tostring(math.random(100, 999)))
+        _G.SavedPositions[finalName] = root.CFrame
+        UI.PosNameInput.Text = ""
+        refreshPosList()
+    end
+end)
+
+UI.DeleteAllButton.MouseButton1Click:Connect(function()
+    table.clear(_G.SavedPositions)
+    refreshPosList()
+end)
+
+local function updateSpeedUI()
+    if RocketConfig.Enabled then
+        UI.SpeedButton.Text = "Rocket Speed: ON"
+        UI.SpeedButton.BackgroundColor3 = Color3.fromRGB(50, 180, 100)
+        UI.QuickSpeedButton.Text = "SPEED\nON"
+        UI.QuickSpeedButton.BackgroundColor3 = Color3.fromRGB(50, 180, 100)
+    else
+        UI.SpeedButton.Text = "Rocket Speed: OFF"
+        UI.SpeedButton.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+        UI.QuickSpeedButton.Text = "SPEED\nOFF"
+        UI.QuickSpeedButton.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+    end
+end
+
+UI.SpeedButton.MouseButton1Click:Connect(function()
+    RocketConfig.Enabled = not RocketConfig.Enabled
+    updateSpeedUI()
+end)
+
+UI.QuickSpeedButton.MouseButton1Click:Connect(function()
+    RocketConfig.Enabled = not RocketConfig.Enabled
+    updateSpeedUI()
+end)
+
+UI.FlashButton.MouseButton1Click:Connect(function()
+    RocketConfig.FlashAttack = not RocketConfig.FlashAttack
+    UI.FlashButton.Text = RocketConfig.FlashAttack and "Flash Attack: ON" or "Flash Attack: OFF"
+    UI.FlashButton.BackgroundColor3 = RocketConfig.FlashAttack and Color3.fromRGB(50, 180, 100) or Color3.fromRGB(180, 50, 50)
+end)
+
+-- ==================== LUỒNG GIẢ LẬP CLICK VẬT LÝ SIÊU TỐC LUÂN HỒI ====================
+RunService.RenderStepped:Connect(function()
+    if RocketConfig.FlashAttack then
+        local char = LocalPlayer.Character
+        local tool = char and char:FindFirstChildOfClass("Tool")
+        if tool then
+            -- Bỏ qua Remote trống, click thẳng vào màn hình thông qua bộ engine ảo của Roblox
+            -- Tham số Vector2.new(0,0) chỉ định click trực diện màn hình, kích hoạt liên hoàn Combo đòn
+            VirtualUser:Button1Down(Vector2.new(0, 0), Workspace.CurrentCamera.CFrame)
+            VirtualUser:Button1Up(Vector2.new(0, 0), Workspace.CurrentCamera.CFrame)
+        end
+    end
+end)
+
+UI.ToggleButton.MouseButton1Click:Connect(function()
+    UI.MainMenu.Visible = not UI.MainMenu.Visible
+    UI.ToggleButton.Text = UI.MainMenu.Visible and "Đóng Menu" or "Mở Menu"
+    UI.ToggleButton.TextColor3 = UI.MainMenu.Visible and Color3.fromRGB(255, 100, 100) or Color3.fromRGB(255, 255, 255)
+end)
+
+UI.GodButton.MouseButton1Click:Connect(function()
+    RocketConfig.GodMode = not RocketConfig.GodMode
+    UI.GodButton.Text = RocketConfig.GodMode and "GodMode: ON" or "GodMode: OFF"
+    UI.GodButton.BackgroundColor3 = RocketConfig.GodMode and Color3.fromRGB(50, 180, 100) or Color3.fromRGB(180, 50, 50)
+end)
+
+local function clearAllESP()
+    for obj, espItems in pairs(_G.ActiveESP) do
+        for _, item in pairs(espItems) do if item then item:Destroy() end end
+    end
+    table.clear(_G.ActiveESP)
+end
+
+UI.ESPButton.MouseButton1Click:Connect(function()
+    RocketConfig.ESPEnabled = not RocketConfig.ESPEnabled
+    UI.ESPButton.Text = RocketConfig.ESPEnabled and "Crate ESP: ON" or "Crate ESP: OFF"
+    UI.ESPButton.BackgroundColor3 = RocketConfig.ESPEnabled and Color3.fromRGB(50, 180, 100) or Color3.fromRGB(180, 50, 50)
+    if not RocketConfig.ESPEnabled then clearAllESP() end
+end)
+
+UI.SpeedInput.FocusLost:Connect(function()
+    local numericValue = tonumber(UI.SpeedInput.Text)
+    if numericValue then RocketConfig.Speed = numericValue else UI.SpeedInput.Text = tostring(RocketConfig.Speed) end
+end)
+
+local function createESP(part)
+    if not part:IsA("BasePart") or _G.ActiveESP[part] then return end
+    local espItems = {}
+    local highlight = Instance.new("Highlight")
+    highlight.FillColor = Color3.fromRGB(255, 100, 0)
+    highlight.FillTransparency = 0.4
+    highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+    highlight.OutlineTransparency = 0.2
+    highlight.Adornee = part
+    highlight.Parent = UI.ScreenGui
+    table.insert(espItems, highlight)
+    
+    local billboard = Instance.new("BillboardGui")
+    billboard.Size = UDim2.new(0, 120, 0, 40)
+    billboard.AlwaysOnTop = true
+    billboard.ExtentsOffset = Vector3.new(0, 3, 0)
+    billboard.Adornee = part
+    billboard.Parent = UI.ScreenGui
+    table.insert(espItems, billboard)
+    
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.TextColor3 = Color3.fromRGB(255, 230, 0) 
+    label.Font = Enum.Font.SourceSansBold
+    label.TextSize = 13
+    label.TextStrokeTransparency = 0 
+    label.Parent = billboard
+    table.insert(espItems, label)
+    _G.ActiveESP[part] = espItems
+    
+    task.spawn(function()
+        while part and part.Parent and RocketConfig.ESPEnabled and _G.ActiveESP[part] do
+            if part.Transparency >= 1 or part.CanCollide == false then break end
+            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                local myPos = LocalPlayer.Character.HumanoidRootPart.Position
+                local dist = math.floor((part.Position - myPos).Magnitude)
+                label.Text = string.format("%s\n[%dm]", part.Name, dist)
+            end
+            task.wait(0.3)
+        end
+        if _G.ActiveESP[part] then
+            for _, item in pairs(_G.ActiveESP[part]) do if item then item:Destroy() end end
+            _G.ActiveESP[part] = nil
+        end
+    end)
+end
+
+local function isInShopOrLobby(object)
+    local current = object.Parent
+    while current and current ~= Workspace do
+        local name = string.lower(current.Name)
+        if string.find(name, "shop") or string.find(name, "lobby") or string.find(name, "safezone") or string.find(name, "ui") then return true end
+        current = current.Parent
+    end
+    return false
+end
+
+local oldNamecall
+oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+    local method = getnamecallmethod()
+    local args = {...}
+    if RocketConfig.GodMode and (method == "FireServer" or method == "fireServer") then
+        if self.Name == "RocketEvent" and args[1] == "crash" then return nil end
+    end
+    return oldNamecall(self, ...)
+end)
+
+RunService.Heartbeat:Connect(function()
+    local character = LocalPlayer.Character
+    if not character then return end
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    if RocketConfig.Enabled and humanoid and humanoid.SeatPart then
+        local seat = humanoid.SeatPart
+        seat.AssemblyLinearVelocity = seat.CFrame.LookVector * RocketConfig.Speed
+    end
+end)
+
+task.spawn(function()
+    while true do
+        if RocketConfig.ESPEnabled then
+            local character = LocalPlayer.Character
+            for _, obj in pairs(Workspace:GetDescendants()) do
+                if obj:IsA("BasePart") and (not character or not obj:IsDescendantOf(character)) then
+                    if string.find(string.lower(obj.Name), "crate") then
+                        if obj.Transparency < 1 and obj.CanCollide == true and not isInShopOrLobby(obj) then createESP(obj) end
+                    end
+                end
+            end
+            for part, espItems in pairs(_G.ActiveESP) do
+                if not part or not part.Parent or part.Transparency >= 1 or part.CanCollide == false or isInShopOrLobby(part) then
+                    for _, item in pairs(espItems) do if item then item:Destroy() end end
+                    _G.ActiveESP[part] = nil
+                end
+            end
+        end
+        task.wait(1.0)
+    end
+end)
