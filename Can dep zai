@@ -1,26 +1,27 @@
 local blacklist = {}
 local whitelist = { [11012176034] = true, ["duy2778894"] = true, ["duy28954"] = true, ["cacchaba2355"] = true, }
 local Players = game:GetService("Players")
+
 if blacklist[Players.LocalPlayer.Name] or blacklist[Players.LocalPlayer.UserId] then
-pcall(function()
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "HỆ THỐNG",
-        Text = "MÀY ĐÃ BỊ CẤM",
-        Duration = 5,
-    })
-end)
-   return
+    pcall(function()
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "HỆ THỐNG",
+            Text = "MÀY ĐÃ BỊ CẤM",
+            Duration = 5,
+        })
+    end)
+    return
 end
+
 if not whitelist[Players.LocalPlayer.Name] and not whitelist[Players.LocalPlayer.UserId] then
-pcall(function()
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "HỆ THỐNG",
-        Text = "MÀY KHÔNG CÓ QUYỀN",
-        Duration = 5,
-    })
-end)
-    
-   return
+    pcall(function()
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "HỆ THỐNG",
+            Text = "MÀY KHÔNG CÓ QUYỀN",
+            Duration = 5,
+        })
+    end)
+    return
 end
 
 pcall(function()
@@ -30,6 +31,7 @@ pcall(function()
         Duration = 5,
     })
 end)
+
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 local LocalPlayer = Players.LocalPlayer
@@ -198,6 +200,18 @@ _G.PremiumMenuStyleTextBox = styleTextBox
 tabs[1].Visible = true
 btns[1].BackgroundColor3 = Color3.fromRGB(70, 70, 70)
 btns[1].TextColor3 = Color3.fromRGB(255, 255, 0)
+repeat task.wait(0.1) until _G.PremiumMenuTabs
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+local LocalPlayer = Players.LocalPlayer
+local CurrentCamera = Workspace.CurrentCamera
+
+local tabs = _G.PremiumMenuTabs
+local styleLabel = _G.PremiumMenuStyleLabel
+local styleTextBox = _G.PremiumMenuStyleTextBox
+local resetCharacterAnimation = _G.PremiumMenuResetAnim
 
 local t1 = tabs[1]
 
@@ -268,7 +282,7 @@ SpeedToggle.MouseButton1Click:Connect(function()
     sActive = not sActive
     SpeedToggle.Text = sActive and "Speed: ON" or "Speed: OFF"
     SpeedToggle.BackgroundColor3 = sActive and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(55, 55, 55)
-    resetCharacterAnimation()
+    if type(resetCharacterAnimation) == "function" then resetCharacterAnimation() end
     if not sActive and LocalPlayer.Character then 
         local h = LocalPlayer.Character:FindFirstChildWhichIsA("Humanoid")
         if h then h.WalkSpeed = 16 end
@@ -286,7 +300,7 @@ FlyToggle.MouseButton1Click:Connect(function()
     local hum = char and char:FindFirstChildWhichIsA("Humanoid")
     if not root or not hum then return end
     
-    resetCharacterAnimation()
+    if type(resetCharacterAnimation) == "function" then resetCharacterAnimation() end
     if Flying then
         hum.PlatformStand = true
         FlyBV = Instance.new("BodyVelocity", root)
@@ -370,7 +384,7 @@ FloatToggle.MouseButton1Click:Connect(function()
         local targetY = root.Position.Y - 3.3
         platform.Position = Vector3.new(root.Position.X, targetY, root.Position.Z)
         
-        renderConnection = RunService.Stepped:Connect(function()
+        renderConnection = RunService.Heartbeat:Connect(function()
             local currentCharacter = LocalPlayer.Character
             local currentRoot = currentCharacter and currentCharacter:FindFirstChild("HumanoidRootPart")
             local currentHumanoid = currentCharacter and currentCharacter:FindFirstChildWhichIsA("Humanoid")
@@ -404,11 +418,19 @@ NoclipToggle.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
 NoclipToggle.Text = "Noclip: OFF"
 styleLabel(NoclipToggle, 15)
 
+-- KHỞI TẠO LOGIC NOCLIP CẢI TIẾN CHỐNG CẤN CHÂN
 local nActive = false
+local originalCollisions = {}
+
 RunService.RenderStepped:Connect(function()
     if nActive and LocalPlayer.Character then
         for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
-            if part:IsA("BasePart") then part.CanCollide = false end
+            if part:IsA("BasePart") then
+                if originalCollisions[part] == nil then
+                    originalCollisions[part] = part.CanCollide
+                end
+                part.CanCollide = false 
+            end
         end
     end
 end)
@@ -420,17 +442,15 @@ NoclipToggle.MouseButton1Click:Connect(function()
     if type(resetCharacterAnimation) == "function" then resetCharacterAnimation() end
     
     if not nActive and LocalPlayer.Character then
-        for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
-            if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then 
-                part.CanCollide = true 
+        for part, originalValue in pairs(originalCollisions) do
+            if part and part:IsDescendantOf(LocalPlayer.Character) then
+                part.CanCollide = originalValue
             end
         end
+        table.clear(originalCollisions)
     end
 end)
 
--- ====================================================================
--- TAB 3: HIGHLIGHT ESP & TELEPORT (CHỈ THAY RUỘT ESP SANG HIGHLIGHT)
--- ====================================================================
 local t3 = tabs[3]
 local EspToggle = Instance.new("TextButton", t3)
 EspToggle.Size = UDim2.new(1, -10, 0, 35)
@@ -503,7 +523,6 @@ local function createEsp(plr)
     local container = Instance.new("Folder", espStorage)
     container.Name = pName
     
-    -- Thay đổi từ Box sang dạng Highlight phát sáng toàn thân mượt mà theo màu Team
     local hl = Instance.new("Highlight", container)
     hl.Adornee = char
     hl.FillColor = getTeamColor(plr)
@@ -667,3 +686,4 @@ UnviewBtn.MouseButton1Click:Connect(function()
     local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildWhichIsA("Humanoid")
     if hum then CurrentCamera.CameraSubject = hum end
 end)
+
