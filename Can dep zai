@@ -418,17 +418,13 @@ NoclipToggle.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
 NoclipToggle.Text = "Noclip: OFF"
 styleLabel(NoclipToggle, 15)
 
--- KHỞI TẠO LOGIC NOCLIP CẢI TIẾN CHỐNG CẤN CHÂN
 local nActive = false
-local originalCollisions = {}
-
-RunService.RenderStepped:Connect(function()
+-- Thay đổi cơ chế Noclip: Ép trạng thái Humanoid liên tục để không bị gắt vật lý
+local noclipConnection = nil
+RunService.Stepped:Connect(function()
     if nActive and LocalPlayer.Character then
         for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
-            if part:IsA("BasePart") then
-                if originalCollisions[part] == nil then
-                    originalCollisions[part] = part.CanCollide
-                end
+            if part:IsA("BasePart") and part.CanCollide then 
                 part.CanCollide = false 
             end
         end
@@ -436,18 +432,27 @@ RunService.RenderStepped:Connect(function()
 end)
 
 NoclipToggle.MouseButton1Click:Connect(function()
+    if not LocalPlayer.Character then return end
+    local hum = LocalPlayer.Character:FindFirstChildWhichIsA("Humanoid")
+    
     nActive = not nActive
     NoclipToggle.Text = nActive and "Noclip: ON" or "Noclip: OFF"
     NoclipToggle.BackgroundColor3 = nActive and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(55, 55, 55)
     if type(resetCharacterAnimation) == "function" then resetCharacterAnimation() end
     
-    if not nActive and LocalPlayer.Character then
-        for part, originalValue in pairs(originalCollisions) do
-            if part and part:IsDescendantOf(LocalPlayer.Character) then
-                part.CanCollide = originalValue
-            end
+    if hum then
+        if nActive then
+            -- Tắt các trạng thái va chạm gốc để đi xuyên mượt mà
+            hum:SetStateEnabled(Enum.HumanoidStateType.Climbing, false)
+            hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
+            hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
+        else
+            -- Khi tắt Noclip, khôi phục lại trạng thái chuẩn, để Roblox tự tính toán HipHeight (Hết hẳn vấp ổ gà)
+            hum:SetStateEnabled(Enum.HumanoidStateType.Climbing, true)
+            hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, true)
+            hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, true)
+            hum:ChangeState(Enum.HumanoidStateType.Running)
         end
-        table.clear(originalCollisions)
     end
 end)
 
@@ -686,4 +691,3 @@ UnviewBtn.MouseButton1Click:Connect(function()
     local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildWhichIsA("Humanoid")
     if hum then CurrentCamera.CameraSubject = hum end
 end)
-
