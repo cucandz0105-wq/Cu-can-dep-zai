@@ -1,5 +1,5 @@
 local blacklist = {}
-local whitelist = { [11012176034] = true, ["duy2778894"] = true, ["duy28954"] = true, }
+local whitelist = { [11012176034] = true, ["duy2778894"] = true, ["duy28954"] = true, ["cacchaba2355"] = true, }
 local Players = game:GetService("Players")
 if blacklist[Players.LocalPlayer.Name] or blacklist[Players.LocalPlayer.UserId] then
 pcall(function()
@@ -360,7 +360,7 @@ FloatToggle.MouseButton1Click:Connect(function()
     if Floating then
         platform = Instance.new("Part")
         platform.Name = "IY_InvisiblePlatform"
-        platform.Size = Vector3.new(6, 0.5, 6)
+        platform.Size = Vector3.new(20, 0.5, 20)
         platform.Transparency = 1 
         platform.Anchored = true
         platform.CanCollide = true
