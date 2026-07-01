@@ -1,0 +1,97 @@
+-- ====================================================================
+-- SCRIPT XOẠC CHUẨN CHỈ + COOLDOWN CHỐNG LÚN ĐẤT (0.5 GIÂY)
+-- ====================================================================
+
+-- Xóa giao diện cũ nếu có để tránh trùng lặp
+if game.CoreGui:FindFirstChild("CustomSlideUI") then
+    game.CoreGui.CustomSlideUI:Destroy()
+end
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "CustomSlideUI"
+ScreenGui.Parent = game.CoreGui
+ScreenGui.ResetOnSpawn = false
+
+local SlideButton = Instance.new("TextButton")
+SlideButton.Name = "CustomSlideButton"
+SlideButton.Parent = ScreenGui
+SlideButton.Size = UDim2.new(0, 70, 0, 70)
+SlideButton.Position = UDim2.new(1, -90, 0.5, 0) 
+SlideButton.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
+SlideButton.Text = "SLIDE"
+SlideButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+SlideButton.TextSize = 16
+SlideButton.Font = Enum.Font.SourceSansBold
+SlideButton.Active = true
+
+local ButtonCorner = Instance.new("UICorner")
+ButtonCorner.CornerRadius = UDim.new(0, 15)
+ButtonCorner.Parent = SlideButton
+
+-- Hàm kéo thả nút di động cho điện thoại
+local function makeDraggable(frame)
+    local UserInputService = game:GetService("UserInputService")
+    local dragging, dragInput, dragStart, startPos
+    frame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = frame.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then dragging = false end
+            end)
+        end
+    end)
+    frame.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - dragStart
+            frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+end
+makeDraggable(SlideButton)
+
+----------------------------------------------------
+-- LOGIC XOẠC AN TOÀN TUYỆT ĐỐI (COOLDOWN >= 0.5S)
+----------------------------------------------------
+local isCooldown = false -- Biến trạng thái chờ
+
+SlideButton.MouseButton1Click:Connect(function()
+    -- Nếu đang trong thời gian hồi chiêu của cú xoạc trước thì chặn luôn
+    if isCooldown then return end
+
+    local ballsInPlay = workspace:FindFirstChild("BallsInPlay")
+    local ball = ballsInPlay and ballsInPlay:FindFirstChild("Ball")
+    
+    local player = game.Players.LocalPlayer
+    local character = player.Character
+    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+    local hrp = character and character:FindFirstChild("HumanoidRootPart")
+    
+    if ball then
+        isCooldown = true -- Bắt đầu kích hoạt trạng thái chờ
+        
+        -- 1. Gửi lệnh xoạc lên server
+        local args = {ball, 0.5, false}
+        game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("Slide"):FireServer(unpack(args))
+        
+        -- 2. Đợi 0.15 giây cho hành động xoạc bắt đầu mượt mà
+        task.wait(0.15)
+        
+        -- 3. Ép Client reset trạng thái vật lý để sửa dáng chạy
+        if humanoid and hrp then
+            hrp.Velocity = Vector3.new(0, 0, 0)
+            humanoid:ChangeState(Enum.HumanoidStateType.Running)
+            hrp.CFrame = hrp.CFrame + Vector3.new(0, 0.1, 0)
+        end
+        
+        -- 4. Bù nốt thời gian chờ còn lại để tổng thời gian hồi chiêu đúng bằng 0.5 giây
+        task.wait(0.35) 
+        
+        isCooldown = false -- Mở khóa cho cú bấm tiếp theo
+    end
+end)
+
