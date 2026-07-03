@@ -1,48 +1,47 @@
 local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
 local LocalPlayer = Players.LocalPlayer
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui", 10)
 
--- BẢN GIÁ TRỊ CẤU HÌNH MẶC ĐỊNH
-_G.RocketConfig = {
+-- 1. CẤU HÌNH MẶC ĐỊNH TOÀN CỤC (Nếu chưa có)
+_G.RocketConfig = _G.RocketConfig or {
     Enabled = false,
     Speed = 100,
     GodMode = false,
     ESPEnabled = false,
-    FlashAttack = false
+    OrbESPActive = false,
+    VacuumEnabled = false
 }
 
--- Thay đổi: Khởi tạo dạng Mảng tuần tự để danh sách lưu không bị nhảy lung tung
 _G.SavedPositions = _G.SavedPositions or {}
-_G.ActiveESP = {}
+_G.ActiveESP = _G.ActiveESP or {}
+_G.OrbObjectsESP = _G.OrbObjectsESP or {}
 
--- 1. Tạo ScreenGui chính
+-- Xóa UI cũ nếu có trùng lặp
+if PlayerGui:FindFirstChild("SpaceSailorKamuiMenu") then 
+    PlayerGui["SpaceSailorKamuiMenu"]:Destroy() 
+end
+
+-- 2. Tạo ScreenGui chính
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "SpaceSailorKamuiMenu"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.DisplayOrder = 10
 ScreenGui.Parent = PlayerGui
 
--- Hàm xử lý kéo thả (Draggable) độc lập
+-- Hàm kéo thả UI
 local function makeDraggable(uiComponent)
     local dragging, dragInput, dragStart, startPos
     uiComponent.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            dragStart = input.Position
-            startPos = uiComponent.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then dragging = false end
-            end)
+            dragging = true; dragStart = input.Position; startPos = uiComponent.Position
+            input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragging = false end end)
         end
     end)
-    uiComponent.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-            dragInput = input
-        end
-    end)
+    uiComponent.InputChanged:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end end)
     UserInputService.InputChanged:Connect(function(input)
         if input == dragInput and dragging then
             local delta = input.Position - dragStart
@@ -52,7 +51,7 @@ local function makeDraggable(uiComponent)
     end)
 end
 
--- 2. Tạo Nút Bật/Tắt hiển thị Menu chính
+-- Nút mở menu chính
 local ToggleButton = Instance.new("TextButton")
 ToggleButton.Name = "ToggleButton"
 ToggleButton.Size = UDim2.new(0, 110, 0, 45)
@@ -62,14 +61,12 @@ ToggleButton.Text = "Mở Menu"
 ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 ToggleButton.Font = Enum.Font.SourceSansBold
 ToggleButton.TextSize = 16
-ToggleButton.BorderSizePixel = 0
 ToggleButton.ZIndex = 5 
 ToggleButton.Parent = ScreenGui
-
 Instance.new("UICorner", ToggleButton).CornerRadius = UDim.new(0, 8)
 makeDraggable(ToggleButton)
 
--- ==================== NÚT SPEED TRÒN BÊN PHẢI MÀN HÌNH ====================
+-- Nút Speed tròn bên phải
 local QuickSpeedButton = Instance.new("TextButton")
 QuickSpeedButton.Name = "QuickSpeedButton"
 QuickSpeedButton.Size = UDim2.new(0, 55, 0, 55)
@@ -81,25 +78,20 @@ QuickSpeedButton.Font = Enum.Font.SourceSansBold
 QuickSpeedButton.TextSize = 12
 QuickSpeedButton.ZIndex = 5
 QuickSpeedButton.Parent = ScreenGui
-
-local CircleCorner = Instance.new("UICorner")
-CircleCorner.CornerRadius = UDim.new(1, 0)
-CircleCorner.Parent = QuickSpeedButton
-
+Instance.new("UICorner", QuickSpeedButton).CornerRadius = UDim.new(1, 0)
 makeDraggable(QuickSpeedButton)
 
--- 3. BẢNG MENU CHÍNH
+-- Bảng Menu chính
 local MainMenu = Instance.new("Frame")
 MainMenu.Name = "MainMenu"
 MainMenu.Size = UDim2.new(0, 440, 0, 320)
 MainMenu.Position = UDim2.new(0.5, -220, 0.5, -160)
 MainMenu.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 MainMenu.Visible = false
-MainMenu.BorderSizePixel = 0
 MainMenu.ZIndex = 2
 MainMenu.Parent = ScreenGui
-
 Instance.new("UICorner", MainMenu).CornerRadius = UDim.new(0, 12)
+makeDraggable(MainMenu)
 
 local TitleLabel = Instance.new("TextLabel")
 TitleLabel.Size = UDim2.new(1, 0, 0, 40)
@@ -108,22 +100,18 @@ TitleLabel.Text = "SPACE SAILOR UTILITIES"
 TitleLabel.TextColor3 = Color3.fromRGB(0, 255, 128)
 TitleLabel.Font = Enum.Font.SourceSansBold
 TitleLabel.TextSize = 15
-TitleLabel.BorderSizePixel = 0
 TitleLabel.ZIndex = 3
 TitleLabel.Parent = MainMenu
-
 Instance.new("UICorner", TitleLabel).CornerRadius = UDim.new(0, 12)
-makeDraggable(MainMenu)
 
 local Divider = Instance.new("Frame")
 Divider.Size = UDim2.new(0, 2, 1, -50)
 Divider.Position = UDim2.new(0.5, -1, 0, 45)
 Divider.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-Divider.BorderSizePixel = 0
 Divider.ZIndex = 3
 Divider.Parent = MainMenu
 
--- ==================== BÊN TRÁI ====================
+-- Khung Bên Trái
 local LeftFrame = Instance.new("Frame")
 LeftFrame.Size = UDim2.new(0.5, -20, 1, -50)
 LeftFrame.Position = UDim2.new(0, 15, 0, 45)
@@ -155,23 +143,36 @@ GodButton.ZIndex = 4
 GodButton.Parent = LeftFrame
 Instance.new("UICorner", GodButton).CornerRadius = UDim.new(0, 6)
 
+-- HAI NÚT NẰM NGANG NHAU TRÊN CÙNG HÀNG
 local ESPButton = Instance.new("TextButton")
-ESPButton.Size = UDim2.new(1, 0, 0, 35)
+ESPButton.Size = UDim2.new(0.48, 0, 0, 35)
 ESPButton.Position = UDim2.new(0, 0, 0, 85)
 ESPButton.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
-ESPButton.Text = "Real Crate ESP: OFF"
+ESPButton.Text = "Crate ESP: OFF"
 ESPButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 ESPButton.Font = Enum.Font.SourceSansBold
-ESPButton.TextSize = 13
+ESPButton.TextSize = 12
 ESPButton.ZIndex = 4
 ESPButton.Parent = LeftFrame
 Instance.new("UICorner", ESPButton).CornerRadius = UDim.new(0, 6)
+
+local OrbESPButton = Instance.new("TextButton")
+OrbESPButton.Size = UDim2.new(0.48, 0, 0, 35)
+OrbESPButton.Position = UDim2.new(0.52, 0, 0, 85)
+OrbESPButton.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+OrbESPButton.Text = "Orb ESP: OFF"
+OrbESPButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+OrbESPButton.Font = Enum.Font.SourceSansBold
+OrbESPButton.TextSize = 12
+OrbESPButton.ZIndex = 4
+OrbESPButton.Parent = LeftFrame
+Instance.new("UICorner", OrbESPButton).CornerRadius = UDim.new(0, 6)
 
 local FlashButton = Instance.new("TextButton")
 FlashButton.Size = UDim2.new(1, 0, 0, 35)
 FlashButton.Position = UDim2.new(0, 0, 0, 125)
 FlashButton.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
-FlashButton.Text = "Flash Attack (Dig): OFF"
+FlashButton.Text = "Smart Vacuum (Dig): OFF"
 FlashButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 FlashButton.Font = Enum.Font.SourceSansBold
 FlashButton.TextSize = 13
@@ -203,7 +204,7 @@ SpeedInput.ZIndex = 4
 SpeedInput.Parent = LeftFrame
 Instance.new("UICorner", SpeedInput).CornerRadius = UDim.new(0, 6)
 
--- ==================== BÊN PHẢI ====================
+-- Khung Bên Phải
 local RightFrame = Instance.new("Frame")
 RightFrame.Size = UDim2.new(0.5, -20, 1, -50)
 RightFrame.Position = UDim2.new(0.5, 5, 0, 45)
@@ -261,40 +262,46 @@ Instance.new("UICorner", PosScrollView).CornerRadius = UDim.new(0, 6)
 
 local UIListLayout = Instance.new("UIListLayout")
 UIListLayout.Parent = PosScrollView
-UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder -- Ép sắp xếp theo LayoutOrder mã định danh
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 UIListLayout.Padding = UDim.new(0, 4)
 
-_G.KamuiUI = {
+-- Xuất dữ liệu giao diện để Đoạn 2 gọi xử lý trực tiếp
+_G.KamuiUIElements = {
     ScreenGui = ScreenGui, MainMenu = MainMenu, ToggleButton = ToggleButton,
     QuickSpeedButton = QuickSpeedButton, SpeedButton = SpeedButton, GodButton = GodButton,
-    ESPButton = ESPButton, FlashButton = FlashButton, SpeedInput = SpeedInput,
-    PosNameInput = PosNameInput, SavePosButton = SavePosButton, DeleteAllButton = DeleteAllButton,
-    PosScrollView = PosScrollView, UIListLayout = UIListLayout
+    ESPButton = ESPButton, OrbESPButton = OrbESPButton, FlashButton = FlashButton, 
+    SpeedInput = SpeedInput, PosNameInput = PosNameInput, SavePosButton = SavePosButton, 
+    DeleteAllButton = DeleteAllButton, PosScrollView = PosScrollView, UIListLayout = UIListLayout
 }
+
+print("=== ĐOẠN 1: KHỞI TẠO UI THÀNH CÔNG ===")
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
-local VirtualUser = game:GetService("VirtualUser")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CollectionService = game:GetService("CollectionService")
 
 local LocalPlayer = Players.LocalPlayer
 local RocketConfig = _G.RocketConfig
-local UI = _G.KamuiUI
+local UI = _G.KamuiUIElements
 
-if not UI then warn("Hãy chạy Đoạn 1 trước!") return end
+if not UI or not RocketConfig then 
+    warn("LỖI: Hãy chạy Đoạn 1 trước để khởi tạo UI rồi mới chạy Đoạn 2!") 
+    return 
+end
 
--- Hàm làm mới danh sách vị trí: Ép hiển thị thẳng hàng theo mảng thứ tự thời gian
+-- Vận hành danh sách dịch chuyển TP
 local function refreshPosList()
     for _, child in pairs(UI.PosScrollView:GetChildren()) do
         if child:IsA("Frame") then child:Destroy() end
     end
     
-    -- Sửa lại: Dùng ipairs để duyệt mảng tuần tự từ trên xuống dưới
     for index, data in ipairs(_G.SavedPositions) do
         local itemFrame = Instance.new("Frame")
         itemFrame.Size = UDim2.new(1, -6, 0, 32)
         itemFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
         itemFrame.ZIndex = 4
-        itemFrame.LayoutOrder = index -- Gán số thứ tự tăng dần để UI sắp hàng chuẩn
+        itemFrame.LayoutOrder = index
         itemFrame.Parent = UI.PosScrollView
         Instance.new("UICorner", itemFrame).CornerRadius = UDim.new(0, 4)
         
@@ -341,27 +348,20 @@ local function refreshPosList()
         Instance.new("UICorner", delBtn).CornerRadius = UDim.new(0, 4)
         
         delBtn.MouseButton1Click:Connect(function()
-            table.remove(_G.SavedPositions, index) -- Xóa chuẩn xác theo index mảng
+            table.remove(_G.SavedPositions, index)
             refreshPosList()
         end)
     end
     UI.PosScrollView.CanvasSize = UDim2.new(0, 0, 0, UI.UIListLayout.AbsoluteContentSize.Y + 10)
 end
 
--- Sự kiện nhấn Lưu vị trí
 UI.SavePosButton.MouseButton1Click:Connect(function()
     local char = LocalPlayer.Character
     local root = char and (char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("PrimaryPart"))
     if root then
         local text = UI.PosNameInput.Text
         local finalName = (text ~= "") and text or ("Vị trí " .. tostring(math.random(100, 999)))
-        
-        -- Sửa lại: table.insert để đưa dữ liệu vào cuối danh sách hàng đợi mảng
-        table.insert(_G.SavedPositions, {
-            Name = finalName,
-            CFrame = root.CFrame
-        })
-        
+        table.insert(_G.SavedPositions, { Name = finalName, CFrame = root.CFrame })
         UI.PosNameInput.Text = ""
         refreshPosList()
     end
@@ -372,6 +372,7 @@ UI.DeleteAllButton.MouseButton1Click:Connect(function()
     refreshPosList()
 end)
 
+-- Vận tốc tên lửa
 local function updateSpeedUI()
     if RocketConfig.Enabled then
         UI.SpeedButton.Text = "Rocket Speed: ON"
@@ -386,65 +387,110 @@ local function updateSpeedUI()
     end
 end
 
-UI.SpeedButton.MouseButton1Click:Connect(function()
-    RocketConfig.Enabled = not RocketConfig.Enabled
-    updateSpeedUI()
-end)
-
-UI.QuickSpeedButton.MouseButton1Click:Connect(function()
-    RocketConfig.Enabled = not RocketConfig.Enabled
-    updateSpeedUI()
-end)
-
-UI.FlashButton.MouseButton1Click:Connect(function()
-    RocketConfig.FlashAttack = not RocketConfig.FlashAttack
-    UI.FlashButton.Text = RocketConfig.FlashAttack and "Flash Attack: ON" or "Flash Attack: OFF"
-    UI.FlashButton.BackgroundColor3 = RocketConfig.FlashAttack and Color3.fromRGB(50, 180, 100) or Color3.fromRGB(180, 50, 50)
-end)
-
-RunService.RenderStepped:Connect(function()
-    if RocketConfig.FlashAttack then
-        local char = LocalPlayer.Character
-        local tool = char and char:FindFirstChildOfClass("Tool")
-        if tool then
-            VirtualUser:Button1Down(Vector2.new(0, 0), Workspace.CurrentCamera.CFrame)
-            VirtualUser:Button1Up(Vector2.new(0, 0), Workspace.CurrentCamera.CFrame)
-        end
-    end
-end)
-
-UI.ToggleButton.MouseButton1Click:Connect(function()
-    UI.MainMenu.Visible = not UI.MainMenu.Visible
-    UI.ToggleButton.Text = UI.MainMenu.Visible and "Đóng Menu" or "Mở Menu"
-    UI.ToggleButton.TextColor3 = UI.MainMenu.Visible and Color3.fromRGB(255, 100, 100) or Color3.fromRGB(255, 255, 255)
-end)
-
-UI.GodButton.MouseButton1Click:Connect(function()
-    RocketConfig.GodMode = not RocketConfig.GodMode
-    UI.GodButton.Text = RocketConfig.GodMode and "GodMode: ON" or "GodMode: OFF"
-    UI.GodButton.BackgroundColor3 = RocketConfig.GodMode and Color3.fromRGB(50, 180, 100) or Color3.fromRGB(180, 50, 50)
-end)
-
-local function clearAllESP()
-    for obj, espItems in pairs(_G.ActiveESP) do
-        for _, item in pairs(espItems) do if item then item:Destroy() end end
-    end
-    table.clear(_G.ActiveESP)
-end
-
-UI.ESPButton.MouseButton1Click:Connect(function()
-    RocketConfig.ESPEnabled = not RocketConfig.ESPEnabled
-    UI.ESPButton.Text = RocketConfig.ESPEnabled and "Crate ESP: ON" or "Crate ESP: OFF"
-    UI.ESPButton.BackgroundColor3 = RocketConfig.ESPEnabled and Color3.fromRGB(50, 180, 100) or Color3.fromRGB(180, 50, 50)
-    if not RocketConfig.ESPEnabled then clearAllESP() end
-end)
+UI.SpeedButton.MouseButton1Click:Connect(function() RocketConfig.Enabled = not RocketConfig.Enabled; updateSpeedUI() end)
+UI.QuickSpeedButton.MouseButton1Click:Connect(function() RocketConfig.Enabled = not RocketConfig.Enabled; updateSpeedUI() end)
 
 UI.SpeedInput.FocusLost:Connect(function()
     local numericValue = tonumber(UI.SpeedInput.Text)
     if numericValue then RocketConfig.Speed = numericValue else UI.SpeedInput.Text = tostring(RocketConfig.Speed) end
 end)
 
-local function createESP(part)
+RunService.Heartbeat:Connect(function()
+    local character = LocalPlayer.Character
+    if not character then return end
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    if RocketConfig.Enabled and humanoid and humanoid.SeatPart then
+        local seat = humanoid.SeatPart
+        seat.AssemblyLinearVelocity = seat.CFrame.LookVector * RocketConfig.Speed
+    end
+end)
+
+-- Chống nổ tàu (God Mode)
+UI.GodButton.MouseButton1Click:Connect(function()
+    RocketConfig.GodMode = not RocketConfig.GodMode
+    UI.GodButton.Text = RocketConfig.GodMode and "GodMode: ON" or "Anti-Crash (God): OFF"
+    UI.GodButton.BackgroundColor3 = RocketConfig.GodMode and Color3.fromRGB(50, 180, 100) or Color3.fromRGB(180, 50, 50)
+end)
+
+local oldNamecall
+oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+    local method = getnamecallmethod()
+    local args = {...}
+    if RocketConfig.GodMode and (method == "FireServer" or method == "fireServer") then
+        if self.Name == "RocketEvent" and args[1] == "crash" then return nil end
+    end
+    return oldNamecall(self, ...)
+end)
+
+-- Smart Vacuum (Hút đá)
+local function getMineralsDistance(part)
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        return (LocalPlayer.Character.HumanoidRootPart.Position - part.Position).Magnitude
+    end
+    return 99999
+end
+
+UI.FlashButton.MouseButton1Click:Connect(function()
+    RocketConfig.VacuumEnabled = not RocketConfig.VacuumEnabled
+    UI.FlashButton.Text = RocketConfig.VacuumEnabled and "Smart Vacuum: ON" or "Smart Vacuum (Dig): OFF"
+    UI.FlashButton.BackgroundColor3 = RocketConfig.VacuumEnabled and Color3.fromRGB(50, 180, 100) or Color3.fromRGB(180, 50, 50)
+    
+    if RocketConfig.VacuumEnabled then
+        task.spawn(function()
+            local CommonLocalEvent = ReplicatedStorage:WaitForChild("Events", 10):WaitForChild("CommonLocalEvent", 10)
+            while RocketConfig.VacuumEnabled do
+                if CommonLocalEvent then
+                    local count = 0
+                    for _, folder in ipairs(Workspace:GetDescendants()) do
+                        if not RocketConfig.VacuumEnabled then break end
+                        if count >= 3 then break end
+                        if folder:IsA("Folder") and folder.Name == "Minerals" then
+                            for _, rock in ipairs(folder:GetChildren()) do
+                                if count >= 3 then break end
+                                if rock:IsA("BasePart") or rock:IsA("Model") then
+                                    local targetPart = rock:IsA("Model") and (rock.PrimaryPart or rock:FindFirstChildWhichIsA("BasePart")) or rock
+                                    if targetPart and getMineralsDistance(targetPart) < 25 then
+                                        CommonLocalEvent:FireServer("mineral", { part = rock })
+                                        count = count + 1
+                                        task.wait(0.08)
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+                task.wait(0.5)
+            end
+        end)
+    end
+end)
+
+-- Đóng mở Menu chính
+UI.ToggleButton.MouseButton1Click:Connect(function()
+    UI.MainMenu.Visible = not UI.MainMenu.Visible
+    UI.ToggleButton.Text = UI.MainMenu.Visible and "Đóng Menu" or "Mở Menu"
+    UI.ToggleButton.TextColor3 = UI.MainMenu.Visible and Color3.fromRGB(255, 100, 100) or Color3.fromRGB(255, 255, 255)
+end)
+
+-- LOGIC CRATE ESP
+local function clearAllCrateESP()
+    for obj, espItems in pairs(_G.ActiveESP) do
+        for _, item in pairs(espItems) do if item then item:Destroy() end end
+    end
+    table.clear(_G.ActiveESP)
+end
+
+local function isInShopOrLobby(object)
+    local current = object.Parent
+    while current and current ~= Workspace do
+        local name = string.lower(current.Name)
+        if string.find(name, "shop") or string.find(name, "lobby") or string.find(name, "safezone") then return true end
+        current = current.Parent
+    end
+    return false
+end
+
+local function createCrateESP(part)
     if not part:IsA("BasePart") or _G.ActiveESP[part] then return end
     local espItems = {}
     local highlight = Instance.new("Highlight")
@@ -470,7 +516,6 @@ local function createESP(part)
     label.TextColor3 = Color3.fromRGB(255, 230, 0) 
     label.Font = Enum.Font.SourceSansBold
     label.TextSize = 13
-    label.TextStrokeTransparency = 0 
     label.Parent = billboard
     table.insert(espItems, label)
     _G.ActiveESP[part] = espItems
@@ -492,34 +537,11 @@ local function createESP(part)
     end)
 end
 
-local function isInShopOrLobby(object)
-    local current = object.Parent
-    while current and current ~= Workspace do
-        local name = string.lower(current.Name)
-        if string.find(name, "shop") or string.find(name, "lobby") or string.find(name, "safezone") or string.find(name, "ui") then return true end
-        current = current.Parent
-    end
-    return false
-end
-
-local oldNamecall
-oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
-    local method = getnamecallmethod()
-    local args = {...}
-    if RocketConfig.GodMode and (method == "FireServer" or method == "fireServer") then
-        if self.Name == "RocketEvent" and args[1] == "crash" then return nil end
-    end
-    return oldNamecall(self, ...)
-end)
-
-RunService.Heartbeat:Connect(function()
-    local character = LocalPlayer.Character
-    if not character then return end
-    local humanoid = character:FindFirstChildOfClass("Humanoid")
-    if RocketConfig.Enabled and humanoid and humanoid.SeatPart then
-        local seat = humanoid.SeatPart
-        seat.AssemblyLinearVelocity = seat.CFrame.LookVector * RocketConfig.Speed
-    end
+UI.ESPButton.MouseButton1Click:Connect(function()
+    RocketConfig.ESPEnabled = not RocketConfig.ESPEnabled
+    UI.ESPButton.Text = RocketConfig.ESPEnabled and "Crate: ON" or "Crate ESP: OFF"
+    UI.ESPButton.BackgroundColor3 = RocketConfig.ESPEnabled and Color3.fromRGB(50, 180, 100) or Color3.fromRGB(180, 50, 50)
+    if not RocketConfig.ESPEnabled then clearAllCrateESP() end
 end)
 
 task.spawn(function()
@@ -529,7 +551,7 @@ task.spawn(function()
             for _, obj in pairs(Workspace:GetDescendants()) do
                 if obj:IsA("BasePart") and (not character or not obj:IsDescendantOf(character)) then
                     if string.find(string.lower(obj.Name), "crate") then
-                        if obj.Transparency < 1 and obj.CanCollide == true and not isInShopOrLobby(obj) then createESP(obj) end
+                        if obj.Transparency < 1 and obj.CanCollide == true and not isInShopOrLobby(obj) then createCrateESP(obj) end
                     end
                 end
             end
@@ -544,5 +566,122 @@ task.spawn(function()
     end
 end)
 
--- Đồng bộ hiển thị danh sách cũ nếu có sẵn
+-- LOGIC ORB ESP (BẢN SỬA ĐỔI: CHỐNG HIỂN THỊ HOLE ORB)
+local function clearAllOrbESP()
+    for obj, espItems in pairs(_G.OrbObjectsESP) do
+        for _, item in pairs(espItems) do if item then item:Destroy() end end
+    end
+    table.clear(_G.OrbObjectsESP)
+end
+
+local function isValidOrb(object)
+    local current = object
+    while current and current ~= Workspace do
+        local nameLower = string.lower(current.Name)
+        -- THAY ĐỔI: Lọc bỏ thêm tất cả các dạng từ khoá "hole" để chặn đứng Hole Orb
+        if string.find(nameLower, "rocket") or string.find(nameLower, "spawn") or
+           string.find(nameLower, "fake") or string.find(nameLower, "shop") or
+           string.find(nameLower, "lobby") or string.find(nameLower, "hole") then 
+            return false 
+        end
+        current = current.Parent
+    end
+    return true
+end
+
+local function createOrbESP(part)
+    if not part or not part:IsA("BasePart") or _G.OrbObjectsESP[part] then return end
+    local espItems = {}
+    
+    local highlight = Instance.new("Highlight")
+    highlight.FillColor = Color3.fromRGB(0, 100, 255)
+    highlight.FillTransparency = 0.4
+    highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+    highlight.OutlineTransparency = 0.1
+    highlight.Adornee = part
+    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    highlight.Parent = UI.ScreenGui
+    table.insert(espItems, highlight)
+    
+    local billboard = Instance.new("BillboardGui")
+    billboard.Size = UDim2.new(0, 120, 0, 40)
+    billboard.AlwaysOnTop = true
+    billboard.MaxDistance = math.huge
+    billboard.ExtentsOffset = Vector3.new(0, 3, 0)
+    billboard.Adornee = part
+    billboard.Parent = UI.ScreenGui
+    table.insert(espItems, billboard)
+    
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.TextColor3 = Color3.fromRGB(100, 200, 255)
+    label.Font = Enum.Font.SourceSansBold
+    label.TextSize = 13
+    label.Parent = billboard
+    table.insert(espItems, label)
+    
+    _G.OrbObjectsESP[part] = espItems
+    
+    task.spawn(function()
+        while part and part.Parent and RocketConfig.OrbESPActive and _G.OrbObjectsESP[part] do
+            if part.Transparency >= 1 then break end
+            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                local myPos = LocalPlayer.Character.HumanoidRootPart.Position
+                local dist = math.floor((part.Position - myPos).Magnitude)
+                label.Text = string.format("%s\n[%dm]", part.Name, dist)
+            end
+            task.wait(0.2)
+        end
+        if _G.OrbObjectsESP[part] then
+            for _, item in pairs(_G.OrbObjectsESP[part]) do if item then item:Destroy() end end
+            _G.OrbObjectsESP[part] = nil
+        end
+    end)
+end
+
+local function forceProcessOrb(obj)
+    if not RocketConfig.OrbESPActive then return end
+    if string.find(string.lower(obj.Name), "orb") then
+        local targetPart = obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")) or obj
+        if targetPart and targetPart:IsA("BasePart") and isValidOrb(targetPart) then createOrbESP(targetPart) end
+    end
+end
+
+UI.OrbESPButton.MouseButton1Click:Connect(function()
+    RocketConfig.OrbESPActive = not RocketConfig.OrbESPActive
+    UI.OrbESPButton.Text = RocketConfig.OrbESPActive and "Orb: ON" or "Orb ESP: OFF"
+    UI.OrbESPButton.BackgroundColor3 = RocketConfig.OrbESPActive and Color3.fromRGB(50, 180, 100) or Color3.fromRGB(180, 50, 50)
+    if not RocketConfig.OrbESPActive then clearAllOrbESP() end
+end)
+
+task.spawn(function()
+    while true do
+        if RocketConfig.OrbESPActive then
+            pcall(function()
+                local allData = Workspace:GetDescendants()
+                for i = 1, #allData do
+                    local obj = allData[i]
+                    if obj and string.find(string.lower(obj.Name), "orb") then forceProcessOrb(obj) end
+                end
+            end)
+            pcall(function()
+                for _, tag in pairs(CollectionService:GetTags()) do
+                    if string.find(string.lower(tag), "orb") then
+                        for _, obj in pairs(CollectionService:GetTagged(tag)) do forceProcessOrb(obj) end
+                    end
+                end
+            end)
+            for part, espItems in pairs(_G.OrbObjectsESP) do
+                if not part or not part.Parent or part.Transparency >= 1 or not part:IsDescendantOf(Workspace) then
+                    for _, item in pairs(espItems) do if item then item:Destroy() end end
+                    _G.OrbObjectsESP[part] = nil
+                end
+            end
+        end
+        task.wait(0.3)
+    end
+end)
+
 refreshPosList()
+print("=== ĐOẠN 2 CHỈNH SỬA: ĐÃ KHÓA HOÀN TOÀN HOLE ORB ===")
