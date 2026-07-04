@@ -6,33 +6,31 @@ local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui", 10)
 
--- 1. CẤU HÌNH MẶC ĐỊNH TOÀN CỤC (Nếu chưa có)
 _G.RocketConfig = _G.RocketConfig or {
     Enabled = false,
     Speed = 100,
     GodMode = false,
     ESPEnabled = false,
     OrbESPActive = false,
-    VacuumEnabled = false
+    VacuumEnabled = false,
+    RemoteBombActive = false
 }
 
 _G.SavedPositions = _G.SavedPositions or {}
 _G.ActiveESP = _G.ActiveESP or {}
 _G.OrbObjectsESP = _G.OrbObjectsESP or {}
+_G.MyVisitedShips = _G.MyVisitedShips or {}
 
--- Xóa UI cũ nếu có trùng lặp
 if PlayerGui:FindFirstChild("SpaceSailorKamuiMenu") then 
     PlayerGui["SpaceSailorKamuiMenu"]:Destroy() 
 end
 
--- 2. Tạo ScreenGui chính
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "SpaceSailorKamuiMenu"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.DisplayOrder = 10
 ScreenGui.Parent = PlayerGui
 
--- Hàm kéo thả UI
 local function makeDraggable(uiComponent)
     local dragging, dragInput, dragStart, startPos
     uiComponent.InputBegan:Connect(function(input)
@@ -51,7 +49,6 @@ local function makeDraggable(uiComponent)
     end)
 end
 
--- Nút mở menu chính
 local ToggleButton = Instance.new("TextButton")
 ToggleButton.Name = "ToggleButton"
 ToggleButton.Size = UDim2.new(0, 110, 0, 45)
@@ -66,11 +63,10 @@ ToggleButton.Parent = ScreenGui
 Instance.new("UICorner", ToggleButton).CornerRadius = UDim.new(0, 8)
 makeDraggable(ToggleButton)
 
--- Nút Speed tròn bên phải
 local QuickSpeedButton = Instance.new("TextButton")
 QuickSpeedButton.Name = "QuickSpeedButton"
 QuickSpeedButton.Size = UDim2.new(0, 55, 0, 55)
-QuickSpeedButton.Position = UDim2.new(0.85, 0, 0.5, -27)
+QuickSpeedButton.Position = UDim2.new(0.85, 0, 0.4, 0)
 QuickSpeedButton.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
 QuickSpeedButton.Text = "SPEED\nOFF"
 QuickSpeedButton.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -81,11 +77,25 @@ QuickSpeedButton.Parent = ScreenGui
 Instance.new("UICorner", QuickSpeedButton).CornerRadius = UDim.new(1, 0)
 makeDraggable(QuickSpeedButton)
 
--- Bảng Menu chính
+local RemoteDetonateBtn = Instance.new("TextButton")
+RemoteDetonateBtn.Name = "RemoteDetonateBtn"
+RemoteDetonateBtn.Size = UDim2.new(0, 55, 0, 55)
+RemoteDetonateBtn.Position = UDim2.new(0.85, 0, 0.4, 60)
+RemoteDetonateBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+RemoteDetonateBtn.Text = "DETONATE\nWARP"
+RemoteDetonateBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+RemoteDetonateBtn.Font = Enum.Font.SourceSansBold
+RemoteDetonateBtn.TextSize = 9
+RemoteDetonateBtn.ZIndex = 5
+RemoteDetonateBtn.Visible = false
+RemoteDetonateBtn.Parent = ScreenGui
+Instance.new("UICorner", RemoteDetonateBtn).CornerRadius = UDim.new(1, 0)
+makeDraggable(RemoteDetonateBtn)
+
 local MainMenu = Instance.new("Frame")
 MainMenu.Name = "MainMenu"
-MainMenu.Size = UDim2.new(0, 440, 0, 320)
-MainMenu.Position = UDim2.new(0.5, -220, 0.5, -160)
+MainMenu.Size = UDim2.new(0, 440, 0, 350)
+MainMenu.Position = UDim2.new(0.5, -220, 0.5, -175)
 MainMenu.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 MainMenu.Visible = false
 MainMenu.ZIndex = 2
@@ -111,7 +121,6 @@ Divider.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
 Divider.ZIndex = 3
 Divider.Parent = MainMenu
 
--- Khung Bên Trái
 local LeftFrame = Instance.new("Frame")
 LeftFrame.Size = UDim2.new(0.5, -20, 1, -50)
 LeftFrame.Position = UDim2.new(0, 15, 0, 45)
@@ -120,7 +129,7 @@ LeftFrame.ZIndex = 3
 LeftFrame.Parent = MainMenu
 
 local SpeedButton = Instance.new("TextButton")
-SpeedButton.Size = UDim2.new(1, 0, 0, 35)
+SpeedButton.Size = UDim2.new(1, 0, 0, 32)
 SpeedButton.Position = UDim2.new(0, 0, 0, 5)
 SpeedButton.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
 SpeedButton.Text = "Rocket Speed: OFF"
@@ -132,8 +141,8 @@ SpeedButton.Parent = LeftFrame
 Instance.new("UICorner", SpeedButton).CornerRadius = UDim.new(0, 6)
 
 local GodButton = Instance.new("TextButton")
-GodButton.Size = UDim2.new(1, 0, 0, 35)
-GodButton.Position = UDim2.new(0, 0, 0, 45)
+GodButton.Size = UDim2.new(1, 0, 0, 32)
+GodButton.Position = UDim2.new(0, 0, 0, 42)
 GodButton.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
 GodButton.Text = "Anti-Crash (God): OFF"
 GodButton.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -143,10 +152,9 @@ GodButton.ZIndex = 4
 GodButton.Parent = LeftFrame
 Instance.new("UICorner", GodButton).CornerRadius = UDim.new(0, 6)
 
--- HAI NÚT NẰM NGANG NHAU TRÊN CÙNG HÀNG
 local ESPButton = Instance.new("TextButton")
-ESPButton.Size = UDim2.new(0.48, 0, 0, 35)
-ESPButton.Position = UDim2.new(0, 0, 0, 85)
+ESPButton.Size = UDim2.new(0.48, 0, 0, 32)
+ESPButton.Position = UDim2.new(0, 0, 0, 79)
 ESPButton.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
 ESPButton.Text = "Crate ESP: OFF"
 ESPButton.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -157,8 +165,8 @@ ESPButton.Parent = LeftFrame
 Instance.new("UICorner", ESPButton).CornerRadius = UDim.new(0, 6)
 
 local OrbESPButton = Instance.new("TextButton")
-OrbESPButton.Size = UDim2.new(0.48, 0, 0, 35)
-OrbESPButton.Position = UDim2.new(0.52, 0, 0, 85)
+OrbESPButton.Size = UDim2.new(0.48, 0, 0, 32)
+OrbESPButton.Position = UDim2.new(0.52, 0, 0, 79)
 OrbESPButton.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
 OrbESPButton.Text = "Orb ESP: OFF"
 OrbESPButton.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -169,8 +177,8 @@ OrbESPButton.Parent = LeftFrame
 Instance.new("UICorner", OrbESPButton).CornerRadius = UDim.new(0, 6)
 
 local FlashButton = Instance.new("TextButton")
-FlashButton.Size = UDim2.new(1, 0, 0, 35)
-FlashButton.Position = UDim2.new(0, 0, 0, 125)
+FlashButton.Size = UDim2.new(1, 0, 0, 32)
+FlashButton.Position = UDim2.new(0, 0, 0, 116)
 FlashButton.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
 FlashButton.Text = "Smart Vacuum (Dig): OFF"
 FlashButton.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -180,9 +188,21 @@ FlashButton.ZIndex = 4
 FlashButton.Parent = LeftFrame
 Instance.new("UICorner", FlashButton).CornerRadius = UDim.new(0, 6)
 
+local RemoteBombToggleBtn = Instance.new("TextButton")
+RemoteBombToggleBtn.Size = UDim2.new(1, 0, 0, 32)
+RemoteBombToggleBtn.Position = UDim2.new(0, 0, 0, 153)
+RemoteBombToggleBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+RemoteBombToggleBtn.Text = "Remote Bomb: OFF"
+RemoteBombToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+RemoteBombToggleBtn.Font = Enum.Font.SourceSansBold
+RemoteBombToggleBtn.TextSize = 13
+RemoteBombToggleBtn.ZIndex = 4
+RemoteBombToggleBtn.Parent = LeftFrame
+Instance.new("UICorner", RemoteBombToggleBtn).CornerRadius = UDim.new(0, 6)
+
 local LeftInputLabel = Instance.new("TextLabel")
 LeftInputLabel.Size = UDim2.new(1, 0, 0, 20)
-LeftInputLabel.Position = UDim2.new(0, 0, 0, 170)
+LeftInputLabel.Position = UDim2.new(0, 0, 0, 195)
 LeftInputLabel.BackgroundTransparency = 1
 LeftInputLabel.Text = "Giá trị tốc độ tên lửa:"
 LeftInputLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
@@ -194,7 +214,7 @@ LeftInputLabel.Parent = LeftFrame
 
 local SpeedInput = Instance.new("TextBox")
 SpeedInput.Size = UDim2.new(1, 0, 0, 35)
-SpeedInput.Position = UDim2.new(0, 0, 0, 195)
+SpeedInput.Position = UDim2.new(0, 0, 0, 220)
 SpeedInput.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
 SpeedInput.Text = tostring(_G.RocketConfig.Speed)
 SpeedInput.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -204,7 +224,6 @@ SpeedInput.ZIndex = 4
 SpeedInput.Parent = LeftFrame
 Instance.new("UICorner", SpeedInput).CornerRadius = UDim.new(0, 6)
 
--- Khung Bên Phải
 local RightFrame = Instance.new("Frame")
 RightFrame.Size = UDim2.new(0.5, -20, 1, -50)
 RightFrame.Position = UDim2.new(0.5, 5, 0, 45)
@@ -250,7 +269,7 @@ DeleteAllButton.Parent = RightFrame
 Instance.new("UICorner", DeleteAllButton).CornerRadius = UDim.new(0, 6)
 
 local PosScrollView = Instance.new("ScrollingFrame")
-PosScrollView.Size = UDim2.new(1, 0, 0, 175)
+PosScrollView.Size = UDim2.new(1, 0, 0, 205)
 PosScrollView.Position = UDim2.new(0, 0, 0, 55)
 PosScrollView.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
 PosScrollView.BorderSizePixel = 0
@@ -265,16 +284,16 @@ UIListLayout.Parent = PosScrollView
 UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 UIListLayout.Padding = UDim.new(0, 4)
 
--- Xuất dữ liệu giao diện để Đoạn 2 gọi xử lý trực tiếp
 _G.KamuiUIElements = {
     ScreenGui = ScreenGui, MainMenu = MainMenu, ToggleButton = ToggleButton,
-    QuickSpeedButton = QuickSpeedButton, SpeedButton = SpeedButton, GodButton = GodButton,
-    ESPButton = ESPButton, OrbESPButton = OrbESPButton, FlashButton = FlashButton, 
+    QuickSpeedButton = QuickSpeedButton, RemoteDetonateBtn = RemoteDetonateBtn,
+    SpeedButton = SpeedButton, GodButton = GodButton, ESPButton = ESPButton, 
+    OrbESPButton = OrbESPButton, FlashButton = FlashButton, RemoteBombToggleBtn = RemoteBombToggleBtn,
     SpeedInput = SpeedInput, PosNameInput = PosNameInput, SavePosButton = SavePosButton, 
     DeleteAllButton = DeleteAllButton, PosScrollView = PosScrollView, UIListLayout = UIListLayout
 }
 
-print("=== ĐOẠN 1: KHỞI TẠO UI THÀNH CÔNG ===")
+print("=== ĐOẠN 1 HOÀN TẤT ===")
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
@@ -286,11 +305,19 @@ local RocketConfig = _G.RocketConfig
 local UI = _G.KamuiUIElements
 
 if not UI or not RocketConfig then 
-    warn("LỖI: Hãy chạy Đoạn 1 trước để khởi tạo UI rồi mới chạy Đoạn 2!") 
+    warn("❌ LỖI: Hãy chạy Đoạn 1 trước!") 
     return 
 end
 
--- Vận hành danh sách dịch chuyển TP
+local RocketEvent = ReplicatedStorage:WaitForChild("Events"):WaitForChild("RocketEvent")
+local RocketsFolder = Workspace:FindFirstChild("Rockets")
+
+if _G.RemoteDetonateRunning then
+    _G.RemoteDetonateRunning = false
+    task.wait(0.1)
+end
+_G.RemoteDetonateRunning = true
+
 local function refreshPosList()
     for _, child in pairs(UI.PosScrollView:GetChildren()) do
         if child:IsA("Frame") then child:Destroy() end
@@ -372,7 +399,6 @@ UI.DeleteAllButton.MouseButton1Click:Connect(function()
     refreshPosList()
 end)
 
--- Vận tốc tên lửa
 local function updateSpeedUI()
     if RocketConfig.Enabled then
         UI.SpeedButton.Text = "Rocket Speed: ON"
@@ -405,24 +431,25 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
--- Chống nổ tàu (God Mode)
 UI.GodButton.MouseButton1Click:Connect(function()
     RocketConfig.GodMode = not RocketConfig.GodMode
     UI.GodButton.Text = RocketConfig.GodMode and "GodMode: ON" or "Anti-Crash (God): OFF"
     UI.GodButton.BackgroundColor3 = RocketConfig.GodMode and Color3.fromRGB(50, 180, 100) or Color3.fromRGB(180, 50, 50)
 end)
 
+-- FIX LỖI CÚ PHÁP: Bảo toàn nguyên vẹn tham số truyền vào hàm gốc
 local oldNamecall
 oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
     local method = getnamecallmethod()
     local args = {...}
     if RocketConfig.GodMode and (method == "FireServer" or method == "fireServer") then
-        if self.Name == "RocketEvent" and args[1] == "crash" then return nil end
+        if self.Name == "RocketEvent" and args[1] == "crash" then 
+            return nil 
+        end
     end
     return oldNamecall(self, ...)
 end)
 
--- Smart Vacuum (Hút đá)
 local function getMineralsDistance(part)
     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
         return (LocalPlayer.Character.HumanoidRootPart.Position - part.Position).Magnitude
@@ -465,14 +492,57 @@ UI.FlashButton.MouseButton1Click:Connect(function()
     end
 end)
 
--- Đóng mở Menu chính
-UI.ToggleButton.MouseButton1Click:Connect(function()
-    UI.MainMenu.Visible = not UI.MainMenu.Visible
-    UI.ToggleButton.Text = UI.MainMenu.Visible and "Đóng Menu" or "Mở Menu"
-    UI.ToggleButton.TextColor3 = UI.MainMenu.Visible and Color3.fromRGB(255, 100, 100) or Color3.fromRGB(255, 255, 255)
+local function updateRemoteBombUI()
+    if RocketConfig.RemoteBombActive then
+        UI.RemoteBombToggleBtn.Text = "Remote Bomb: ON"
+        UI.RemoteBombToggleBtn.BackgroundColor3 = Color3.fromRGB(50, 180, 100)
+        UI.RemoteDetonateBtn.Visible = true
+    else
+        UI.RemoteBombToggleBtn.Text = "Remote Bomb: OFF"
+        UI.RemoteBombToggleBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+        UI.RemoteDetonateBtn.Visible = false
+    end
+end
+
+UI.RemoteBombToggleBtn.MouseButton1Click:Connect(function()
+    RocketConfig.RemoteBombActive = not RocketConfig.RemoteBombActive
+    updateRemoteBombUI()
 end)
 
--- LOGIC CRATE ESP
+task.spawn(function()
+    while _G.RemoteDetonateRunning do
+        if RocketConfig.RemoteBombActive then
+            local char = LocalPlayer.Character
+            local humanoid = char and char:FindFirstChildOfClass("Humanoid")
+            
+            if humanoid and humanoid.SeatPart and RocketsFolder then
+                for _, shipModel in pairs(RocketsFolder:GetChildren()) do
+                    if shipModel:IsA("Model") and humanoid.SeatPart:IsDescendantOf(shipModel) then
+                        if not table.find(_G.MyVisitedShips, shipModel) then
+                            table.insert(_G.MyVisitedShips, shipModel)
+                            print("📌 Đã ghi nhớ mục tiêu rải bom:", shipModel.Name)
+                        end
+                    end
+                end
+            end
+        end
+        task.wait(1)
+    end
+end)
+
+UI.RemoteDetonateBtn.MouseButton1Click:Connect(function()
+    if #_G.MyVisitedShips == 0 then return end
+    for i = #_G.MyVisitedShips, 1, -1 do
+        local shipModel = _G.MyVisitedShips[i]
+        if shipModel and shipModel.Parent then
+            pcall(function()
+                RocketEvent:FireServer("crash", { touchSpeed = 1000 })
+            end)
+        end
+        table.remove(_G.MyVisitedShips, i)
+    end
+end)
+
 local function clearAllCrateESP()
     for obj, espItems in pairs(_G.ActiveESP) do
         for _, item in pairs(espItems) do if item then item:Destroy() end end
@@ -555,18 +625,11 @@ task.spawn(function()
                     end
                 end
             end
-            for part, espItems in pairs(_G.ActiveESP) do
-                if not part or not part.Parent or part.Transparency >= 1 or part.CanCollide == false or isInShopOrLobby(part) then
-                    for _, item in pairs(espItems) do if item then item:Destroy() end end
-                    _G.ActiveESP[part] = nil
-                end
-            end
         end
         task.wait(1.0)
     end
 end)
 
--- LOGIC ORB ESP (BẢN SỬA ĐỔI: CHỐNG HIỂN THỊ HOLE ORB)
 local function clearAllOrbESP()
     for obj, espItems in pairs(_G.OrbObjectsESP) do
         for _, item in pairs(espItems) do if item then item:Destroy() end end
@@ -578,7 +641,6 @@ local function isValidOrb(object)
     local current = object
     while current and current ~= Workspace do
         local nameLower = string.lower(current.Name)
-        -- THAY ĐỔI: Lọc bỏ thêm tất cả các dạng từ khoá "hole" để chặn đứng Hole Orb
         if string.find(nameLower, "rocket") or string.find(nameLower, "spawn") or
            string.find(nameLower, "fake") or string.find(nameLower, "shop") or
            string.find(nameLower, "lobby") or string.find(nameLower, "hole") then 
@@ -607,7 +669,6 @@ local function createOrbESP(part)
     billboard.Size = UDim2.new(0, 120, 0, 40)
     billboard.AlwaysOnTop = true
     billboard.MaxDistance = math.huge
-    billboard.ExtentsOffset = Vector3.new(0, 3, 0)
     billboard.Adornee = part
     billboard.Parent = UI.ScreenGui
     table.insert(espItems, billboard)
@@ -640,14 +701,6 @@ local function createOrbESP(part)
     end)
 end
 
-local function forceProcessOrb(obj)
-    if not RocketConfig.OrbESPActive then return end
-    if string.find(string.lower(obj.Name), "orb") then
-        local targetPart = obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")) or obj
-        if targetPart and targetPart:IsA("BasePart") and isValidOrb(targetPart) then createOrbESP(targetPart) end
-    end
-end
-
 UI.OrbESPButton.MouseButton1Click:Connect(function()
     RocketConfig.OrbESPActive = not RocketConfig.OrbESPActive
     UI.OrbESPButton.Text = RocketConfig.OrbESPActive and "Orb: ON" or "Orb ESP: OFF"
@@ -659,29 +712,26 @@ task.spawn(function()
     while true do
         if RocketConfig.OrbESPActive then
             pcall(function()
-                local allData = Workspace:GetDescendants()
-                for i = 1, #allData do
-                    local obj = allData[i]
-                    if obj and string.find(string.lower(obj.Name), "orb") then forceProcessOrb(obj) end
-                end
-            end)
-            pcall(function()
-                for _, tag in pairs(CollectionService:GetTags()) do
-                    if string.find(string.lower(tag), "orb") then
-                        for _, obj in pairs(CollectionService:GetTagged(tag)) do forceProcessOrb(obj) end
+                for _, obj in pairs(Workspace:GetDescendants()) do
+                    if string.find(string.lower(obj.Name), "orb") then
+                        local targetPart = obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")) or obj
+                        if targetPart and targetPart:IsA("BasePart") and isValidOrb(targetPart) then createOrbESP(targetPart) end
                     end
                 end
             end)
-            for part, espItems in pairs(_G.OrbObjectsESP) do
-                if not part or not part.Parent or part.Transparency >= 1 or not part:IsDescendantOf(Workspace) then
-                    for _, item in pairs(espItems) do if item then item:Destroy() end end
-                    _G.OrbObjectsESP[part] = nil
-                end
-            end
         end
-        task.wait(0.3)
+        task.wait(1.5)
     end
 end)
 
+UI.ToggleButton.MouseButton1Click:Connect(function()
+    UI.MainMenu.Visible = not UI.MainMenu.Visible
+    UI.ToggleButton.Text = UI.MainMenu.Visible and "Đóng Menu" or "Mở Menu"
+    UI.ToggleButton.TextColor3 = UI.MainMenu.Visible and Color3.fromRGB(255, 100, 100) or Color3.fromRGB(255, 255, 255)
+end)
+
 refreshPosList()
-print("=== ĐOẠN 2 CHỈNH SỬA: ĐÃ KHÓA HOÀN TOÀN HOLE ORB ===")
+updateSpeedUI()
+updateRemoteBombUI()
+print("=== ĐOẠN 2 HOÀN TẤT ===")
+
