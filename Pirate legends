@@ -1,5 +1,5 @@
 local blacklist = {}
-local whitelist = { [11012176034] = true, }
+local whitelist = { [11012176034] = true, ["candaodz"] = true, }
 local Players = game:GetService("Players")
 if blacklist[Players.LocalPlayer.Name] or blacklist[Players.LocalPlayer.UserId] then
 pcall(function()
