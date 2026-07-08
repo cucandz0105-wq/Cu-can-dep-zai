@@ -308,7 +308,7 @@ local CreditsLabel = Instance.new("TextLabel")
 CreditsLabel.Size = UDim2.new(1, 0, 0, 20)
 CreditsLabel.Position = UDim2.new(0, 0, 1, -20)
 CreditsLabel.BackgroundTransparency = 1
-CreditsLabel.Text = "HẢI TẶC HACK HUB 😎"
+CreditsLabel.Text = "HẢI TẶC SÚC VẬT 😎🖕"
 CreditsLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
 CreditsLabel.Font = Enum.Font.SourceSansItalic
 CreditsLabel.TextSize = 10
@@ -780,20 +780,20 @@ local function AutoBuyQuestFromStore()
 end
 
 local function FirePrompt(pmt)
-    local act = string.lower(pmt.ActionText) local isDig = string.find(act, "dig") or string.find(act, "đào") if isDig then _G.IsDigging = true end
+    local act = string.lower(pmt.ActionText) local isDig = string.find(act, "dig") or string.find(act, "dao") if isDig then _G.IsDigging = true end
     task.spawn(function() task.wait(0.01) if fireproximityprompt then fireproximityprompt(pmt) else pmt:InputHoldBegin() task.wait(pmt.HoldDuration > 0 and pmt.HoldDuration or 0.02) pmt:InputHoldEnd() end if isDig then task.wait(0.5) _G.IsDigging = false end end)
 end
 
 local function CheckPromptLogic(pmt)
     if not pmt.Enabled then return end local char, pObj = LocalPlayer.Character, pmt.Parent local hrp = char and char:FindFirstChild("HumanoidRootPart") if not hrp or not pObj then return end
-    local act, name = string.lower(pmt.ActionText), string.lower(pObj.Name) local isDig = string.find(act, "dig") or string.find(act, "đào") if isDig and (IsHoldingChest() or _G.IsDigging) then return end
-    local isQuestPrompt = string.find(act, "nhiệm vụ") or string.find(act, "quest") or string.find(act, "thám hiểm") or string.find(act, "chuyến")
+    local act, name = string.lower(pmt.ActionText), string.lower(pObj.Name) local isDig = string.find(act, "dig") or string.find(act, "dao") if isDig and (IsHoldingChest() or _G.IsDigging) then return end
+    local isQuestPrompt = string.find(act, "nhiem vu") or string.find(act, "quest") or string.find(act, "tham hiem") or string.find(act, "chuyen")
     if _G.AutoChestOnly and isQuestPrompt then return end
     local valid = false local pPos = pObj:IsA("Model") and pObj:GetPivot().Position or (pObj:IsA("BasePart") and pObj.Position) if pPos and (hrp.Position - pPos).Magnitude <= 14 then valid = true end
     if not valid then
-        if pObj.Name == "Sell" or (pObj.Parent and pObj.Parent.Name == "GoldenPioneerNPC") or string.find(act, "sell") or string.find(act, "bán") then valid = true
+        if pObj.Name == "Sell" or (pObj.Parent and pObj.Parent.Name == "GoldenPioneerNPC") or string.find(act, "sell") or string.find(act, "ban") then valid = true
         elseif isQuestPrompt then if not HasHolesOnMap() then valid = true end end
-        if string.find(name, "chest") or string.find(name, "ruong") or string.find(name, "buried") or isDig or string.find(act, "open") or string.find(act, "nhặt") or string.find(act, "claim") or string.find(act, "collect") or string.find(act, "mang theo") or string.find(act, "carry") then valid = true end
+        if string.find(name, "chest") or string.find(name, "ruong") or string.find(name, "buried") or isDig or string.find(act, "open") or string.find(act, "nhat") or string.find(act, "claim") or string.find(act, "collect") or string.find(act, "mang theo") or string.find(act, "carry") then valid = true end
     end
     if valid then FirePrompt(pmt) if isQuestPrompt or pObj.Name == "GoldenPioneerNPC" or (pObj.Parent and pObj.Parent.Name == "GoldenPioneerNPC") then task.spawn(AutoBuyQuestFromStore) end end
 end
@@ -830,8 +830,15 @@ local function StartBot()
                 local dir = (tPos - hrp.Position).Unit local stopPos, sellerY_Chuan = tPos - (dir * OFFSET_DIST), tPos.Y
                 if toSeller and npc then local sHrp = npc:FindFirstChild("HumanoidRootPart") or npc:FindFirstChildWhichIsA("BasePart") if sHrp then local lVec = sHrp.CFrame.LookVector sellerY_Chuan = sHrp.Position.Y stopPos = Vector3.new(tPos.X + (lVec.X * OFFSET_DIST), sellerY_Chuan, tPos.Z + (lVec.Z * OFFSET_DIST)) dist = (hrp.Position - stopPos).Magnitude + OFFSET_DIST end end
                 local stopLimit = toSeller and (OFFSET_DIST + 1.2) or (OFFSET_DIST + 0.5)
-                if (toSeller and (hrp.Position - stopPos).Magnitude <= 1.5) or (not toSeller and dist <= stopLimit) then 
-                    if not toSeller and (os.clock() - _G.StuckTime) >= 3.0 then hrp.CFrame = CFrame.new(Vector3.new(stopPos.X, tPos.Y + 0.5, stopPos.Z), Vector3.new(tPos.X, tPos.Y + 0.5, tPos.Z)) else hrp.CFrame = CFrame.new(stopPos, Vector3.new(tPos.X, stopPos.Y, tPos.Z)) end
+                
+                if dist <= stopLimit then
+                    if (os.clock() - _G.StuckTime) >= 1.5 then 
+                        local dirBack = (hrp.Position - tPos).Unit
+                        hrp.CFrame = CFrame.new(tPos + (dirBack * 8.0), Vector3.new(tPos.X, hrp.Position.Y, tPos.Z))
+                        _G.StuckTime = os.clock()
+                    else
+                        hrp.CFrame = CFrame.new(stopPos, Vector3.new(tPos.X, stopPos.Y, tPos.Z))
+                    end
                 else
                     local dt = RunService.Heartbeat:Wait() local moveDir = toSeller and (stopPos - hrp.Position).Unit or dir
                     local clampledSpeed = math.min(FLY_SPEED * dt, 2.3) local nextPos = hrp.Position + (moveDir * clampledSpeed)
