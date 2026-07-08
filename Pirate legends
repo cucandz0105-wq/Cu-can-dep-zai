@@ -814,7 +814,7 @@ task.spawn(function()
     end 
 end)
 
-local FLY_SPEED, FALL_LIMIT, CLIMB_LIMIT, OFFSET_DIST, LERP_SMOOTH, MAX_HEIGHT, SEA_LEVEL = 50, 80, 45, 3.5, 0.25, 8.0, 14.5
+local FLY_SPEED, FALL_LIMIT, CLIMB_LIMIT, OFFSET_DIST, LERP_SMOOTH, MAX_HEIGHT, SEA_LEVEL = 58, 80, 45, 3.5, 0.25, 8.0, 14.5
 local function StartBot()
     if _G.BotConnection then _G.BotConnection:Disconnect() _G.BotConnection = nil end if _G.NoclipConnection then _G.NoclipConnection:Disconnect() _G.NoclipConnection = nil end
     _G.NoclipConnection = RunService.Stepped:Connect(function() local char = LocalPlayer.Character if char and (_G.AutoDigAndPick or _G.AutoChestOnly) then local hum = char:FindFirstChildWhichIsA("Humanoid") if hum then hum:ChangeState(Enum.HumanoidStateType.Physics) end for _, child in ipairs(char:GetChildren()) do if child:IsA("BasePart") then child.CanCollide = false end end end end)
