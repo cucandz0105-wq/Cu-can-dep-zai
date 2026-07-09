@@ -308,7 +308,7 @@ local CreditsLabel = Instance.new("TextLabel")
 CreditsLabel.Size = UDim2.new(1, 0, 0, 20)
 CreditsLabel.Position = UDim2.new(0, 0, 1, -20)
 CreditsLabel.BackgroundTransparency = 1
-CreditsLabel.Text = "HẢI TẶC SÚC VẬT 😎🖕"
+CreditsLabel.Text = "SÚC VẬT CƯỚP BIỂN ☠️"
 CreditsLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
 CreditsLabel.Font = Enum.Font.SourceSansItalic
 CreditsLabel.TextSize = 10
@@ -642,6 +642,11 @@ local function cleanUpForces()
     if RealCarpet then RealCarpet:Destroy() RealCarpet = nil end
     currentBoatCache, lastCachedSeat = {}, nil
 end
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local PhysicsService = game:GetService("PhysicsService")
+local LocalPlayer = Players.LocalPlayer
+
 pcall(function()
     PhysicsService:RegisterCollisionGroup("PlayerBoatGroup") PhysicsService:RegisterCollisionGroup("GhostCarpetGroup")
     PhysicsService:CollisionGroupSetCollidable("PlayerBoatGroup", "GhostCarpetGroup", true)
@@ -666,6 +671,7 @@ if _G.DownBtn then
     _G.DownBtn.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then holdingDown = false end end)
 end
 
+local lastCachedSeat, currentBoatCache = nil, {}
 local function assignBoatToGroup(seat)
     local boat = seat.Parent if not boat then return end
     if lastCachedSeat ~= boat then
@@ -680,25 +686,28 @@ local function assignBoatToGroup(seat)
 end
 
 RunService.PreSimulation:Connect(function()
-    local seat = getDrivenSeat()
+    local seat = getDrivenSeat and getDrivenSeat()
     if seat then
         assignBoatToGroup(seat)
         pcall(function() seat:CanSetNetworkOwnership() seat:SetNetworkOwner(LocalPlayer) for _, part in ipairs(currentBoatCache) do if part and part:CanSetNetworkOwnership() then part:SetNetworkOwner(LocalPlayer) end end end)
         pcall(function() seat.MaxTorque = Vector3.new(math.huge, 0, math.huge) seat.AngularVelocity = Vector3.new(0, seat.AngularVelocity.Y, 0) end)
         if _G.BoatFlyActive then
-            local currentBottomY = getAbsoluteBoatBottom(seat) if not _G.BaseFloatLevel then _G.BaseFloatLevel = currentBottomY - 2 end
+            local currentBottomY = getAbsoluteBoatBottom and getAbsoluteBoatBottom(seat) or seat.Position.Y
+            if not _G.BaseFloatLevel then _G.BaseFloatLevel = currentBottomY - 2 end
             local targetCarpetY = _G.BaseFloatLevel + _G.ManualOffset if targetCarpetY > (currentBottomY - 1.2) then targetCarpetY = currentBottomY - 1.2 end
             if _G.HeightLabel then _G.HeightLabel.Text = "Cao độ thảm Y: " .. tostring(math.floor(targetCarpetY)) end
-            if not RealCarpet then createRealCarpet() end
-            local _, rotY, _ = seat.CFrame:ToEulerAnglesYXZ() local targetCFrame = CFrame.new(seat.Position.X, targetCarpetY, seat.Position.Z) * CFrame.fromEulerAnglesYXZ(0, rotY, 0)
-            RealCarpet.CFrame = RealCarpet.CFrame:Lerp(targetCFrame, 0.85)
+            if not RealCarpet and createRealCarpet then createRealCarpet() end
+            if RealCarpet then
+                local _, rotY, _ = seat.CFrame:ToEulerAnglesYXZ() local targetCFrame = CFrame.new(seat.Position.X, targetCarpetY, seat.Position.Z) * CFrame.fromEulerAnglesYXZ(0, rotY, 0)
+                RealCarpet.CFrame = RealCarpet.CFrame:Lerp(targetCFrame, 0.85)
+            end
         else if RealCarpet then RealCarpet:Destroy() RealCarpet = nil end if _G.BaseFloatLevel then if _G.HeightLabel then _G.HeightLabel.Text = "Độ Cao Thảm: Tắt" end _G.BaseFloatLevel = nil end end
         if _G.SuperSailActive then
             if not activeAttachment or activeAttachment.Parent ~= seat then if activeAttachment then activeAttachment:Destroy() end activeAttachment = Instance.new("Attachment") activeAttachment.Parent = seat end
             if not activeVelocity or activeVelocity.Parent ~= seat then if activeVelocity then activeVelocity:Destroy() end activeVelocity = Instance.new("LinearVelocity") activeVelocity.Attachment0 = activeAttachment activeVelocity.MaxForce = math.huge activeVelocity.VelocityConstraintMode = Enum.VelocityConstraintMode.Vector activeVelocity.Parent = seat end
-            local forward = seat.CFrame.LookVector activeVelocity.VectorVelocity = Vector3.new(forward.X, 0, forward.Z).Unit * _G.BoostMultiplier
+            local forward = seat.CFrame.LookVector activeVelocity.VectorVelocity = Vector3.new(forward.X, 0, forward.Z).Unit * (_G.BoostMultiplier or 100)
         else if activeVelocity then activeVelocity:Destroy() activeVelocity = nil end end
-    else cleanUpForces() _G.BaseFloatLevel = nil if _G.HeightLabel then _G.HeightLabel.Text = "Độ Cao Thảm: Tắt" end end
+    else if cleanUpForces then cleanUpForces() end _G.BaseFloatLevel = nil if _G.HeightLabel then _G.HeightLabel.Text = "Độ Cao Thảm: Tắt" end end
 end)
 
 if _G.BoatBoostBtn then
@@ -714,6 +723,13 @@ if _G.BoatFlyBtn then
         if not _G.BoatFlyActive then _G.ManualOffset = 0 end
     end)
 end
+local Workspace = game:GetService("Workspace")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local ProximityPromptService = game:GetService("ProximityPromptService")
+local TweenService = game:GetService("TweenService")
+local LocalPlayer = Players.LocalPlayer
+local Camera = Workspace.CurrentCamera
 
 local function GetNearestSeller()
     local char = LocalPlayer.Character local hrp = char and char:FindFirstChild("HumanoidRootPart") if not hrp then return nil end
@@ -737,6 +753,7 @@ local function GetNearestBuriedChest()
     if folder then for _, isl in pairs(folder:GetChildren()) do for _, cst in pairs(isl:GetChildren()) do if cst.Name == "BuriedChest" then local pmt = cst:FindFirstChildWhichIsA("ProximityPrompt", true) local spn = cst:FindFirstChild("Spawn") if pmt and pmt.Enabled and spn then local dist = (hrp.Position - spn.Position).Magnitude if dist < minDist then minDist, nearHole = dist, spn end end end end end end
     return nearHole
 end
+
 local function GetNearestDroppedChest()
     local char = LocalPlayer.Character local hrp = char and char:FindFirstChild("HumanoidRootPart") if not hrp then return nil end
     local nearChest, minDist = nil, math.huge
@@ -786,7 +803,15 @@ end
 
 local function CheckPromptLogic(pmt)
     if not pmt.Enabled then return end local char, pObj = LocalPlayer.Character, pmt.Parent local hrp = char and char:FindFirstChild("HumanoidRootPart") if not hrp or not pObj then return end
-    local act, name = string.lower(pmt.ActionText), string.lower(pObj.Name) local isDig = string.find(act, "dig") or string.find(act, "dao") if isDig and (IsHoldingChest() or _G.IsDigging) then return end
+    local act, name = string.lower(pmt.ActionText), string.lower(pObj.Name)
+    local isBaseTeleport = false
+    pcall(function()
+        if string.find(name, "tobase") or string.find(act, "căn cứ") or string.find(act, "can cu") then
+            if pObj:FindFirstAncestor("SpiritTeleport") or pObj:FindFirstAncestor("Ferryman's Galleon") then isBaseTeleport = true end
+        end
+    end)
+    if isBaseTeleport then FirePrompt(pmt) return end
+    local isDig = string.find(act, "dig") or string.find(act, "dao") if isDig and (IsHoldingChest() or _G.IsDigging) then return end
     local isQuestPrompt = string.find(act, "nhiem vu") or string.find(act, "quest") or string.find(act, "tham hiem") or string.find(act, "chuyen")
     if _G.AutoChestOnly and isQuestPrompt then return end
     local valid = false local pPos = pObj:IsA("Model") and pObj:GetPivot().Position or (pObj:IsA("BasePart") and pObj.Position) if pPos and (hrp.Position - pPos).Magnitude <= 14 then valid = true end
@@ -804,8 +829,9 @@ task.spawn(function()
     while task.wait(0.15) do 
         if not _G.PromptLoopActive then break end
         if _G.AutoDigAndPick or _G.AutoChestOnly then 
-            local char = LocalPlayer.Character local hrp = char and char:FindFirstChild("HumanoidRootPart")
-            if hrp then
+            local char = LocalPlayer.Character local hrp = char and char:FindFirstChild("HumanoidRootPart") local hum = char and char:FindFirstChildWhichIsA("Humanoid")
+            if hrp and hum and hum.Health > 0 then
+                local galleon = Workspace:FindFirstChild("Ferryman's Galleon") if galleon then for _, pmt in pairs(galleon:GetDescendants()) do if pmt:IsA("ProximityPrompt") and pmt.Enabled then CheckPromptLogic(pmt) end end end
                 local cFolder = Workspace:FindFirstChild("ChestsFolder") if cFolder then for _, pmt in pairs(cFolder:GetDescendants()) do if pmt:IsA("ProximityPrompt") and pmt.Enabled and pmt.Parent then local pPos = pmt.Parent:IsA("Model") and pmt.Parent:GetPivot().Position or (pmt.Parent:IsA("BasePart") and pmt.Parent.Position) if pPos and (hrp.Position - pPos).Magnitude <= 14 then CheckPromptLogic(pmt) end end end end
                 for _, o in pairs(Workspace:GetChildren()) do if o:IsA("Tool") or o:IsA("Model") then local n = string.lower(o.Name) if string.find(n, "chest") or string.find(n, "ruong") then local pmt = o:FindFirstChildWhichIsA("ProximityPrompt", true) if pmt and pmt.Enabled then local pPos = o:IsA("Model") and o:GetPivot().Position or o.Position if pPos and (hrp.Position - pPos).Magnitude <= 14 then CheckPromptLogic(pmt) end end end end end
                 local npc = GetNearestSeller() if npc then for _, pmt in pairs(npc:GetDescendants()) do if pmt:IsA("ProximityPrompt") and pmt.Enabled then CheckPromptLogic(pmt) end end end 
@@ -813,52 +839,219 @@ task.spawn(function()
         end 
     end 
 end)
+-- =======================================================
+-- ANTI-AFK SYSTEM (PREVENTS 20-MIN IDLE KICK)
+-- =======================================================
+local VirtualUser = game:GetService("VirtualUser")
+if _G.AntiAFKConnection then _G.AntiAFKConnection:Disconnect() end
+
+_G.AntiAFKConnection = game:GetService("Players").LocalPlayer.Idled:Connect(function()
+    VirtualUser:CaptureController()
+    VirtualUser:ClickButton2(Vector2.new(0, 0))
+end)
+-- =======================================================
 
 local FLY_SPEED, FALL_LIMIT, CLIMB_LIMIT, OFFSET_DIST, LERP_SMOOTH, MAX_HEIGHT, SEA_LEVEL = 55, 80, 45, 3.5, 0.25, 8.0, 12.5
+
 local function StartBot()
-    if _G.BotConnection then _G.BotConnection:Disconnect() _G.BotConnection = nil end if _G.NoclipConnection then _G.NoclipConnection:Disconnect() _G.NoclipConnection = nil end
-    _G.NoclipConnection = RunService.Stepped:Connect(function() local char = LocalPlayer.Character if char and (_G.AutoDigAndPick or _G.AutoChestOnly) then local hum = char:FindFirstChildWhichIsA("Humanoid") if hum then hum:ChangeState(Enum.HumanoidStateType.Physics) end for _, child in ipairs(char:GetChildren()) do if child:IsA("BasePart") then child.CanCollide = false end end end end)
-    _G.BotConnection = RunService.Heartbeat:Connect(function()
+    if _G.BotConnection then _G.BotConnection:Disconnect() _G.BotConnection = nil end 
+    if _G.NoclipConnection then _G.NoclipConnection:Disconnect() _G.NoclipConnection = nil end
+    
+    _G.NoclipConnection = RunService.Stepped:Connect(function() 
+        local char = LocalPlayer.Character 
+        local hum = char and char:FindFirstChildWhichIsA("Humanoid") 
+        if hum and hum.Health > 0 and (_G.AutoDigAndPick or _G.AutoChestOnly) then 
+            hum:ChangeState(Enum.HumanoidStateType.Physics) 
+            hum:SetStateEnabled(Enum.HumanoidStateType.Seated, false)
+            if hum.Sit then hum.Sit = false end 
+            
+            for _, child in ipairs(char:GetChildren()) do 
+                if child:IsA("BasePart") then child.CanCollide = false end 
+            end 
+        end 
+    end)
+    
+    _G.BotConnection = RunService.Heartbeat:Connect(function(dt)
         local char = LocalPlayer.Character local hrp, hum = char and char:FindFirstChild("HumanoidRootPart"), char and char:FindFirstChildWhichIsA("Humanoid")
-        if hrp and hum and (_G.AutoDigAndPick or _G.AutoChestOnly) then
-            hrp.AssemblyLinearVelocity, hrp.AssemblyAngularVelocity = Vector3.new(0,0,0), Vector3.new(0,0,0) local tPos, tPart, toSeller, npc = nil, nil, false, nil
-            if IsHoldingChest() then npc = GetNearestSeller() if npc then tPos, toSeller = npc:GetPivot().Position, true tPart = npc end
-            else tPart = _G.AutoChestOnly and GetNearestDroppedChest() or (_G.AutoDigAndPick and (GetChestAtFeet() or GetNearestBuriedChest())) if tPart then tPos = tPart.Position else npc = GetNearestSeller() if npc then tPos, toSeller = npc:GetPivot().Position, true tPart = npc end end end
-            if tPos then
-                if _G.CurrentTarget ~= tPart then _G.CurrentTarget = tPart _G.StuckTime = os.clock() end
-                local dist = (hrp.Position - tPos).Magnitude if toSeller and dist < 18 then Camera.CFrame = CFrame.new(Camera.CFrame.Position, tPos) end
-                local dir = (tPos - hrp.Position).Unit local stopPos, sellerY_Chuan = tPos - (dir * OFFSET_DIST), tPos.Y
-                if toSeller and npc then local sHrp = npc:FindFirstChild("HumanoidRootPart") or npc:FindFirstChildWhichIsA("BasePart") if sHrp then local lVec = sHrp.CFrame.LookVector sellerY_Chuan = sHrp.Position.Y stopPos = Vector3.new(tPos.X + (lVec.X * OFFSET_DIST), sellerY_Chuan, tPos.Z + (lVec.Z * OFFSET_DIST)) dist = (hrp.Position - stopPos).Magnitude + OFFSET_DIST end end
-                local stopLimit = toSeller and (OFFSET_DIST + 1.2) or (OFFSET_DIST + 0.5)
-                
-                if dist <= stopLimit then
-                    if (os.clock() - _G.StuckTime) >= 1.5 then 
-                        local dirBack = (hrp.Position - tPos).Unit
-                        hrp.CFrame = CFrame.new(tPos + (dirBack * 8.0), Vector3.new(tPos.X, hrp.Position.Y, tPos.Z))
-                        _G.StuckTime = os.clock()
-                    else
-                        hrp.CFrame = CFrame.new(stopPos, Vector3.new(tPos.X, stopPos.Y, tPos.Z))
-                    end
+        if not hrp or not hum then _G.CurrentTarget = nil _G.FakeFallSpeed = 0 return end
+        if (_G.AutoDigAndPick or _G.AutoChestOnly) then
+            local tPos, tPart, toSeller, npc, ghostDoor = nil, nil, false, nil, nil
+            local galleon = Workspace:FindFirstChild("Ferryman's Galleon") local gd = galleon and galleon:FindFirstChild("SpiritTeleport") and galleon["SpiritTeleport"]:FindFirstChild("Main")
+            
+            local distToDoor = math.huge
+            if gd then
+                distToDoor = (hrp.Position - gd:GetPivot().Position).Magnitude
+            end
+
+            if hum.Health <= 0 or distToDoor < 150 then
+                _G.IsTeleportingHome = true
+            end
+            
+            if hum.Health > 0 and distToDoor > 200 then
+                _G.IsTeleportingHome = false
+            end
+            
+            if _G.IsTeleportingHome then
+                if gd then 
+                    ghostDoor = gd tPos = gd:GetPivot().Position tPart = gd 
                 else
-                    local dt = RunService.Heartbeat:Wait() local moveDir = toSeller and (stopPos - hrp.Position).Unit or dir
-                    local clampledSpeed = math.min(FLY_SPEED * dt, 2.3) local nextPos = hrp.Position + (moveDir * clampledSpeed)
-                    local inCave = (not toSeller) and (tPos.Y < 20 or (hrp.Position.Y - tPos.Y > 15)) local targetY, groundY, trenBien = hrp.Position.Y, nil, false local ganMucTieu = dist < 30
-                    if ganMucTieu then targetY = toSeller and sellerY_Chuan or (tPos.Y + (hrp.Size.Y / 2) + 0.5) nextPos = Vector3.new(nextPos.X, targetY, nextPos.Z)
-                    elseif not inCave then
-                        local params = RaycastParams.new() params.FilterType = Enum.RaycastFilterType.Exclude local ignore = {char}
-                        if Workspace:FindFirstChild("IslandsModel") and Workspace["IslandsModel"]:FindFirstChild("NPCs") then table.insert(ignore, Workspace["IslandsModel"]["NPCs"]) end
-                        if Workspace:FindFirstChild("Trees") then table.insert(ignore, Workspace["Trees"]) end if Workspace:FindFirstChild("TreeFolder") then table.insert(ignore, Workspace["TreeFolder"]) end
-                        params.FilterDescendantsInstances = ignore local ray = Workspace:Raycast(Vector3.new(nextPos.X, nextPos.Y + 100, nextPos.Z), Vector3.new(0, -200, 0), params)
-                        if ray and ray.Instance then groundY = ray.Position.Y targetY = groundY + (hrp.Size.Y / 2) + 0.01 if tPos.Y < hrp.Position.Y - 5 and targetY > tPos.Y + 10 then targetY = tPos.Y + (hrp.Size.Y / 2) + 0.01 end else targetY, trenBien = SEA_LEVEL, true end
-                    else targetY = math.max(tPos.Y + (hrp.Size.Y / 2) + 0.01, -30) end
-                    local finalY = hrp.Position.Y
-                    if ganMucTieu then finalY = targetY
-                    elseif trenBien then if hrp.Position.Y > SEA_LEVEL then _G.FakeFallSpeed = _G.FakeFallSpeed + (workspace.Gravity * dt) if _G.FakeFallSpeed > 110 then _G.FakeFallSpeed = 110 end finalY = hrp.Position.Y - (_G.FakeFallSpeed * dt) if finalY < SEA_LEVEL then finalY, _G.FakeFallSpeed = SEA_LEVEL, 0 end else finalY, _G.FakeFallSpeed = SEA_LEVEL, 0 end
-                    else _G.FakeFallSpeed = 0 if targetY < hrp.Position.Y - 2 then finalY = hrp.Position.Y - (FALL_LIMIT * dt) if finalY < targetY then finalY = targetY end elseif targetY > hrp.Position.Y + 2 then finalY = hrp.Position.Y + (CLIMB_LIMIT * dt) if finalY > targetY then finalY = targetY end else finalY = hrp.Position.Y + (targetY - hrp.Position.Y) * LERP_SMOOTH end end
-                    if groundY and (finalY - groundY > MAX_HEIGHT) and not ganMucTieu then finalY = groundY + MAX_HEIGHT end
-                    finalY = math.max(finalY, -30) hrp.CFrame = CFrame.new(Vector3.new(nextPos.X, finalY, nextPos.Z), Vector3.new(tPos.X, finalY, tPos.Z))
+                    _G.CurrentTarget = nil hrp.AssemblyLinearVelocity = Vector3.new(0,0,0) return
                 end
-            else hrp.AssemblyLinearVelocity = Vector3.new(0,0,0) end
+            end
+            
+            if not _G.IsTeleportingHome and not tPos then
+                if IsHoldingChest() then npc = GetNearestSeller() if npc then tPos, toSeller = npc:GetPivot().Position, true tPart = npc end
+                else tPart = _G.AutoChestOnly and GetNearestDroppedChest() or (_G.AutoDigAndPick and (GetChestAtFeet() or GetNearestBuriedChest())) if tPart then tPos = tPart.Position else npc = GetNearestSeller() if npc then tPos, toSeller = npc:GetPivot().Position, true tPart = npc elseif gd and distToDoor > 200 then ghostDoor = gd tPos = gd:GetPivot().Position tPart = gd end end end
+            end
+            
+            if not tPos then _G.CurrentTarget = nil _G.FakeFallSpeed = 0 hrp.AssemblyLinearVelocity = Vector3.new(0,0,0) hrp.AssemblyAngularVelocity = Vector3.new(0,0,0) return end
+            hrp.AssemblyLinearVelocity, hrp.AssemblyAngularVelocity = Vector3.new(0,0,0), Vector3.new(0,0,0)
+            
+            if _G.CurrentTarget ~= tPart then 
+                _G.CurrentTarget = tPart 
+                _G.StuckTime = os.clock() 
+                _G.SellerStuckTime = nil 
+                _G.DaDenDich = false
+            end
+            
+            -- =======================================================
+            -- ANTI-RUBBERBAND SYSTEM
+            -- =======================================================
+            if not _G.LastHrpPosition then 
+                _G.LastHrpPosition = hrp.Position
+                _G.RubberbandCount = 0
+                _G.LastRubberbandTime = os.clock()
+            end
+
+            if os.clock() - _G.LastRubberbandTime > 3.0 then
+                _G.RubberbandCount = 0
+            end
+
+            local currentDistToTarget = (hrp.Position - tPos).Magnitude
+            local lastDistToTarget = (_G.LastHrpPosition - tPos).Magnitude
+
+            if (currentDistToTarget - lastDistToTarget) > 10.0 then
+                _G.RubberbandCount = _G.RubberbandCount + 1
+                _G.LastRubberbandTime = os.clock()
+                
+                if _G.RubberbandCount >= 5 then
+                    if char and hum and hum.Health > 0 then 
+                        hum.Health = 0 
+                    end
+                    _G.RubberbandCount = 0
+                    _G.LastHrpPosition = hrp.Position
+                    return
+                end
+            end
+            _G.LastHrpPosition = hrp.Position
+            -- =======================================================
+            
+            local dist = (hrp.Position - tPos).Magnitude if toSeller and dist < 18 then Camera.CFrame = CFrame.new(Camera.CFrame.Position, tPos) end
+            local dir = (tPos - hrp.Position).Unit local stopPos, sellerY_Chuan = tPos - (dir * OFFSET_DIST), tPos.Y
+            if toSeller and npc then local sHrp = npc:FindFirstChild("HumanoidRootPart") or npc:FindFirstChildWhichIsA("BasePart") if sHrp then local lVec = sHrp.CFrame.LookVector sellerY_Chuan = sHrp.Position.Y stopPos = Vector3.new(tPos.X + (lVec.X * OFFSET_DIST), sellerY_Chuan, tPos.Z + (lVec.Z * OFFSET_DIST)) dist = (hrp.Position - stopPos).Magnitude + OFFSET_DIST end 
+            elseif ghostDoor then sellerY_Chuan = tPos.Y stopPos = tPos - (dir * OFFSET_DIST) end
+            local stopLimit = (toSeller or ghostDoor) and (OFFSET_DIST + 1.2) or (OFFSET_DIST + 0.5)
+            
+            if dist <= stopLimit then
+                if not _G.DaDenDich then
+                    _G.StuckTime = os.clock()
+                    _G.DaDenDich = true
+                end
+
+                -- 1. SELLER STUCK RESET (3 SECONDS)
+                if toSeller then
+                    if IsHoldingChest() then
+                        if not _G.SellerStuckTime then
+                            _G.SellerStuckTime = os.clock()
+                        elseif (os.clock() - _G.SellerStuckTime) >= 3.0 then
+                            if char and hum and hum.Health > 0 then hum.Health = 0 end
+                            _G.SellerStuckTime = nil
+                            return
+                        end
+                    else
+                        _G.SellerStuckTime = nil
+                    end
+                end
+
+                -- 2. FARM STUCK RESET (2.5 SECONDS)
+                local notNpcOrDoor = (not toSeller) and (not ghostDoor)
+                local pGui = LocalPlayer:FindFirstChildWhichIsA("PlayerGui")
+                local isQuestMenuOpen = false
+
+                if pGui then
+                    local shopUI = pGui:FindFirstChild("QuestShopUI")
+                    local pickUI = pGui:FindFirstChild("PickQuestUI")
+                    
+                    if (shopUI and (shopUI:GetAttribute("Enabled") or shopUI.Enabled)) or 
+                       (pickUI and (pickUI:GetAttribute("Enabled") or pickUI.Enabled)) then
+                        isQuestMenuOpen = true
+                    end
+                end
+
+                if notNpcOrDoor and not isQuestMenuOpen and (os.clock() - _G.StuckTime) >= 2.5 then 
+                    if char and hum and hum.Health > 0 then 
+                        hum.Health = 0 
+                    end
+                    return
+                end
+
+                hrp.CFrame = CFrame.new(stopPos, Vector3.new(tPos.X, stopPos.Y, tPos.Z)) 
+            else
+                _G.DaDenDich = false
+                _G.SellerStuckTime = nil 
+                
+                local moveDir = (toSeller or ghostDoor) and (stopPos - hrp.Position).Unit or dir local clampledSpeed = math.min(FLY_SPEED * dt, 2.3) local nextPos = hrp.Position + (moveDir * clampledSpeed)
+                local inCave = (not toSeller) and (not ghostDoor) and (tPos.Y < 20 or (hrp.Position.Y - tPos.Y > 15)) local targetY, groundY, trenBien = hrp.Position.Y, nil, false local ganMucTieu = dist < 30
+                if ganMucTieu then targetY = (toSeller or ghostDoor) and sellerY_Chuan or (tPos.Y + (hrp.Size.Y / 2) + 0.5) nextPos = Vector3.new(nextPos.X, targetY, nextPos.Z)
+                elseif not inCave then
+                    local params = RaycastParams.new() params.FilterType = Enum.RaycastFilterType.Exclude local ignore = {char}
+                    if Workspace:FindFirstChild("IslandsModel") and Workspace["IslandsModel"]:FindFirstChild("NPCs") then table.insert(ignore, Workspace["IslandsModel"]["NPCs"]) end
+                    if Workspace:FindFirstChild("Trees") then table.insert(ignore, Workspace["Trees"]) end if Workspace:FindFirstChild("TreeFolder") then table.insert(ignore, Workspace["TreeFolder"]) end
+                    params.FilterDescendantsInstances = ignore local ray = Workspace:Raycast(Vector3.new(nextPos.X, nextPos.Y + 100, nextPos.Z), Vector3.new(0, -200, 0), params)
+                    if ray and ray.Instance then groundY = ray.Position.Y targetY = groundY + (hrp.Size.Y / 2) + 0.01 if tPos.Y < hrp.Position.Y - 5 and targetY > tPos.Y + 10 then targetY = tPos.Y + (hrp.Size.Y / 2) + 0.01 end else targetY, trenBien = SEA_LEVEL, true end
+                else targetY = math.max(tPos.Y + (hrp.Size.Y / 2) + 0.01, -30) end
+                
+                local finalY = hrp.Position.Y
+                if ganMucTieu then 
+                    finalY = targetY
+                elseif trenBien then 
+                    if hrp.Position.Y > SEA_LEVEL then 
+                        _G.FakeFallSpeed = _G.FakeFallSpeed + (workspace.Gravity * dt) 
+                        if _G.FakeFallSpeed > 110 then _G.FakeFallSpeed = 110 end 
+                        
+                        local deltaY = _G.FakeFallSpeed * dt
+                        if deltaY > 1.4 then deltaY = 1.4 end
+                        finalY = hrp.Position.Y - deltaY
+                        if finalY < SEA_LEVEL then finalY, _G.FakeFallSpeed = SEA_LEVEL, 0 end 
+                    else 
+                        finalY, _G.FakeFallSpeed = SEA_LEVEL, 0 
+                    end
+                else 
+                    _G.FakeFallSpeed = 0 
+                    if targetY < hrp.Position.Y - 2 then 
+                        local duKienY = hrp.Position.Y - (FALL_LIMIT * dt)
+                        if duKienY < targetY then duKienY = targetY end
+                        
+                        local doLechY = hrp.Position.Y - duKienY
+                        if doLechY > 1.4 then duKienY = hrp.Position.Y - 1.4 end
+                        
+                        finalY = duKienY
+                        if finalY <= targetY then 
+                            finalY = targetY 
+                        end 
+                    elseif targetY > hrp.Position.Y + 2 then 
+                        finalY = hrp.Position.Y + (CLIMB_LIMIT * dt) 
+                        if finalY > targetY then finalY = targetY end 
+                    else 
+                        finalY = hrp.Position.Y + (targetY - hrp.Position.Y) * LERP_SMOOTH 
+                    end 
+                end
+                
+                if groundY and (finalY - groundY > MAX_HEIGHT) and not ganMucTieu then finalY = groundY + MAX_HEIGHT end
+                finalY = math.max(finalY, -30)
+                if (Vector3.new(tPos.X, finalY, tPos.Z) - Vector3.new(nextPos.X, finalY, nextPos.Z)).Magnitude > 0.1 then hrp.CFrame = CFrame.new(Vector3.new(nextPos.X, finalY, nextPos.Z), Vector3.new(tPos.X, finalY, tPos.Z))
+                else hrp.CFrame = CFrame.new(Vector3.new(nextPos.X, finalY, nextPos.Z), nextPos.X + hrp.CFrame.LookVector) end
+            end
         end
     end)
 end
@@ -866,23 +1059,38 @@ end
 local function StopBot()
     if not _G.AutoDigAndPick and not _G.AutoChestOnly then
         if _G.BotConnection then _G.BotConnection:Disconnect() _G.BotConnection = nil end if _G.NoclipConnection then _G.NoclipConnection:Disconnect() _G.NoclipConnection = nil end
-        if LocalPlayer.Character then local hum = LocalPlayer.Character:FindFirstChildWhichIsA("Humanoid") if hum then hum:ChangeState(Enum.HumanoidStateType.GettingUp) end local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart") if hrp then hrp.AssemblyLinearVelocity = Vector3.new(0,0,0) end end
-        _G.IsDigging, _G.FakeFallSpeed, _G.CurrentTarget, _G.StuckTime = false, 0, nil, 0
+        if LocalPlayer.Character then 
+            local hum = LocalPlayer.Character:FindFirstChildWhichIsA("Humanoid") 
+            if hum then 
+                hum:ChangeState(Enum.HumanoidStateType.GettingUp) 
+                hum:SetStateEnabled(Enum.HumanoidStateType.Seated, true) 
+            end 
+            local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart") if hrp then hrp.AssemblyLinearVelocity = Vector3.new(0,0,0) end 
+        end
+        _G.IsDigging, _G.FakeFallSpeed, _G.CurrentTarget, _G.StuckTime, _G.IsTeleportingHome = false, 0, nil, 0, false
+        _G.DaDenDich = false
+        _G.SellerStuckTime = nil
+        _G.LastHrpPosition = nil
+        _G.RubberbandCount = 0
     end
 end
 
-BtnDig.MouseButton1Click:Connect(function()
-    _G.AutoDigAndPick = not _G.AutoDigAndPick
-    if _G.AutoDigAndPick then
-        _G.AutoChestOnly = false BtnPick.Text = "CHEST ONLY [OFF]" BtnPick.BackgroundColor3 = Color3.fromRGB(45, 45, 45) BtnDig.Text = "DIG HOLE [RUNNING]"
-        TweenService:Create(BtnDig, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255, 0, 128)}):Play() StartBot()
-    else BtnDig.Text = "DIG HOLE [OFF]" TweenService:Create(BtnDig, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(45, 45, 45)}):Play() StopBot() end
-end)
+if BtnDig then
+    BtnDig.MouseButton1Click:Connect(function()
+        _G.AutoDigAndPick = not _G.AutoDigAndPick
+        if _G.AutoDigAndPick then
+            _G.AutoChestOnly = false if BtnPick then BtnPick.Text = "CHEST ONLY [OFF]" BtnPick.BackgroundColor3 = Color3.fromRGB(45, 45, 45) end BtnDig.Text = "DIG HOLE [RUNNING]"
+            TweenService:Create(BtnDig, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255, 0, 128)}):Play() StartBot()
+        else BtnDig.Text = "DIG HOLE [OFF]" TweenService:Create(BtnDig, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(45, 45, 45)}):Play() StopBot() end
+    end)
+end
 
-BtnPick.MouseButton1Click:Connect(function()
-    _G.AutoChestOnly = not _G.AutoChestOnly
-    if _G.AutoChestOnly then
-        _G.AutoDigAndPick = false BtnDig.Text = "DIG HOLE [OFF]" BtnDig.BackgroundColor3 = Color3.fromRGB(45, 45, 45) BtnPick.Text = "CHEST ONLY [RUNNING]"
-        TweenService:Create(BtnPick, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(0, 170, 255)}):Play() StartBot()
-    else BtnPick.Text = "CHEST ONLY [OFF]" TweenService:Create(BtnPick, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(45, 45, 45)}):Play() StopBot() end
-end)
+if BtnPick then
+    BtnPick.MouseButton1Click:Connect(function()
+        _G.AutoChestOnly = not _G.AutoChestOnly
+        if _G.AutoChestOnly then
+            _G.AutoDigAndPick = false if BtnDig then BtnDig.Text = "DIG HOLE [OFF]" BtnDig.BackgroundColor3 = Color3.fromRGB(45, 45, 45) end BtnPick.Text = "CHEST ONLY [RUNNING]"
+            TweenService:Create(BtnPick, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(0, 170, 255)}):Play() StartBot()
+        else BtnPick.Text = "CHEST ONLY [OFF]" TweenService:Create(BtnPick, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(45, 45, 45)}):Play() StopBot() end
+    end)
+end
