@@ -959,13 +959,14 @@ local function StartBot()
                     _G.DaDenDich = true
                 end
 
-                -- FIX LÚN ĐẤT: Chỉ kích hoạt giật lên khi đã đứng ngay sát trục XZ của rương
+                -- CHỐT HẠ FIX LÚN ĐẤT CHUẨN ĐÉT: Lún > 5 studs + Chờ đúng 1.5 giây -> Giật lên cao hơn mặt rương 1.5 studs
                 local flatDist = Vector3.new(hrp.Position.X, 0, hrp.Position.Z) - Vector3.new(tPos.X, 0, tPos.Z)
-                if (not toSeller) and (not ghostDoor) and flatDist.Magnitude < 5.0 and (tPos.Y - hrp.Position.Y > 1.5) then
+                if (not toSeller) and (not ghostDoor) and flatDist.Magnitude < 6.0 and (tPos.Y - hrp.Position.Y > 5.0) then
                     if not _G.CaveTimer then
                         _G.CaveTimer = os.clock()
-                    elseif (os.clock() - _G.CaveTimer) >= 1.2 then 
-                        hrp.CFrame = CFrame.new(Vector3.new(tPos.X, tPos.Y + (hrp.Size.Y / 2) + 0.1, tPos.Z), Vector3.new(tPos.X, tPos.Y, tPos.Z))
+                    elseif (os.clock() - _G.CaveTimer) >= 1.5 then 
+                        local safeY = tPos.Y + (hrp.Size.Y / 2) + 1.5
+                        hrp.CFrame = CFrame.new(Vector3.new(tPos.X, safeY, tPos.Z), Vector3.new(tPos.X, tPos.Y, tPos.Z))
                         _G.CaveTimer = os.clock()
                         _G.StuckTime = os.clock() 
                     end
@@ -1020,7 +1021,6 @@ local function StartBot()
                 local clampledSpeed = math.min(FLY_SPEED * dt, 2.3) 
                 local nextPos = hrp.Position + (moveDir * clampledSpeed)
                 
-                -- ĐÃ FIX: Khi đang bay xa, chỉ tính inCave nếu rương thực sự nằm ở hang sâu dưới lòng đất
                 local inCave = (not toSeller) and (not ghostDoor) and (tPos.Y < 20) 
                 local targetY, groundY, trenBien = hrp.Position.Y, nil, false 
                 local ganMucTieu = dist < 30
