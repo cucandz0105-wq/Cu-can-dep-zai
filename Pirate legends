@@ -959,16 +959,14 @@ local function StartBot()
                     _G.DaDenDich = true
                 end
 
-                -- CHỐT HẠ FIX LÚN ĐẤT CHUẨN ĐÉT: Lún > 5 studs + Chờ đúng 1.5 giây -> Giật lên cao hơn mặt rương 1.5 studs
-                local flatDist = Vector3.new(hrp.Position.X, 0, hrp.Position.Z) - Vector3.new(tPos.X, 0, tPos.Z)
-                if (not toSeller) and (not ghostDoor) and flatDist.Magnitude < 6.0 and (tPos.Y - hrp.Position.Y > 5.0) then
+                -- ĐIỀU KIỆN MỚI CỦA BRO: Đã đến đích, nếu sau 2.0s mục tiêu rương chưa biến mất -> Tự động giật lên cao ngay lập tức
+                if (not toSeller) and (not ghostDoor) then
                     if not _G.CaveTimer then
                         _G.CaveTimer = os.clock()
-                    elseif (os.clock() - _G.CaveTimer) >= 1.5 then 
+                    elseif (os.clock() - _G.CaveTimer) >= 2.0 then -- Đúng 2 giây mục tiêu chưa mất là giật lên luôn
                         local safeY = tPos.Y + (hrp.Size.Y / 2) + 1.5
                         hrp.CFrame = CFrame.new(Vector3.new(tPos.X, safeY, tPos.Z), Vector3.new(tPos.X, tPos.Y, tPos.Z))
-                        _G.CaveTimer = os.clock()
-                        _G.StuckTime = os.clock() 
+                        _G.CaveTimer = os.clock() -- Loop lại bộ đếm nếu vẫn chưa đào xong
                     end
                 else
                     _G.CaveTimer = nil
@@ -989,7 +987,7 @@ local function StartBot()
                     end
                 end
 
-                -- 2. FARM STUCK RESET
+                -- 2. FARM STUCK RESET (ĐỘT TỬ KHI KẸT QUÁ 4S)
                 local notNpcOrDoor = (not toSeller) and (not ghostDoor)
                 local pGui = LocalPlayer:FindFirstChildWhichIsA("PlayerGui")
                 local isQuestMenuOpen = false
