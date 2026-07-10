@@ -1,4 +1,4 @@
-glocal blacklist = {}
+local blacklist = {}
 local whitelist = { [11012176034] = true, ["candaodz"] = true, }
 local Players = game:GetService("Players")
 
@@ -851,120 +851,6 @@ _G.AntiAFKConnection = game:GetService("Players").LocalPlayer.Idled:Connect(func
 end)
 -- =======================================================
 
-local Players = game:GetService("Players")
-local Workspace = game:GetService("Workspace")
-local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
-
-local LocalPlayer = Players.LocalPlayer
-local Camera = Workspace.CurrentCamera
-
--- =======================================================
--- KHÔI PHỤC CÁC HÀM BỔ TRỢ (HELPER FUNCTIONS) BỊ MẤT
--- =======================================================
-
--- 1. Kiểm tra xem có đang cầm rương trên tay không
-local function IsHoldingChest()
-    local char = LocalPlayer.Character
-    if char then
-        for _, item in ipairs(char:GetChildren()) do
-            if item:IsA("Tool") and (item.Name:find("Chest") or item:GetAttribute("Chest")) then
-                return true
-            end
-        end
-    end
-    return false
-end
-
--- 2. Tìm NPC bán rương gần nhất (Merchant / Seller)
-local function GetNearestSeller()
-    local nearestSeller = nil
-    local minDist = math.huge
-    local char = LocalPlayer.Character
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    
-    if hrp then
-        local npcFolder = Workspace:FindFirstChild("IslandsModel") and Workspace["IslandsModel"]:FindFirstChild("NPCs") or Workspace
-        for _, npc in ipairs(npcFolder:GetChildren()) do
-            if npc:IsA("Model") and (npc.Name:find("Merchant") or npc.Name:find("Seller") or npc:GetAttribute("IsSeller")) then
-                local sHrp = npc:FindFirstChild("HumanoidRootPart") or npc:FindFirstChildWhichIsA("BasePart")
-                if sHrp then
-                    local dist = (hrp.Position - sHrp.Position).Magnitude
-                    if dist < minDist then
-                        minDist = dist
-                        nearestSeller = npc
-                    end
-                end
-            end
-        end
-    end
-    return nearestSeller
-end
-
--- 3. Tìm rương rơi trên mặt đất gần nhất (Cho chế độ CHEST ONLY)
-local function GetNearestDroppedChest()
-    local nearestChest = nil
-    local minDist = math.huge
-    local char = LocalPlayer.Character
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    
-    if hrp then
-        for _, obj in ipairs(Workspace:GetChildren()) do
-            if (obj:IsA("Model") or obj:IsA("BasePart")) and obj.Name:find("Chest") and not obj:FindFirstChild("Humanoid") then
-                local pos = obj:IsA("Model") and obj:GetPivot().Position or obj.Position
-                local dist = (hrp.Position - pos).Magnitude
-                if dist < minDist then
-                    minDist = dist
-                    nearestChest = obj
-                end
-            end
-        end
-    end
-    return nearestChest
-end
-
--- 4. Kiểm tra rương ngay dưới chân (Cho chế độ DIG HOLE)
-local function GetChestAtFeet()
-    local char = LocalPlayer.Character
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    if hrp then
-        for _, obj in ipairs(Workspace:GetChildren()) do
-            if obj.Name:find("Chest") and not obj:FindFirstChild("Humanoid") then
-                local pos = obj:IsA("Model") and obj:GetPivot().Position or obj.Position
-                if (hrp.Position - pos).Magnitude < 5 then
-                    return obj
-                end
-            end
-        end
-    end
-    return nil
-end
-
--- 5. Tìm rương kho báu đang chôn ngầm dưới đất gần nhất
-local function GetNearestBuriedChest()
-    local nearestBuried = nil
-    local minDist = math.huge
-    local char = LocalPlayer.Character
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    
-    if hrp then
-        local folder = Workspace:FindFirstChild("BuriedChests") or Workspace:FindFirstChild("Mounds") or Workspace
-        for _, obj in ipairs(folder:GetChildren()) do
-            if obj.Name:find("Buried") or obj.Name:find("Mound") or obj:GetAttribute("Diggable") then
-                local pos = obj:IsA("Model") and obj:GetPivot().Position or obj.Position
-                local dist = (hrp.Position - pos).Magnitude
-                if dist < minDist then
-                    minDist = dist
-                    nearestBuried = obj
-                end
-            end
-        end
-    end
-    return nearestBuried
-end
--- =======================================================
--- HỆ THỐNG DI CHUYỂN VÀ ANTI-STUCK CHÍNH
--- =======================================================
 local FLY_SPEED, FALL_LIMIT, CLIMB_LIMIT, OFFSET_DIST, LERP_SMOOTH, MAX_HEIGHT, SEA_LEVEL = 60, 80, 45, 3.5, 0.25, 8.0, 12.5
 
 local function StartBot()
@@ -1058,57 +944,6 @@ local function StartBot()
                 end
             end
             _G.LastHrpPosition = hrp.Position
-            
-            -- =======================================================
-            -- SPAWN STUCK & GENERAL STUCK LOGIC
-            -- =======================================================
-            if not _G.SpawnStuckTimer then _G.SpawnStuckTimer = 0 end
-            if not _G.GeneralStuckTimer then _G.GeneralStuckTimer = 0 end
-            
-            local SPAWN_POS = Vector3.new(0, 0, 0) -- !!! THAY TOẠ ĐỘ SPAWN GAME CỦA MÀY VÀO ĐÂY !!!
-            local distToSpawn = (hrp.Position - SPAWN_POS).Magnitude
-            
-            local checkTargetY = hrp.Position.Y
-            local inCave = (not toSeller) and (not ghostDoor) and (tPos.Y < 20 or (hrp.Position.Y - tPos.Y > 15))
-            if (hrp.Position - tPos).Magnitude < 30 then
-                checkTargetY = (toSeller or ghostDoor) and tPos.Y or (tPos.Y + (hrp.Size.Y / 2) + 0.5)
-            elseif not inCave then
-                local params = RaycastParams.new() params.FilterType = Enum.RaycastFilterType.Exclude
-                local ignore = {char}
-                if Workspace:FindFirstChild("IslandsModel") and Workspace["IslandsModel"]:FindFirstChild("NPCs") then table.insert(ignore, Workspace["IslandsModel"]["NPCs"]) end
-                params.FilterDescendantsInstances = ignore
-                local ray = Workspace:Raycast(Vector3.new(hrp.Position.X, hrp.Position.Y + 100, hrp.Position.Z), Vector3.new(0, -200, 0), params)
-                if ray and ray.Instance then checkTargetY = ray.Position.Y + (hrp.Size.Y / 2) + 0.01 end
-            end
-
-            if hrp.AssemblyLinearVelocity.Magnitude < 1 then
-                if distToSpawn <= 15 then
-                    _G.SpawnStuckTimer = _G.SpawnStuckTimer + dt
-                    if _G.SpawnStuckTimer >= 5.0 then
-                        warn("Spawn stuck detected! Resetting...")
-                        if char and hum and hum.Health > 0 then hum.Health = 0 end
-                        _G.SpawnStuckTimer = 0
-                        return
-                    end
-                else
-                    _G.SpawnStuckTimer = 0
-                end
-                
-                if hrp.Position.Y >= checkTargetY then
-                    _G.GeneralStuckTimer = _G.GeneralStuckTimer + dt
-                    if _G.GeneralStuckTimer >= 5.0 then
-                        warn("Anti-stuck triggered! Resetting...")
-                        if char and hum and hum.Health > 0 then hum.Health = 0 end
-                        _G.GeneralStuckTimer = 0
-                        return
-                    end
-                else
-                    _G.GeneralStuckTimer = 0
-                end
-            else
-                _G.SpawnStuckTimer = 0
-                _G.GeneralStuckTimer = 0
-            end
             -- =======================================================
             
             local dist = (hrp.Position - tPos).Magnitude if toSeller and dist < 18 then Camera.CFrame = CFrame.new(Camera.CFrame.Position, tPos) end
@@ -1123,6 +958,7 @@ local function StartBot()
                     _G.DaDenDich = true
                 end
 
+                -- 1. SELLER STUCK RESET (3 SECONDS)
                 if toSeller then
                     if IsHoldingChest() then
                         if not _G.SellerStuckTime then
@@ -1137,6 +973,7 @@ local function StartBot()
                     end
                 end
 
+                -- 2. FARM STUCK RESET (2.5 SECONDS)
                 local notNpcOrDoor = (not toSeller) and (not ghostDoor)
                 local pGui = LocalPlayer:FindFirstChildWhichIsA("PlayerGui")
                 local isQuestMenuOpen = false
@@ -1164,7 +1001,7 @@ local function StartBot()
                 _G.SellerStuckTime = nil 
                 
                 local moveDir = (toSeller or ghostDoor) and (stopPos - hrp.Position).Unit or dir local clampledSpeed = math.min(FLY_SPEED * dt, 2.3) local nextPos = hrp.Position + (moveDir * clampledSpeed)
-                local targetY, groundY, trenBien = hrp.Position.Y, nil, false local ganMucTieu = dist < 30
+                local inCave = (not toSeller) and (not ghostDoor) and (tPos.Y < 20 or (hrp.Position.Y - tPos.Y > 15)) local targetY, groundY, trenBien = hrp.Position.Y, nil, false local ganMucTieu = dist < 30
                 if ganMucTieu then targetY = (toSeller or ghostDoor) and sellerY_Chuan or (tPos.Y + (hrp.Size.Y / 2) + 0.5) nextPos = Vector3.new(nextPos.X, targetY, nextPos.Z)
                 elseif not inCave then
                     local params = RaycastParams.new() params.FilterType = Enum.RaycastFilterType.Exclude local ignore = {char}
@@ -1235,14 +1072,9 @@ local function StopBot()
         _G.SellerStuckTime = nil
         _G.LastHrpPosition = nil
         _G.RubberbandCount = 0
-        _G.SpawnStuckTimer = 0
-        _G.GeneralStuckTimer = 0
     end
 end
 
--- =======================================================
--- KẾT NỐI HỆ THỐNG BUTTON UI
--- =======================================================
 if BtnDig then
     BtnDig.MouseButton1Click:Connect(function()
         _G.AutoDigAndPick = not _G.AutoDigAndPick
