@@ -912,10 +912,11 @@ local function StartBot()
                 _G.StuckTime = os.clock() 
                 _G.SellerStuckTime = nil 
                 _G.DaDenDich = false
+                _G.CaveTimer = nil
             end
             
             -- =======================================================
-            -- ANTI-RUBBERBAND SYSTEM (GIỮ NGUYÊN BỘ ĐẾM CHO BRO TỰ CHỈNH)
+            -- ANTI-RUBBERBAND SYSTEM
             -- =======================================================
             if not _G.LastHrpPosition then 
                 _G.LastHrpPosition = hrp.Position
@@ -934,8 +935,7 @@ local function StartBot()
                 _G.RubberbandCount = _G.RubberbandCount + 1
                 _G.LastRubberbandTime = os.clock()
                 
-                -- Sửa số 5 này thành 8 hoặc 10 nếu hay bị đập đầu vào đá oẹo oan nhé!
-                if _G.RubberbandCount >= 5 then
+                if _G.RubberbandCount >= 8 then -- Đã tăng lên 8 cho lỳ đòn chống va quẹt nhẹ địa hình
                     if char and hum and hum.Health > 0 then 
                         hum.Health = 0 
                     end
@@ -959,6 +959,21 @@ local function StartBot()
                     _G.DaDenDich = true
                 end
 
+                -- CRITICAL FIX: KIỂM TRA LÚN SÂU NGAY TẠI HỐ ĐÀO RƯƠNG
+                -- Nếu khoảng cách XZ đã cực sát rương nhưng Cao độ nhân vật bị chìm dưới rương quá 1.5 stud
+                local flatDist = Vector3.new(hrp.Position.X, 0, hrp.Position.Z) - Vector3.new(tPos.X, 0, tPos.Z)
+                if (not toSeller) and (not ghostDoor) and flatDist.Magnitude < 5.0 and (tPos.Y - hrp.Position.Y > 1.5) then
+                    if not _G.CaveTimer then
+                        _G.CaveTimer = os.clock()
+                    elseif (os.clock() - _G.CaveTimer) >= 1.2 then -- Đúng 1.2 giây chìm là giật lên lại ngay
+                        hrp.CFrame = CFrame.new(Vector3.new(tPos.X, tPos.Y + (hrp.Size.Y / 2) + 0.1, tPos.Z), Vector3.new(tPos.X, tPos.Y, tPos.Z))
+                        _G.CaveTimer = os.clock()
+                        _G.StuckTime = os.clock() -- Bảo hiểm: Reset thời gian kẹt để không bị đột tử oan
+                    end
+                else
+                    _G.CaveTimer = nil
+                end
+
                 -- 1. SELLER STUCK RESET (3 SECONDS)
                 if toSeller then
                     if IsHoldingChest() then
@@ -974,7 +989,7 @@ local function StartBot()
                     end
                 end
 
-                -- 2. FARM STUCK RESET (KHÓA CHẶT ĐIỀU KIỆN _G.DaDenDich)
+                -- 2. FARM STUCK RESET
                 local notNpcOrDoor = (not toSeller) and (not ghostDoor)
                 local pGui = LocalPlayer:FindFirstChildWhichIsA("PlayerGui")
                 local isQuestMenuOpen = false
@@ -989,7 +1004,6 @@ local function StartBot()
                     end
                 end
 
-                -- ĐÃ FIX: Chỉ đếm ngược và kích tử khi _G.DaDenDich == true (Đang đứng tại đích đào rương)
                 if _G.DaDenDich and notNpcOrDoor and not isQuestMenuOpen and (os.clock() - _G.StuckTime) >= 4.0 then 
                     if char and hum and hum.Health > 0 then 
                         hum.Health = 0 
@@ -1001,27 +1015,11 @@ local function StartBot()
             else
                 _G.DaDenDich = false
                 _G.SellerStuckTime = nil 
+                _G.CaveTimer = nil
                 
                 local moveDir = (toSeller or ghostDoor) and (stopPos - hrp.Position).Unit or dir local clampledSpeed = math.min(FLY_SPEED * dt, 2.3) local nextPos = hrp.Position + (moveDir * clampledSpeed)
-                local inCave = (not toSeller) and (not ghostDoor) and (tPos.Y < 20 or (hrp.Position.Y - tPos.Y > 15)) local targetY, groundY, trenBien = hrp.Position.Y, nil, false local ganMucTieu = dist < 30
+                local inCave = (not toSeller) and (not ghostDoor) and (tPos.Y < 20 or (hrp.Position.Y - tPos.Y > 15) or (tPos.Y - hrp.Position.Y > 15)) local targetY, groundY, trenBien = hrp.Position.Y, nil, false local ganMucTieu = dist < 30
                 
-                -- =======================================================
-                -- CƠ CHẾ KIỂM SOÁT HỐ KHI ĐANG TRÊN ĐƯỜNG BAY ĐẾN
-                -- =======================================================
-                if inCave then
-                    if not _G.CaveTimer then
-                        _G.CaveTimer = os.clock()
-                    elseif (os.clock() - _G.CaveTimer) >= 2.0 then
-                        -- Lún sâu quá 2s tự động kéo giật xác lên lại mặt đất
-                        local targetCFrame = CFrame.new(Vector3.new(tPos.X, tPos.Y + (hrp.Size.Y / 2) + 0.1, tPos.Z), Vector3.new(tPos.X, tPos.Y, tPos.Z))
-                        hrp.CFrame = targetCFrame
-                        _G.CaveTimer = os.clock() 
-                    end
-                else
-                    _G.CaveTimer = nil
-                end
-                -- =======================================================
-
                 if ganMucTieu then targetY = (toSeller or ghostDoor) and sellerY_Chuan or (tPos.Y + (hrp.Size.Y / 2) + 0.5) nextPos = Vector3.new(nextPos.X, targetY, nextPos.Z)
                 elseif not inCave then
                     local params = RaycastParams.new() params.FilterType = Enum.RaycastFilterType.Exclude local ignore = {char}
@@ -1070,7 +1068,7 @@ local function StartBot()
                 if groundY and (finalY - groundY > MAX_HEIGHT) and not ganMucTieu then finalY = groundY + MAX_HEIGHT end
                 finalY = math.max(finalY, -30)
                 if (Vector3.new(tPos.X, finalY, tPos.Z) - Vector3.new(nextPos.X, finalY, nextPos.Z)).Magnitude > 0.1 then hrp.CFrame = CFrame.new(Vector3.new(nextPos.X, finalY, nextPos.Z), Vector3.new(tPos.X, finalY, tPos.Z))
-                else hrp.CFrame = CFrame.new(Vector3.new(nextPos.X, finalY, netPos.Z), nextPos.X + hrp.CFrame.LookVector) end
+                else hrp.CFrame = CFrame.new(Vector3.new(nextPos.X, finalY, nextPos.Z), nextPos.X + hrp.CFrame.LookVector) end
             end
         end
     end)
