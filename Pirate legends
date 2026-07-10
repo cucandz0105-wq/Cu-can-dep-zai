@@ -935,7 +935,7 @@ local function StartBot()
                 _G.RubberbandCount = _G.RubberbandCount + 1
                 _G.LastRubberbandTime = os.clock()
                 
-                if _G.RubberbandCount >= 8 then -- Đã tăng lên 8 cho lỳ đòn chống va quẹt nhẹ địa hình
+                if _G.RubberbandCount >= 8 then 
                     if char and hum and hum.Health > 0 then 
                         hum.Health = 0 
                     end
@@ -959,16 +959,15 @@ local function StartBot()
                     _G.DaDenDich = true
                 end
 
-                -- CRITICAL FIX: KIỂM TRA LÚN SÂU NGAY TẠI HỐ ĐÀO RƯƠNG
-                -- Nếu khoảng cách XZ đã cực sát rương nhưng Cao độ nhân vật bị chìm dưới rương quá 1.5 stud
+                -- FIX LÚN ĐẤT: Chỉ kích hoạt giật lên khi đã đứng ngay sát trục XZ của rương
                 local flatDist = Vector3.new(hrp.Position.X, 0, hrp.Position.Z) - Vector3.new(tPos.X, 0, tPos.Z)
                 if (not toSeller) and (not ghostDoor) and flatDist.Magnitude < 5.0 and (tPos.Y - hrp.Position.Y > 1.5) then
                     if not _G.CaveTimer then
                         _G.CaveTimer = os.clock()
-                    elseif (os.clock() - _G.CaveTimer) >= 1.2 then -- Đúng 1.2 giây chìm là giật lên lại ngay
+                    elseif (os.clock() - _G.CaveTimer) >= 1.2 then 
                         hrp.CFrame = CFrame.new(Vector3.new(tPos.X, tPos.Y + (hrp.Size.Y / 2) + 0.1, tPos.Z), Vector3.new(tPos.X, tPos.Y, tPos.Z))
                         _G.CaveTimer = os.clock()
-                        _G.StuckTime = os.clock() -- Bảo hiểm: Reset thời gian kẹt để không bị đột tử oan
+                        _G.StuckTime = os.clock() 
                     end
                 else
                     _G.CaveTimer = nil
@@ -1017,8 +1016,14 @@ local function StartBot()
                 _G.SellerStuckTime = nil 
                 _G.CaveTimer = nil
                 
-                local moveDir = (toSeller or ghostDoor) and (stopPos - hrp.Position).Unit or dir local clampledSpeed = math.min(FLY_SPEED * dt, 2.3) local nextPos = hrp.Position + (moveDir * clampledSpeed)
-                local inCave = (not toSeller) and (not ghostDoor) and (tPos.Y < 20 or (hrp.Position.Y - tPos.Y > 15) or (tPos.Y - hrp.Position.Y > 15)) local targetY, groundY, trenBien = hrp.Position.Y, nil, false local ganMucTieu = dist < 30
+                local moveDir = (toSeller or ghostDoor) and (stopPos - hrp.Position).Unit or dir 
+                local clampledSpeed = math.min(FLY_SPEED * dt, 2.3) 
+                local nextPos = hrp.Position + (moveDir * clampledSpeed)
+                
+                -- ĐÃ FIX: Khi đang bay xa, chỉ tính inCave nếu rương thực sự nằm ở hang sâu dưới lòng đất
+                local inCave = (not toSeller) and (not ghostDoor) and (tPos.Y < 20) 
+                local targetY, groundY, trenBien = hrp.Position.Y, nil, false 
+                local ganMucTieu = dist < 30
                 
                 if ganMucTieu then targetY = (toSeller or ghostDoor) and sellerY_Chuan or (tPos.Y + (hrp.Size.Y / 2) + 0.5) nextPos = Vector3.new(nextPos.X, targetY, nextPos.Z)
                 elseif not inCave then
