@@ -957,19 +957,27 @@ local function StartBot()
                 if not _G.DaDenDich then
                     _G.StuckTime = os.clock()
                     _G.DaDenDich = true
+                    _G.CaveTimer = nil -- Reset sạch sẽ bộ đếm ngay khi vừa chạm mục tiêu
                 end
 
-                -- ĐIỀU KIỆN MỚI CỦA BRO: Đã đến đích, nếu sau 2.0s mục tiêu rương chưa biến mất -> Tự động giật lên cao ngay lập tức
-                if (not toSeller) and (not ghostDoor) then
-                    if not _G.CaveTimer then
-                        _G.CaveTimer = os.clock()
-                    elseif (os.clock() - _G.CaveTimer) >= 2.0 then -- Đúng 2 giây mục tiêu chưa mất là giật lên luôn
-                        local safeY = tPos.Y + (hrp.Size.Y / 2) + 1.5
-                        hrp.CFrame = CFrame.new(Vector3.new(tPos.X, safeY, tPos.Z), Vector3.new(tPos.X, tPos.Y, tPos.Z))
-                        _G.CaveTimer = os.clock() -- Loop lại bộ đếm nếu vẫn chưa đào xong
+                -- FIX BOM NỔ SỚM CHUẨN ĐÉT: Chỉ kích hoạt bộ đếm 2s KHI ĐÃ ĐẾN ĐÍCH VÀ BỊ CHÌM THỰC SỰ
+                if _G.DaDenDich and (not toSeller) and (not ghostDoor) then
+                    local flatDist = Vector3.new(hrp.Position.X, 0, hrp.Position.Z) - Vector3.new(tPos.X, 0, tPos.Z)
+                    
+                    if flatDist.Magnitude < 6.0 and (tPos.Y - hrp.Position.Y > 0.5) then
+                        if not _G.CaveTimer then
+                            _G.CaveTimer = os.clock() -- Chỉ bấm giờ khi bắt đầu có dấu hiệu lún lúc đứng đào
+                        elseif (os.clock() - _G.CaveTimer) >= 2.0 then 
+                            -- Đã lún thực tế 2s mà hố chưa mất -> Giật mạnh lên trời!
+                            local safeY = tPos.Y + (hrp.Size.Y / 2) + 1.5
+                            hrp.CFrame = CFrame.new(Vector3.new(tPos.X, safeY, tPos.Z), Vector3.new(tPos.X, tPos.Y, tPos.Z))
+                            
+                            _G.CaveTimer = os.clock() -- Loop lại bộ đếm đề phòng lún tiếp
+                            _G.StuckTime = os.clock() -- Reset bộ đếm đột tử 4s để bảo toàn mạng sống
+                        end
+                    else
+                        _G.CaveTimer = nil -- Đứng bình thường, không lún thì clear bộ đếm ngay
                     end
-                else
-                    _G.CaveTimer = nil
                 end
 
                 -- 1. SELLER STUCK RESET (3 SECONDS)
@@ -987,7 +995,7 @@ local function StartBot()
                     end
                 end
 
-                -- 2. FARM STUCK RESET (ĐỘT TỬ KHI KẸT QUÁ 4S)
+                -- 2. FARM STUCK RESET (ĐỘT TỬ PHÒNG THỦ 4S)
                 local notNpcOrDoor = (not toSeller) and (not ghostDoor)
                 local pGui = LocalPlayer:FindFirstChildWhichIsA("PlayerGui")
                 local isQuestMenuOpen = false
