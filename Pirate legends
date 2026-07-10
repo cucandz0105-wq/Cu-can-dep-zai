@@ -915,7 +915,7 @@ local function StartBot()
             end
             
             -- =======================================================
-            -- ANTI-RUBBERBAND SYSTEM
+            -- ANTI-RUBBERBAND SYSTEM (GIỮ NGUYÊN BỘ ĐẾM CHO BRO TỰ CHỈNH)
             -- =======================================================
             if not _G.LastHrpPosition then 
                 _G.LastHrpPosition = hrp.Position
@@ -934,6 +934,7 @@ local function StartBot()
                 _G.RubberbandCount = _G.RubberbandCount + 1
                 _G.LastRubberbandTime = os.clock()
                 
+                -- Sửa số 5 này thành 8 hoặc 10 nếu hay bị đập đầu vào đá oẹo oan nhé!
                 if _G.RubberbandCount >= 5 then
                     if char and hum and hum.Health > 0 then 
                         hum.Health = 0 
@@ -973,7 +974,7 @@ local function StartBot()
                     end
                 end
 
-                -- 2. FARM STUCK RESET CHUẨN (CHỈ CHẠY KHI ĐÃ ĐẾN ĐÍCH HOẶC ĐÃ TP LÊN MẶT ĐẤT SÁT RƯƠNG)
+                -- 2. FARM STUCK RESET (KHÓA CHẶT ĐIỀU KIỆN _G.DaDenDich)
                 local notNpcOrDoor = (not toSeller) and (not ghostDoor)
                 local pGui = LocalPlayer:FindFirstChildWhichIsA("PlayerGui")
                 local isQuestMenuOpen = false
@@ -988,7 +989,8 @@ local function StartBot()
                     end
                 end
 
-                if notNpcOrDoor and not isQuestMenuOpen and (os.clock() - _G.StuckTime) >= 2.5 then 
+                -- ĐÃ FIX: Chỉ đếm ngược và kích tử khi _G.DaDenDich == true (Đang đứng tại đích đào rương)
+                if _G.DaDenDich and notNpcOrDoor and not isQuestMenuOpen and (os.clock() - _G.StuckTime) >= 4.0 then 
                     if char and hum and hum.Health > 0 then 
                         hum.Health = 0 
                     end
@@ -1004,16 +1006,16 @@ local function StartBot()
                 local inCave = (not toSeller) and (not ghostDoor) and (tPos.Y < 20 or (hrp.Position.Y - tPos.Y > 15)) local targetY, groundY, trenBien = hrp.Position.Y, nil, false local ganMucTieu = dist < 30
                 
                 -- =======================================================
-                -- CƠ CHẾ KIỂM SOÁT HỐ KHI ĐANG TRÊN ĐƯỜNG BAY ĐẾN (KHÔNG ĐỘT TỬ)
+                -- CƠ CHẾ KIỂM SOÁT HỐ KHI ĐANG TRÊN ĐƯỜNG BAY ĐẾN
                 -- =======================================================
                 if inCave then
                     if not _G.CaveTimer then
                         _G.CaveTimer = os.clock()
                     elseif (os.clock() - _G.CaveTimer) >= 2.0 then
-                        -- Nếu bị lún sâu dưới lòng đất quá 2s -> Teleport thẳng lên mặt đất ngay vị trí hố rương
+                        -- Lún sâu quá 2s tự động kéo giật xác lên lại mặt đất
                         local targetCFrame = CFrame.new(Vector3.new(tPos.X, tPos.Y + (hrp.Size.Y / 2) + 0.1, tPos.Z), Vector3.new(tPos.X, tPos.Y, tPos.Z))
                         hrp.CFrame = targetCFrame
-                        _G.CaveTimer = os.clock() -- Reset bộ đếm Teleport
+                        _G.CaveTimer = os.clock() 
                     end
                 else
                     _G.CaveTimer = nil
@@ -1068,7 +1070,7 @@ local function StartBot()
                 if groundY and (finalY - groundY > MAX_HEIGHT) and not ganMucTieu then finalY = groundY + MAX_HEIGHT end
                 finalY = math.max(finalY, -30)
                 if (Vector3.new(tPos.X, finalY, tPos.Z) - Vector3.new(nextPos.X, finalY, nextPos.Z)).Magnitude > 0.1 then hrp.CFrame = CFrame.new(Vector3.new(nextPos.X, finalY, nextPos.Z), Vector3.new(tPos.X, finalY, tPos.Z))
-                else hrp.CFrame = CFrame.new(Vector3.new(nextPos.X, finalY, nextPos.Z), nextPos.X + hrp.CFrame.LookVector) end
+                else hrp.CFrame = CFrame.new(Vector3.new(nextPos.X, finalY, netPos.Z), nextPos.X + hrp.CFrame.LookVector) end
             end
         end
     end)
@@ -1090,7 +1092,7 @@ local function StopBot()
         _G.SellerStuckTime = nil
         _G.LastHrpPosition = nil
         _G.RubberbandCount = 0
-        _G.CaveTimer = nil -- Dọn dẹp biến đếm hố khi tắt bot
+        _G.CaveTimer = nil
     end
 end
 
