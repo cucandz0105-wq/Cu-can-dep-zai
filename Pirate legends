@@ -944,6 +944,59 @@ local function StartBot()
                 end
             end
             _G.LastHrpPosition = hrp.Position
+            
+            -- =======================================================
+            -- SPAWN STUCK & GENERAL STUCK LOGIC (GLITCH PROOF)
+            -- =======================================================
+            if not _G.SpawnStuckTimer then _G.SpawnStuckTimer = 0 end
+            if not _G.GeneralStuckTimer then _G.GeneralStuckTimer = 0 end
+            
+            local SPAWN_POS = Vector3.new(0, 0, 0) -- !!! REPLACE WITH YOUR SPAWN POSITION !!!
+            local distToSpawn = (hrp.Position - SPAWN_POS).Magnitude
+            
+            local checkTargetY = hrp.Position.Y
+            local inCave = (not toSeller) and (not ghostDoor) and (tPos.Y < 20 or (hrp.Position.Y - tPos.Y > 15))
+            if (hrp.Position - tPos).Magnitude < 30 then
+                checkTargetY = (toSeller or ghostDoor) and tPos.Y or (tPos.Y + (hrp.Size.Y / 2) + 0.5)
+            elseif not inCave then
+                local params = RaycastParams.new() params.FilterType = Enum.RaycastFilterType.Exclude
+                local ignore = {char}
+                if Workspace:FindFirstChild("IslandsModel") and Workspace["IslandsModel"]:FindFirstChild("NPCs") then table.insert(ignore, Workspace["IslandsModel"]["NPCs"]) end
+                params.FilterDescendantsInstances = ignore
+                local ray = Workspace:Raycast(Vector3.new(hrp.Position.X, hrp.Position.Y + 100, hrp.Position.Z), Vector3.new(0, -200, 0), params)
+                if ray and ray.Instance then checkTargetY = ray.Position.Y + (hrp.Size.Y / 2) + 0.01 end
+            end
+
+            if hrp.AssemblyLinearVelocity.Magnitude < 1 then
+                -- 1. Spawn Stuck Verification
+                if distToSpawn <= 15 then
+                    _G.SpawnStuckTimer = _G.SpawnStuckTimer + dt
+                    if _G.SpawnStuckTimer >= 5.0 then
+                        warn("Spawn stuck detected! Resetting character...")
+                        if char and hum and hum.Health > 0 then hum.Health = 0 end
+                        _G.SpawnStuckTimer = 0
+                        return
+                    end
+                else
+                    _G.SpawnStuckTimer = 0
+                end
+                
+                -- 2. General Button Stuck Verification (Ground Glitch Safe)
+                if hrp.Position.Y >= checkTargetY then
+                    _G.GeneralStuckTimer = _G.GeneralStuckTimer + dt
+                    if _G.GeneralStuckTimer >= 5.0 then
+                        warn("Anti-stuck triggered! Resetting character...")
+                        if char and hum and hum.Health > 0 then hum.Health = 0 end
+                        _G.GeneralStuckTimer = 0
+                        return
+                    end
+                else
+                    _G.GeneralStuckTimer = 0
+                end
+            else
+                _G.SpawnStuckTimer = 0
+                _G.GeneralStuckTimer = 0
+            end
             -- =======================================================
             
             local dist = (hrp.Position - tPos).Magnitude if toSeller and dist < 18 then Camera.CFrame = CFrame.new(Camera.CFrame.Position, tPos) end
@@ -1001,7 +1054,7 @@ local function StartBot()
                 _G.SellerStuckTime = nil 
                 
                 local moveDir = (toSeller or ghostDoor) and (stopPos - hrp.Position).Unit or dir local clampledSpeed = math.min(FLY_SPEED * dt, 2.3) local nextPos = hrp.Position + (moveDir * clampledSpeed)
-                local inCave = (not toSeller) and (not ghostDoor) and (tPos.Y < 20 or (hrp.Position.Y - tPos.Y > 15)) local targetY, groundY, trenBien = hrp.Position.Y, nil, false local ganMucTieu = dist < 30
+                local targetY, groundY, trenBien = hrp.Position.Y, nil, false local ganMucTieu = dist < 30
                 if ganMucTieu then targetY = (toSeller or ghostDoor) and sellerY_Chuan or (tPos.Y + (hrp.Size.Y / 2) + 0.5) nextPos = Vector3.new(nextPos.X, targetY, nextPos.Z)
                 elseif not inCave then
                     local params = RaycastParams.new() params.FilterType = Enum.RaycastFilterType.Exclude local ignore = {char}
@@ -1072,6 +1125,8 @@ local function StopBot()
         _G.SellerStuckTime = nil
         _G.LastHrpPosition = nil
         _G.RubberbandCount = 0
+        _G.SpawnStuckTimer = 0
+        _G.GeneralStuckTimer = 0
     end
 end
 
