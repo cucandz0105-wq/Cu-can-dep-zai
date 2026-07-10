@@ -998,10 +998,222 @@ local function StartBot()
                 hrp.CFrame = CFrame.new(stopPos, Vector3.new(tPos.X, stopPos.Y, tPos.Z)) 
             else
                 _G.DaDenDich = false
+-- =======================================================
+-- ANTI-AFK SYSTEM (PREVENTS 20-MIN IDLE KICK)
+-- =======================================================
+local VirtualUser = game:GetService("VirtualUser")
+if _G.AntiAFKConnection then _G.AntiAFKConnection:Disconnect() end
+
+_G.AntiAFKConnection = game:GetService("Players").LocalPlayer.Idled:Connect(function()
+    VirtualUser:CaptureController()
+    VirtualUser:ClickButton2(Vector2.new(0, 0))
+end)
+-- =======================================================
+
+local FLY_SPEED, FALL_LIMIT, CLIMB_LIMIT, OFFSET_DIST, LERP_SMOOTH, MAX_HEIGHT, SEA_LEVEL = 60, 80, 45, 3.5, 0.25, 8.0, 12.5
+
+local function StartBot()
+    if _G.BotConnection then _G.BotConnection:Disconnect() _G.BotConnection = nil end 
+    if _G.NoclipConnection then _G.NoclipConnection:Disconnect() _G.NoclipConnection = nil end
+    
+    _G.NoclipConnection = RunService.Stepped:Connect(function() 
+        local char = LocalPlayer.Character 
+        local hum = char and char:FindFirstChildWhichIsA("Humanoid") 
+        if hum and hum.Health > 0 and (_G.AutoDigAndPick or _G.AutoChestOnly) then 
+            hum:ChangeState(Enum.HumanoidStateType.Physics) 
+            hum:SetStateEnabled(Enum.HumanoidStateType.Seated, false)
+            if hum.Sit then hum.Sit = false end 
+            
+            for _, child in ipairs(char:GetChildren()) do 
+                if child:IsA("BasePart") then child.CanCollide = false end 
+            end 
+        end 
+    end)
+    
+    _G.BotConnection = RunService.Heartbeat:Connect(function(dt)
+        local char = LocalPlayer.Character local hrp, hum = char and char:FindFirstChild("HumanoidRootPart"), char and char:FindFirstChildWhichIsA("Humanoid")
+        if not hrp or not hum then _G.CurrentTarget = nil _G.FakeFallSpeed = 0 return end
+        if (_G.AutoDigAndPick or _G.AutoChestOnly) then
+            local tPos, tPart, toSeller, npc, ghostDoor = nil, nil, false, nil, nil
+            local galleon = Workspace:FindFirstChild("Ferryman's Galleon") local gd = galleon and galleon:FindFirstChild("SpiritTeleport") and galleon["SpiritTeleport"]:FindFirstChild("Main")
+            
+            local distToDoor = math.huge
+            if gd then
+                distToDoor = (hrp.Position - gd:GetPivot().Position).Magnitude
+            end
+
+            if hum.Health <= 0 or distToDoor < 150 then
+                _G.IsTeleportingHome = true
+            end
+            
+            if hum.Health > 0 and distToDoor > 200 then
+                _G.IsTeleportingHome = false
+            end
+            
+            if _G.IsTeleportingHome then
+                if gd then 
+                    ghostDoor = gd tPos = gd:GetPivot().Position tPart = gd 
+                else
+                    _G.CurrentTarget = nil hrp.AssemblyLinearVelocity = Vector3.new(0,0,0) return
+                end
+            end
+            
+            if not _G.IsTeleportingHome and not tPos then
+                if IsHoldingChest() then npc = GetNearestSeller() if npc then tPos, toSeller = npc:GetPivot().Position, true tPart = npc end
+                else tPart = _G.AutoChestOnly and GetNearestDroppedChest() or (_G.AutoDigAndPick and (GetChestAtFeet() or GetNearestBuriedChest())) if tPart then tPos = tPart.Position else npc = GetNearestSeller() if npc then tPos, toSeller = npc:GetPivot().Position, true tPart = npc elseif gd and distToDoor > 200 then ghostDoor = gd tPos = gd:GetPivot().Position tPart = gd end end end
+            end
+            
+            if not tPos then _G.CurrentTarget = nil _G.FakeFallSpeed = 0 hrp.AssemblyLinearVelocity = Vector3.new(0,0,0) hrp.AssemblyAngularVelocity = Vector3.new(0,0,0) return end
+            hrp.AssemblyLinearVelocity, hrp.AssemblyAngularVelocity = Vector3.new(0,0,0), Vector3.new(0,0,0)
+            
+            if _G.CurrentTarget ~= tPart then 
+                _G.CurrentTarget = tPart 
+                _G.StuckTime = os.clock() 
+                _G.SellerStuckTime = nil 
+                _G.DaDenDich = false
+            end
+            
+            -- =======================================================
+            -- ANTI-RUBBERBAND SYSTEM
+            -- =======================================================
+            if not _G.LastHrpPosition then 
+                _G.LastHrpPosition = hrp.Position
+                _G.RubberbandCount = 0
+                _G.LastRubberbandTime = os.clock()
+            end
+
+            if os.clock() - _G.LastRubberbandTime > 3.0 then
+                _G.RubberbandCount = 0
+            end
+
+            local currentDistToTarget = (hrp.Position - tPos).Magnitude
+            local lastDistToTarget = (_G.LastHrpPosition - tPos).Magnitude
+
+            if (currentDistToTarget - lastDistToTarget) > 10.0 then
+                _G.RubberbandCount = _G.RubberbandCount + 1
+                _G.LastRubberbandTime = os.clock()
+                
+                if _G.RubberbandCount >= 5 then
+                    if char and hum and hum.Health > 0 then 
+                        hum.Health = 0 
+                    end
+                    _G.RubberbandCount = 0
+                    _G.LastHrpPosition = hrp.Position
+                    return
+                end
+            end
+            _G.LastHrpPosition = hrp.Position
+            
+            -- =======================================================
+            -- SPAWN STUCK & GENERAL STUCK LOGIC (GLITCH PROOF)
+            -- =======================================================
+            if not _G.SpawnStuckTimer then _G.SpawnStuckTimer = 0 end
+            if not _G.GeneralStuckTimer then _G.GeneralStuckTimer = 0 end
+            
+            local SPAWN_POS = Vector3.new(0, 0, 0) -- !!! REPLACE WITH YOUR SPAWN POSITION !!!
+            local distToSpawn = (hrp.Position - SPAWN_POS).Magnitude
+            
+            local checkTargetY = hrp.Position.Y
+            local inCave = (not toSeller) and (not ghostDoor) and (tPos.Y < 20 or (hrp.Position.Y - tPos.Y > 15))
+            if (hrp.Position - tPos).Magnitude < 30 then
+                checkTargetY = (toSeller or ghostDoor) and tPos.Y or (tPos.Y + (hrp.Size.Y / 2) + 0.5)
+            elseif not inCave then
+                local params = RaycastParams.new() params.FilterType = Enum.RaycastFilterType.Exclude
+                local ignore = {char}
+                if Workspace:FindFirstChild("IslandsModel") and Workspace["IslandsModel"]:FindFirstChild("NPCs") then table.insert(ignore, Workspace["IslandsModel"]["NPCs"]) end
+                params.FilterDescendantsInstances = ignore
+                local ray = Workspace:Raycast(Vector3.new(hrp.Position.X, hrp.Position.Y + 100, hrp.Position.Z), Vector3.new(0, -200, 0), params)
+                if ray and ray.Instance then checkTargetY = ray.Position.Y + (hrp.Size.Y / 2) + 0.01 end
+            end
+
+            if hrp.AssemblyLinearVelocity.Magnitude < 1 then
+                -- 1. Spawn Stuck Verification
+                if distToSpawn <= 15 then
+                    _G.SpawnStuckTimer = _G.SpawnStuckTimer + dt
+                    if _G.SpawnStuckTimer >= 5.0 then
+                        warn("Spawn stuck detected! Resetting character...")
+                        if char and hum and hum.Health > 0 then hum.Health = 0 end
+                        _G.SpawnStuckTimer = 0
+                        return
+                    end
+                else
+                    _G.SpawnStuckTimer = 0
+                end
+                
+                -- 2. General Button Stuck Verification (Ground Glitch Safe)
+                if hrp.Position.Y >= checkTargetY then
+                    _G.GeneralStuckTimer = _G.GeneralStuckTimer + dt
+                    if _G.GeneralStuckTimer >= 5.0 then
+                        warn("Anti-stuck triggered! Resetting character...")
+                        if char and hum and hum.Health > 0 then hum.Health = 0 end
+                        _G.GeneralStuckTimer = 0
+                        return
+                    end
+                else
+                    _G.GeneralStuckTimer = 0
+                end
+            else
+                _G.SpawnStuckTimer = 0
+                _G.GeneralStuckTimer = 0
+            end
+            -- =======================================================
+            
+            local dist = (hrp.Position - tPos).Magnitude if toSeller and dist < 18 then Camera.CFrame = CFrame.new(Camera.CFrame.Position, tPos) end
+            local dir = (tPos - hrp.Position).Unit local stopPos, sellerY_Chuan = tPos - (dir * OFFSET_DIST), tPos.Y
+            if toSeller and npc then local sHrp = npc:FindFirstChild("HumanoidRootPart") or npc:FindFirstChildWhichIsA("BasePart") if sHrp then local lVec = sHrp.CFrame.LookVector sellerY_Chuan = sHrp.Position.Y stopPos = Vector3.new(tPos.X + (lVec.X * OFFSET_DIST), sellerY_Chuan, tPos.Z + (lVec.Z * OFFSET_DIST)) dist = (hrp.Position - stopPos).Magnitude + OFFSET_DIST end 
+            elseif ghostDoor then sellerY_Chuan = tPos.Y stopPos = tPos - (dir * OFFSET_DIST) end
+            local stopLimit = (toSeller or ghostDoor) and (OFFSET_DIST + 1.2) or (OFFSET_DIST + 0.5)
+            
+            if dist <= stopLimit then
+                if not _G.DaDenDich then
+                    _G.StuckTime = os.clock()
+                    _G.DaDenDich = true
+                end
+
+                -- 1. SELLER STUCK RESET (3 SECONDS)
+                if toSeller then
+                    if IsHoldingChest() then
+                        if not _G.SellerStuckTime then
+                            _G.SellerStuckTime = os.clock()
+                        elseif (os.clock() - _G.SellerStuckTime) >= 3.0 then
+                            if char and hum and hum.Health > 0 then hum.Health = 0 end
+                            _G.SellerStuckTime = nil
+                            return
+                        end
+                    else
+                        _G.SellerStuckTime = nil
+                    end
+                end
+
+                -- 2. FARM STUCK RESET (2.5 SECONDS)
+                local notNpcOrDoor = (not toSeller) and (not ghostDoor)
+                local pGui = LocalPlayer:FindFirstChildWhichIsA("PlayerGui")
+                local isQuestMenuOpen = false
+
+                if pGui then
+                    local shopUI = pGui:FindFirstChild("QuestShopUI")
+                    local pickUI = pGui:FindFirstChild("PickQuestUI")
+                    
+                    if (shopUI and (shopUI:GetAttribute("Enabled") or shopUI.Enabled)) or 
+                       (pickUI and (pickUI:GetAttribute("Enabled") or pickUI.Enabled)) then
+                        isQuestMenuOpen = true
+                    end
+                end
+
+                if notNpcOrDoor and not isQuestMenuOpen and (os.clock() - _G.StuckTime) >= 2.5 then 
+                    if char and hum and hum.Health > 0 then 
+                        hum.Health = 0 
+                    end
+                    return
+                end
+
+                hrp.CFrame = CFrame.new(stopPos, Vector3.new(tPos.X, stopPos.Y, tPos.Z)) 
+            else
+                _G.DaDenDich = false
                 _G.SellerStuckTime = nil 
                 
                 local moveDir = (toSeller or ghostDoor) and (stopPos - hrp.Position).Unit or dir local clampledSpeed = math.min(FLY_SPEED * dt, 2.3) local nextPos = hrp.Position + (moveDir * clampledSpeed)
-                local inCave = (not toSeller) and (not ghostDoor) and (tPos.Y < 20 or (hrp.Position.Y - tPos.Y > 15)) local targetY, groundY, trenBien = hrp.Position.Y, nil, false local ganMucTieu = dist < 30
+                local targetY, groundY, trenBien = hrp.Position.Y, nil, false local ganMucTieu = dist < 30
                 if ganMucTieu then targetY = (toSeller or ghostDoor) and sellerY_Chuan or (tPos.Y + (hrp.Size.Y / 2) + 0.5) nextPos = Vector3.new(nextPos.X, targetY, nextPos.Z)
                 elseif not inCave then
                     local params = RaycastParams.new() params.FilterType = Enum.RaycastFilterType.Exclude local ignore = {char}
@@ -1072,6 +1284,8 @@ local function StopBot()
         _G.SellerStuckTime = nil
         _G.LastHrpPosition = nil
         _G.RubberbandCount = 0
+        _G.SpawnStuckTimer = 0
+        _G.GeneralStuckTimer = 0
     end
 end
 
