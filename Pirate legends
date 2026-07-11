@@ -851,29 +851,43 @@ _G.AntiAFKConnection = game:GetService("Players").LocalPlayer.Idled:Connect(func
 end)
 -- =======================================================
 
--- TOÁN HỌC ĐỈNH CAO: HÀM TÌM RƯƠNG THÔNG MINH (BÙA ĐIỂM ƯU TIÊN)
+-- DANH SÁCH WHITELIST RƯƠNG ĐƯỢC PHÉP LỤM
+local allowedChests = {"Captain's Chest", "Gold Chests", "Silver Chests"}
+
+-- Hàm kiểm tra danh tính rương xịn
+local function IsValidChest(object)
+    if not object or not object.Name then return false end
+    for _, name in ipairs(allowedChests) do
+        if string.find(object.Name, name) then
+            return true
+        end
+    end
+    return false
+end
+
+-- TOÁN HỌC ĐỈNH CAO: HÀM TÌM RƯƠNG THÔNG MINH + LỌC WHITELIST
 local function GetNearestDroppedChest()
     local char = LocalPlayer.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
     if not hrp then return nil end
 
     local bestChest = nil
-    local minScore = math.huge -- Tìm thằng có điểm thấp nhất (ngon nhất)
+    local minScore = math.huge 
 
-    -- BẢNG BÙA ĐIỂM: Rương càng xịn càng được trừ nhiều mét ảo
+    -- BẢNG BÙA ĐIỂM PRIORITY
     local priorityWeight = {
-        ["Captain's Chest"] = -150, -- Ưu tiên tối cao (Bùa -150m)
-        ["Gold Chests"] = -70,      -- Ưu tiên vừa (Bùa -70m)
-        ["Silver Chests"] = 0       -- Bình thường
+        ["Captain's Chest"] = -150, 
+        ["Gold Chests"] = -70,      
+        ["Silver Chests"] = 0       
     }
 
     -- Quét toàn bộ các object trong Workspace
     for _, v in ipairs(Workspace:GetChildren()) do
-        if v:IsA("BasePart") and string.find(v.Name, "Chest") then
+        -- CHỈ XÉT NHỮNG ĐỐI TƯỢNG NẰM TRONG WHITELIST RƯƠNG XỊN
+        if v:IsA("BasePart") and IsValidChest(v) then
             local realDist = (hrp.Position - v.Position).Magnitude
             local bonus = 0
 
-            -- Duyệt bảng để xem rương này thuộc loại nào và lấy điểm bùa
             for chestName, weight in pairs(priorityWeight) do
                 if string.find(v.Name, chestName) then
                     bonus = weight
@@ -881,10 +895,8 @@ local function GetNearestDroppedChest()
                 end
             end
 
-            -- Điểm = Khoảng cách thực tế + Điểm bùa
             local score = realDist + bonus
 
-            -- Thằng nào điểm thấp nhất sẽ được chọn làm mục tiêu
             if score < minScore then
                 minScore = score
                 bestChest = v
@@ -946,7 +958,20 @@ local function StartBot()
             
             if not _G.IsTeleportingHome and not tPos then
                 if IsHoldingChest() then npc = GetNearestSeller() if npc then tPos, toSeller = npc:GetPivot().Position, true tPart = npc end
-                else tPart = _G.AutoChestOnly and GetNearestDroppedChest() or (_G.AutoDigAndPick and (GetChestAtFeet() or GetNearestBuriedChest())) if tPart then tPos = tPart.Position else npc = GetNearestSeller() if npc then tPos, toSeller = npc:GetPivot().Position, true tPart = npc elseif gd and distToDoor > 200 then ghostDoor = gd tPos = gd:GetPivot().Position tPart = gd end end end
+                else 
+                    tPart = _G.AutoChestOnly and GetNearestDroppedChest() or (_G.AutoDigAndPick and (GetChestAtFeet() or GetNearestBuriedChest())) 
+                    -- KHÓA KIỂM TRA: Chỉ đi tới nếu mục tiêu là rương hợp lệ (hoặc đang đào)
+                    if tPart and (_G.AutoDigAndPick or IsValidChest(tPart)) then 
+                        tPos = tPart.Position 
+                    else 
+                        npc = GetNearestSeller() 
+                        if npc then 
+                            tPos, toSeller = npc:GetPivot().Position, true tPart = npc 
+                        elseif gd and distToDoor > 200 then 
+                            ghostDoor = gd tPos = gd:GetPivot().Position tPart = gd 
+                        end 
+                    end 
+                end
             end
             
             if not tPos then _G.CurrentTarget = nil _G.FakeFallSpeed = 0 hrp.AssemblyLinearVelocity = Vector3.new(0,0,0) hrp.AssemblyAngularVelocity = Vector3.new(0,0,0) return end
@@ -1005,12 +1030,20 @@ local function StartBot()
                     _G.CaveTimer = os.clock() -- Bấm giờ TP cứu kẹt 2s
                 end
 
-                -- 1. TP CỨU KẸT (2 GIÂY): Chạy độc lập hoàn toàn, KHÔNG reset StuckTime!
+                -- 1. TP CỨU KẸT (2 GIÂY)
                 if _G.DaDenDich and (not toSeller) and (not ghostDoor) then
                     if (os.clock() - _G.CaveTimer) >= 2.0 then 
                         local safeY = tPos.Y + (hrp.Size.Y / 2) + 1.5
                         hrp.CFrame = CFrame.new(Vector3.new(tPos.X, safeY, tPos.Z), Vector3.new(tPos.X, tPos.Y, tPos.Z))
-                        _G.CaveTimer = os.clock() -- Chỉ reset đồng hồ 2s của chính nó
+                        _G.CaveTimer = os.clock() 
+                    end
+                end
+
+                -- KÍCH HOẠT PROXIMITY PROMPT (CHỈ KHI LÀ RƯƠNG HỢP LỆ HOẶC NPC BÁN)
+                if tPart and (toSeller or ghostDoor or IsValidChest(tPart)) then
+                    local prompt = tPart:FindFirstChildWhichIsA("ProximityPrompt") or (tPart.Parent and tPart.Parent:FindFirstChildWhichIsA("ProximityPrompt"))
+                    if prompt and fireproximityprompt then
+                        fireproximityprompt(prompt)
                     end
                 end
 
