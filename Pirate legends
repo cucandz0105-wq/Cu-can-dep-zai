@@ -912,7 +912,7 @@ local function StartBot()
                 _G.StuckTime = os.clock() 
                 _G.SellerStuckTime = nil 
                 _G.DaDenDich = false
-                _G.CaveTimer = false -- Trạng thái cứu kẹt dạng Boolean dứt khoát
+                _G.DaGiartFrame = false -- Đổi mục tiêu mới hoàn toàn thì mới mở khóa giật Frame
             end
             
             -- =======================================================
@@ -937,8 +937,7 @@ local function StartBot()
                 
                 if _G.RubberbandCount >= 8 then 
                     if char and hum and hum.Health > 0 then 
-                        hum.Health = 0 
-                    end
+                        hum.Health = 0 end
                     _G.RubberbandCount = 0
                     _G.LastHrpPosition = hrp.Position
                     return
@@ -955,23 +954,25 @@ local function StartBot()
             
             if dist <= stopLimit then
                 if not _G.DaDenDich then
-                    _G.StuckTime = os.clock() -- Đóng dấu mốc thời gian đến đích
+                    _G.StuckTime = os.clock() 
                     _G.DaDenDich = true
-                    _G.CaveTimer = false     -- Reset trạng thái cứu kẹt
                 end
 
                 local elapsed = os.clock() - _G.StuckTime
 
-                -- 1. TP CỨU KẸT LÚN ĐẤT (SAU 2 GIÂY): Chỉ áp dụng cho Hố/Rương
+                -- 1. TP CỨU KẸT TUYỆT ĐỐI (ĐÚNG 2 GIÂY - CHỈ GIẬT 1 LẦN DUY NHẤT TRÊN 1 MỤC TIÊU)
                 if _G.DaDenDich and (not toSeller) and (not ghostDoor) then
-                    if elapsed >= 2.0 and not _G.CaveTimer then 
-                        local safeY = tPos.Y + (hrp.Size.Y / 2) + 4.5 -- Giật bốc thẳng lên cao hẳn 4.5 block chống lún đất
-                        hrp.CFrame = CFrame.new(Vector3.new(tPos.X, safeY, tPos.Z), Vector3.new(tPos.X, tPos.Y, tPos.Z))
-                        _G.CaveTimer = true -- Khóa lại, chỉ giật đúng 1 phát duy nhất
+                    if elapsed >= 2.0 and not _G.DaGiartFrame then 
+                        local currentPos = hrp.Position
+                        local safeY = tPos.Y + (hrp.Size.Y / 2) + 5.0 -- Ép cao hẳn lên 5 block vượt mặt đất
+                        
+                        -- Chỉ bốc trục Y lên, giữ nguyên vị trí X, Z và hướng xoay cũ để không bị bắn văng
+                        hrp.CFrame = CFrame.new(Vector3.new(currentPos.X, safeY, currentPos.Z)) * hrp.CFrame.Rotation
+                        _G.DaGiartFrame = true -- Khóa cứng, không bao giờ lặp lại tại mục tiêu này
                     end
                 end
 
-                -- 2. ĐIỀU KIỆN ĐỘT TỬ TINH CHỈNH (SAU 4 GIÂY) - CHỐNG ĐỘT TỬ OAN KHI CHỜ COOLDOWN
+                -- 2. ĐIỀU KIỆN ĐỘT TỬ ĐƯỢC SIẾT CHẶT (SAU 4 GIÂY)
                 local pGui = LocalPlayer:FindFirstChildWhichIsA("PlayerGui")
                 local isQuestMenuOpen = false
 
@@ -984,15 +985,12 @@ local function StartBot()
                     end
                 end
 
-                -- Phân loại điều kiện để kích nổ:
                 local shouldKill = false
                 if not ghostDoor and not isQuestMenuOpen and elapsed >= 4.0 then
                     if not toSeller then
-                        -- Nếu là Hố hoặc Rương mà đứng quá 4s chưa xong việc -> Cook
-                        shouldKill = true
+                        shouldKill = true -- Kẹt hố/rương quá 4s -> Đột tử
                     elseif toSeller and IsHoldingChest() then
-                        -- Nếu là Seller NHƯNG phải đang cầm rương trên tay mà quá 4s không bán được -> Cook
-                        shouldKill = true
+                        shouldKill = true -- Kẹt Seller khi đang bưng rương quá 4s -> Đột tử
                     end
                 end
 
@@ -1003,14 +1001,13 @@ local function StartBot()
                     return
                 end
 
-                -- Nếu chưa tới mốc 2 giây cứu kẹt, hoặc đang ở trạng thái chờ (Seller không cầm rương / Ghost Door), giữ cố định vị trí
+                -- Giữ vị trí tương tác chuẩn
                 if elapsed < 2.0 or toSeller or ghostDoor then
                     hrp.CFrame = CFrame.new(stopPos, Vector3.new(tPos.X, stopPos.Y, tPos.Z)) 
                 end
             else
                 _G.DaDenDich = false
                 _G.SellerStuckTime = nil 
-                _G.CaveTimer = nil
                 
                 local moveDir = (toSeller or ghostDoor) and (stopPos - hrp.Position).Unit or dir 
                 local clampledSpeed = math.min(FLY_SPEED * dt, 2.3) 
@@ -1091,12 +1088,12 @@ local function StopBot()
         _G.SellerStuckTime = nil
         _G.LastHrpPosition = nil
         _G.RubberbandCount = 0
-        _G.CaveTimer = nil
+        _G.DaGiartFrame = nil
     end
 end
 
 -- =======================================================
--- BẮT SỰ KIỆN NÚT BẤM GUI (ĐẦY ĐỦ NGOẶC CHUẨN CHỈ)
+-- BUTTON GUI CLICK EVENTS
 -- =======================================================
 if BtnDig then
     BtnDig.MouseButton1Click:Connect(function()
