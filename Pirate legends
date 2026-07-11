@@ -851,7 +851,7 @@ _G.AntiAFKConnection = game:GetService("Players").LocalPlayer.Idled:Connect(func
 end)
 -- =======================================================
 
--- Hàm kiểm tra danh tính rương xịn (Quét thông minh, không lo đổi tên)
+-- Hàm kiểm tra danh tính rương xịn (Dựa theo từ khóa)
 local function IsValidChest(object)
     if not object or not object.Name then return false end
     local nameLower = string.lower(object.Name)
@@ -872,7 +872,7 @@ local function GetNearestDroppedChest()
     local bestChest = nil
     local minScore = math.huge 
 
-    -- BẢNG BÙA ĐIỂM PRIORITY
+    -- BẢNG BÙA ĐIỂM PRIORITY (Cơ chế chê nghèo yêu giàu)
     local priorityWeight = {
         ["captain"] = -150, 
         ["gold"] = -70,      
@@ -954,33 +954,36 @@ local function StartBot()
                 end
             end
             
-            -- ƯU TIÊN SẮP XẾP LẠI KHÔNG CHO TRÙNG LẶP LỘ TRÌNH
+            -- FIX LOGIC: ÉP PHÂN CHIA ƯU TIÊN TUYỆT ĐỐI Ở ĐÂY
             if not _G.IsTeleportingHome and not tPos then
                 if IsHoldingChest() then 
-                    -- Đang ôm rương trên tay thì đi bán
+                    -- Trường hợp 1: Có rương trên tay -> Bắt buộc đi bán
                     npc = GetNearestSeller() 
                     if npc then tPos, toSeller = npc:GetPivot().Position, true tPart = npc end
                 else 
-                    -- Không ôm rương thì tìm rương dưới đất TRƯỚC
+                    -- Trường hợp 2: Không ôm rương -> Tìm rương dưới đất TRƯỚC TIÊN
                     local droppedChest = GetNearestDroppedChest()
                     
-                    if _G.AutoChestOnly and droppedChest then
+                    if droppedChest then
+                        -- THẤY RƯƠNG DƯỚI ĐẤT LÀ PHẢI BỔ VÀO NGAY, KHÔNG NÓI NHIỀU!
                         tPart = droppedChest
-                    elseif _G.AutoDigAndPick then
-                        tPart = GetChestAtFeet() or GetNearestBuriedChest() or droppedChest
-                    end
-                    
-                    -- Nếu có rương thì bay tới húp, không thèm về seller nữa!
-                    if tPart then 
-                        tPos = tPart.Position 
-                    else 
-                        -- Hết sạch rương dưới đất mới xét đi tìm Seller hoặc Cửa ma
-                        npc = GetNearestSeller() 
-                        if npc then 
-                            tPos, toSeller = npc:GetPivot().Position, true tPart = npc 
-                        elseif gd and distToDoor > 200 then 
-                            ghostDoor = gd tPos = gd:GetPivot().Position tPart = gd 
-                        end 
+                        tPos = droppedChest.Position
+                    else
+                        -- Trường hợp 3: Dưới đất sạch bóng rương -> Mới xét đi đào hoặc về chỗ cũ
+                        if _G.AutoDigAndPick then
+                            tPart = GetChestAtFeet() or GetNearestBuriedChest()
+                            if tPart then tPos = tPart.Position end
+                        end
+                        
+                        -- Nếu vẫn không có gì để làm nữa mới tìm Seller/Cửa ma để đứng đợi
+                        if not tPos then
+                            npc = GetNearestSeller() 
+                            if npc then 
+                                tPos, toSeller = npc:GetPivot().Position, true tPart = npc 
+                            elseif gd and distToDoor > 200 then 
+                                ghostDoor = gd tPos = gd:GetPivot().Position tPart = gd 
+                            end 
+                        end
                     end 
                 end
             end
