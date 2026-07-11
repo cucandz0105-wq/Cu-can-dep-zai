@@ -851,17 +851,6 @@ _G.AntiAFKConnection = game:GetService("Players").LocalPlayer.Idled:Connect(func
 end)
 -- =======================================================
 
--- Hàm lọc rương: Loại bỏ thẳng tay các loại thùng gỗ, thùng rác rưởi
-local function IsPremiumChest(chestPart)
-    if not chestPart or not chestPart.Name then return false end
-    local nameLower = string.lower(chestPart.Name)
-    -- Nếu tên chứa chữ "thùng gỗ" (wood/barrel/cast) thì bỏ qua không lụm
-    if string.find(nameLower, "wood") or string.find(nameLower, "barrel") or string.find(nameLower, "cast") then
-        return false
-    end
-    return true
-end
-
 local FLY_SPEED, FALL_LIMIT, CLIMB_LIMIT, OFFSET_DIST, LERP_SMOOTH, MAX_HEIGHT, SEA_LEVEL = 60, 80, 45, 3.5, 0.25, 8.0, 12.5
 
 local function StartBot()
@@ -915,21 +904,6 @@ local function StartBot()
                 else tPart = _G.AutoChestOnly and GetNearestDroppedChest() or (_G.AutoDigAndPick and (GetChestAtFeet() or GetNearestBuriedChest())) if tPart then tPos = tPart.Position else npc = GetNearestSeller() if npc then tPos, toSeller = npc:GetPivot().Position, true tPart = npc elseif gd and distToDoor > 200 then ghostDoor = gd tPos = gd:GetPivot().Position tPart = gd end end end
             end
             
-            -- ÉP WHITELIST VÀO LOGIC: Nếu mục tiêu là rương rác/thùng gỗ thì huỷ ngay, đi tìm Seller luôn
-            if tPart and not toSeller and not ghostDoor and not IsPremiumChest(tPart) then
-                tPart = nil
-                tPos = nil
-                npc = GetNearestSeller()
-                if npc then 
-                    tPos, toSeller = npc:GetPivot().Position, true 
-                    tPart = npc 
-                elseif gd and distToDoor > 200 then 
-                    ghostDoor = gd 
-                    tPos = gd:GetPivot().Position 
-                    tPart = gd 
-                end
-            end
-
             if not tPos then _G.CurrentTarget = nil _G.FakeFallSpeed = 0 hrp.AssemblyLinearVelocity = Vector3.new(0,0,0) hrp.AssemblyAngularVelocity = Vector3.new(0,0,0) return end
             hrp.AssemblyLinearVelocity, hrp.AssemblyAngularVelocity = Vector3.new(0,0,0), Vector3.new(0,0,0)
             
@@ -981,21 +955,38 @@ local function StartBot()
             
             if dist <= stopLimit then
                 if not _G.DaDenDich then
-                    _G.StuckTime = os.clock() 
+                    _G.StuckTime = os.clock() -- Bấm giờ mốc thời gian đến đích tổng quát
                     _G.DaDenDich = true
-                    _G.CaveTimer = os.clock() 
+                    _G.CaveTimer = false     -- Đánh dấu trạng thái chưa cứu kẹt trồi lên
                 end
 
-                -- 1. TP CỨU KẸT (2 GIÂY)
+                local elapsed = os.clock() - _G.StuckTime
+
+                -- GIAI ĐOẠN 1: Sau 2 giây chưa mất mục tiêu hố/rương -> Ép CFrame trồi thẳng lên ngang tầm mục tiêu
                 if _G.DaDenDich and (not toSeller) and (not ghostDoor) then
-                    if (os.clock() - _G.CaveTimer) >= 2.0 then 
-                        local safeY = tPos.Y + (hrp.Size.Y / 2) + 1.5
+                    if elapsed >= 2.0 and not _G.CaveTimer then 
+                        local safeY = tPos.Y + (hrp.Size.Y / 2) + 1.0
                         hrp.CFrame = CFrame.new(Vector3.new(tPos.X, safeY, tPos.Z), Vector3.new(tPos.X, tPos.Y, tPos.Z))
-                        _G.CaveTimer = os.clock() 
+                        _G.CaveTimer = true -- Đã kích hoạt trồi lên, không lặp lại liên tục gây giật
                     end
                 end
 
-                -- FIX CHÍ MẠNG: ĐỘT TỬ TỔNG LỰC CHO CẢ SELLER VÀ RƯƠNG (4.5 GIÂY)
+                -- SELLER STUCK RESET (Giữ nguyên cơ chế phụ cho Seller)
+                if toSeller then
+                    if IsHoldingChest() then
+                        if not _G.SellerStuckTime then
+                            _G.SellerStuckTime = os.clock()
+                        elseif (os.clock() - _G.SellerStuckTime) >= 3.0 then
+                            if char and hum and hum.Health > 0 then hum.Health = 0 end
+                            _G.SellerStuckTime = nil
+                            return
+                        end
+                    else
+                        _G.SellerStuckTime = nil
+                    end
+                end
+
+                -- GIAI ĐOẠN 2: Sau 4 giây tổng cộng (thêm 2 giây sau cứu kẹt) -> Đột tử như cũ
                 local pGui = LocalPlayer:FindFirstChildWhichIsA("PlayerGui")
                 local isQuestMenuOpen = false
 
@@ -1009,15 +1000,17 @@ local function StartBot()
                     end
                 end
 
-                -- Đến đích quá 4.5 giây mà không đổi mục tiêu/không bán được đồ -> Tự huỷ!
-                if _G.DaDenDich and not isQuestMenuOpen and (os.clock() - _G.StuckTime) >= 4.5 then 
+                if _G.DaDenDich and not isQuestMenuOpen and elapsed >= 4.0 then 
                     if char and hum and hum.Health > 0 then 
                         hum.Health = 0 
                     end
                     return
                 end
 
-                hrp.CFrame = CFrame.new(stopPos, Vector3.new(tPos.X, stopPos.Y, tPos.Z)) 
+                -- Nếu chưa đến mốc 2 giây cần kéo lên, tiếp tục khóa vị trí stopPos
+                if elapsed < 2.0 or toSeller or ghostDoor then
+                    hrp.CFrame = CFrame.new(stopPos, Vector3.new(tPos.X, stopPos.Y, tPos.Z))
+                end 
             else
                 _G.DaDenDich = false
                 _G.SellerStuckTime = nil 
@@ -1107,7 +1100,7 @@ local function StopBot()
 end
 
 -- =======================================================
--- BẮT SỰ KIỆN NÚT BẤM GUI
+-- BẮT SỰ KIỆN NÚT BẤM GUI (ĐẦY ĐỦ NGOẶC CHUẨN CHỈ)
 -- =======================================================
 if BtnDig then
     BtnDig.MouseButton1Click:Connect(function()
