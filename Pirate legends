@@ -851,7 +851,7 @@ _G.AntiAFKConnection = game:GetService("Players").LocalPlayer.Idled:Connect(func
 end)
 -- =======================================================
 
--- Hàm lọc rương quý tộc (Chống kẹt thùng gỗ, thùng rác)
+-- Hàm kiểm tra danh tính rương xịn (Chỉ lọc Captain, Gold, Silver)
 local function IsValidChest(object)
     if not object or not object.Name then return false end
     local nameLower = string.lower(object.Name)
@@ -863,7 +863,7 @@ local function IsValidChest(object)
     return false
 end
 
--- ĐỘ LẠI HÀM: TÌM RƯƠNG GẦN NHẤT THUẦN TÚY (CHỌN LỌC GIÀU NGHÈO)
+-- HÀM TÌM RƯƠNG QUÉT SÂU TOÀN DIỆN (LỤC TUNG MỌI FOLDER CON)
 local function GetNearestDroppedChest()
     local char = LocalPlayer.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
@@ -872,7 +872,8 @@ local function GetNearestDroppedChest()
     local bestChest = nil
     local minDistance = math.huge
 
-    for _, v in ipairs(Workspace:GetChildren()) do
+    -- Quét sạch sành sanh mọi ngóc ngách, ngầm, folder ẩn trong Workspace
+    for _, v in ipairs(Workspace:GetDescendants()) do
         if v:IsA("BasePart") and IsValidChest(v) then
             local dist = (hrp.Position - v.Position).Magnitude
             if dist < minDistance then
@@ -883,6 +884,7 @@ local function GetNearestDroppedChest()
     end
     return bestChest
 end
+-- =======================================================
 
 local FLY_SPEED, FALL_LIMIT, CLIMB_LIMIT, OFFSET_DIST, LERP_SMOOTH, MAX_HEIGHT, SEA_LEVEL = 60, 80, 45, 3.5, 0.25, 8.0, 12.5
 
@@ -932,6 +934,7 @@ local function StartBot()
                 end
             end
             
+            -- BẢN GỐC KHUNG CHUẨN KẾT HỢP HÀM QUÉT SÂU MỚI
             if not _G.IsTeleportingHome and not tPos then
                 if IsHoldingChest() then npc = GetNearestSeller() if npc then tPos, toSeller = npc:GetPivot().Position, true tPart = npc end
                 else tPart = _G.AutoChestOnly and GetNearestDroppedChest() or (_G.AutoDigAndPick and (GetChestAtFeet() or GetNearestBuriedChest())) if tPart then tPos = tPart.Position else npc = GetNearestSeller() if npc then tPos, toSeller = npc:GetPivot().Position, true tPart = npc elseif gd and distToDoor > 200 then ghostDoor = gd tPos = gd:GetPivot().Position tPart = gd end end end
@@ -1010,13 +1013,14 @@ local function StartBot()
                     end
                 end
 
-                -- 2. CƠ CHẾ ĐỘT TỬ TỔNG LỰC (4.5s BAO LAG NÚT E TOÀN DIỆN)
+                -- 2. CƠ CHẾ ĐỘT TỬ TỔNG LỰC (4.5s BAO LAG NÚT E TOÀN DIỆN CHO CẢ RƯƠNG VÀ SELLER)
                 local pGui = LocalPlayer:FindFirstChildWhichIsA("PlayerGui")
                 local isQuestMenuOpen = false
 
                 if pGui then
                     local shopUI = pGui:FindFirstChild("QuestShopUI")
                     local pickUI = pGui:FindFirstChild("PickQuestUI")
+                    
                     if (shopUI and (shopUI:GetAttribute("Enabled") or shopUI.Enabled)) or 
                        (pickUI and (pickUI:GetAttribute("Enabled") or pickUI.Enabled)) then
                         isQuestMenuOpen = true
@@ -1155,7 +1159,7 @@ if BtnPick then
             TweenService:Create(BtnPick, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(0, 170, 255)}):Play() 
             StartBot()
         else 
-            BtnPick.Text = "CHEST Only [OFF]" 
+            BtnPick.Text = "CHEST ONLY [OFF]" 
             TweenService:Create(BtnPick, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(45, 45, 45)}):Play() 
             StopBot() 
         end
