@@ -955,24 +955,21 @@ local function StartBot()
             
             if dist <= stopLimit then
                 if not _G.DaDenDich then
-                    _G.StuckTime = os.clock()
+                    _G.StuckTime = os.clock() -- Bấm giờ Đột tử 4s (Không bị reset bậy bạ nữa)
                     _G.DaDenDich = true
-                    _G.CaveTimer = os.clock() -- BẤM GIỜ CHUẨN NGAY KHI VỪA TIẾP CẬN MỤC TIÊU!
+                    _G.CaveTimer = os.clock() -- Bấm giờ TP cứu kẹt 2s
                 end
 
-                -- BẢN SỬA ĐỔI TRIỆT ĐỂ: BỎ CHECK TRỤC Y THEO Ý BRO, ĐỨNG IM 2S MỤC TIÊU CHƯA MẤT LÀ GIẬT LÊN LUÔN!
+                -- 1. TP CỨU KẸT (2 GIÂY): Chạy độc lập hoàn toàn, KHÔNG reset StuckTime!
                 if _G.DaDenDich and (not toSeller) and (not ghostDoor) then
                     if (os.clock() - _G.CaveTimer) >= 2.0 then 
-                        -- Dùng vũ lực nhấc bổng lên cao hơn mặt rương gốc 1.5 studs
                         local safeY = tPos.Y + (hrp.Size.Y / 2) + 1.5
                         hrp.CFrame = CFrame.new(Vector3.new(tPos.X, safeY, tPos.Z), Vector3.new(tPos.X, tPos.Y, tPos.Z))
-                        
-                        _G.CaveTimer = os.clock() -- Tiếp tục đếm lượt mới đề phòng vẫn bị kẹt nút/kẹt hố
-                        _G.StuckTime = os.clock() -- Reset bộ đếm đột tử 4s để không chết oan
+                        _G.CaveTimer = os.clock() -- Chỉ reset đồng hồ 2s của chính nó
                     end
                 end
 
-                -- 1. SELLER STUCK RESET (3 SECONDS)
+                -- 2. SELLER STUCK RESET (3 SECONDS)
                 if toSeller then
                     if IsHoldingChest() then
                         if not _G.SellerStuckTime then
@@ -987,7 +984,7 @@ local function StartBot()
                     end
                 end
 
-                -- 2. FARM STUCK RESET (ĐỘT TỬ VÒNG NGOÀI 4S)
+                -- 3. CƠ CHẾ ĐỘT TỬ (4 GIÂY): Đúng 4s không xong rương là tự động nổ BÙM!
                 local notNpcOrDoor = (not toSeller) and (not ghostDoor)
                 local pGui = LocalPlayer:FindFirstChildWhichIsA("PlayerGui")
                 local isQuestMenuOpen = false
@@ -1079,7 +1076,8 @@ end
 
 local function StopBot()
     if not _G.AutoDigAndPick and not _G.AutoChestOnly then
-        if _G.BotConnection then _G.BotConnection:Disconnect() _G.BotConnection = nil end if _G.NoclipConnection then _G.NoclipConnection:Disconnect() _G.NoclipConnection = nil end
+        if _G.BotConnection then _G.BotConnection:Disconnect() _G.BotConnection = nil end 
+        if _G.NoclipConnection then _G.NoclipConnection:Disconnect() _G.NoclipConnection = nil end
         if LocalPlayer.Character then 
             local hum = LocalPlayer.Character:FindFirstChildWhichIsA("Humanoid") 
             if hum then 
@@ -1097,13 +1095,26 @@ local function StopBot()
     end
 end
 
+-- =======================================================
+-- BẮT SỰ KIỆN NÚT BẤM GUI (ĐẦY ĐỦ NGOẶC CHUẨN CHỈ)
+-- =======================================================
 if BtnDig then
     BtnDig.MouseButton1Click:Connect(function()
         _G.AutoDigAndPick = not _G.AutoDigAndPick
         if _G.AutoDigAndPick then
-            _G.AutoChestOnly = false if BtnPick then BtnPick.Text = "CHEST ONLY [OFF]" BtnPick.BackgroundColor3 = Color3.fromRGB(45, 45, 45) end BtnDig.Text = "DIG HOLE [RUNNING]"
-            TweenService:Create(BtnDig, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255, 0, 128)}):Play() StartBot()
-        else BtnDig.Text = "DIG HOLE [OFF]" TweenService:Create(BtnDig, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(45, 45, 45)}):Play() StopBot() end
+            _G.AutoChestOnly = false 
+            if BtnPick then 
+                BtnPick.Text = "CHEST ONLY [OFF]" 
+                BtnPick.BackgroundColor3 = Color3.fromRGB(45, 45, 45) 
+            end 
+            BtnDig.Text = "DIG HOLE [RUNNING]"
+            TweenService:Create(BtnDig, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255, 0, 128)}):Play() 
+            StartBot()
+        else 
+            BtnDig.Text = "DIG HOLE [OFF]" 
+            TweenService:Create(BtnDig, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(45, 45, 45)}):Play() 
+            StopBot() 
+        end
     end)
 end
 
@@ -1111,8 +1122,18 @@ if BtnPick then
     BtnPick.MouseButton1Click:Connect(function()
         _G.AutoChestOnly = not _G.AutoChestOnly
         if _G.AutoChestOnly then
-            _G.AutoDigAndPick = false if BtnDig then BtnDig.Text = "DIG HOLE [OFF]" BtnDig.BackgroundColor3 = Color3.fromRGB(45, 45, 45) end BtnPick.Text = "CHEST ONLY [RUNNING]"
-            TweenService:Create(BtnPick, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(0, 170, 255)}):Play() StartBot()
-        else BtnPick.Text = "CHEST ONLY [OFF]" TweenService:Create(BtnPick, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(45, 45, 45)}):Play() StopBot() end
+            _G.AutoDigAndPick = false 
+            if BtnDig then 
+                BtnDig.Text = "DIG HOLE [OFF]" 
+                BtnDig.BackgroundColor3 = Color3.fromRGB(45, 45, 45) 
+            end 
+            BtnPick.Text = "CHEST ONLY [RUNNING]"
+            TweenService:Create(BtnPick, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(0, 170, 255)}):Play() 
+            StartBot()
+        else 
+            BtnPick.Text = "CHEST ONLY [OFF]" 
+            TweenService:Create(BtnPick, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(45, 45, 45)}):Play() 
+            StopBot() 
+        end
     end)
 end
