@@ -851,6 +851,51 @@ _G.AntiAFKConnection = game:GetService("Players").LocalPlayer.Idled:Connect(func
 end)
 -- =======================================================
 
+-- TOÁN HỌC ĐỈNH CAO: HÀM TÌM RƯƠNG THÔNG MINH (BÙA ĐIỂM ƯU TIÊN)
+local function GetNearestDroppedChest()
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return nil end
+
+    local bestChest = nil
+    local minScore = math.huge -- Tìm thằng có điểm thấp nhất (ngon nhất)
+
+    -- BẢNG BÙA ĐIỂM: Rương càng xịn càng được trừ nhiều mét ảo
+    local priorityWeight = {
+        ["Captain's Chest"] = -150, -- Ưu tiên tối cao (Bùa -150m)
+        ["Gold Chests"] = -70,      -- Ưu tiên vừa (Bùa -70m)
+        ["Silver Chests"] = 0       -- Bình thường
+    }
+
+    -- Quét toàn bộ các object trong Workspace
+    for _, v in ipairs(Workspace:GetChildren()) do
+        if v:IsA("BasePart") and string.find(v.Name, "Chest") then
+            local realDist = (hrp.Position - v.Position).Magnitude
+            local bonus = 0
+
+            -- Duyệt bảng để xem rương này thuộc loại nào và lấy điểm bùa
+            for chestName, weight in pairs(priorityWeight) do
+                if string.find(v.Name, chestName) then
+                    bonus = weight
+                    break
+                end
+            end
+
+            -- Điểm = Khoảng cách thực tế + Điểm bùa
+            local score = realDist + bonus
+
+            -- Thằng nào điểm thấp nhất sẽ được chọn làm mục tiêu
+            if score < minScore then
+                minScore = score
+                bestChest = v
+            end
+        end
+    end
+
+    return bestChest
+end
+-- =======================================================
+
 local FLY_SPEED, FALL_LIMIT, CLIMB_LIMIT, OFFSET_DIST, LERP_SMOOTH, MAX_HEIGHT, SEA_LEVEL = 60, 80, 45, 3.5, 0.25, 8.0, 12.5
 
 local function StartBot()
@@ -955,7 +1000,7 @@ local function StartBot()
             
             if dist <= stopLimit then
                 if not _G.DaDenDich then
-                    _G.StuckTime = os.clock() -- Bấm giờ Đột tử 4s (Không bị reset bậy bạ nữa)
+                    _G.StuckTime = os.clock() -- Bấm giờ Đột tử 4s
                     _G.DaDenDich = true
                     _G.CaveTimer = os.clock() -- Bấm giờ TP cứu kẹt 2s
                 end
@@ -984,7 +1029,7 @@ local function StartBot()
                     end
                 end
 
-                -- 3. CƠ CHẾ ĐỘT TỬ (4 GIÂY): Đúng 4s không xong rương là tự động nổ BÙM!
+                -- 3. CƠ CHẾ ĐỘT TỬ (4 GIÂY)
                 local notNpcOrDoor = (not toSeller) and (not ghostDoor)
                 local pGui = LocalPlayer:FindFirstChildWhichIsA("PlayerGui")
                 local isQuestMenuOpen = false
@@ -1096,7 +1141,7 @@ local function StopBot()
 end
 
 -- =======================================================
--- BẮT SỰ KIỆN NÚT BẤM GUI (ĐẦY ĐỦ NGOẶC CHUẨN CHỈ)
+-- BẮT SỰ KIỆN NÚT BẤM GUI
 -- =======================================================
 if BtnDig then
     BtnDig.MouseButton1Click:Connect(function()
