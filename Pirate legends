@@ -912,7 +912,7 @@ local function StartBot()
                 _G.StuckTime = os.clock() 
                 _G.SellerStuckTime = nil 
                 _G.DaDenDich = false
-                _G.DaGiartFrame = false -- Đổi mục tiêu mới hoàn toàn thì mới mở khóa giật Frame
+                _G.DaGiartFrame = false -- Đổi sang mục tiêu mới hoàn toàn thì mới mở khóa giật Frame
             end
             
             -- =======================================================
@@ -956,23 +956,24 @@ local function StartBot()
                 if not _G.DaDenDich then
                     _G.StuckTime = os.clock() 
                     _G.DaDenDich = true
+                    _G.DaGiartFrame = false -- Đảm bảo reset khóa khi vừa chạm đích
                 end
 
                 local elapsed = os.clock() - _G.StuckTime
 
-                -- 1. TP CỨU KẸT TUYỆT ĐỐI (ĐÚNG 2 GIÂY - CHỈ GIẬT 1 LẦN DUY NHẤT TRÊN 1 MỤC TIÊU)
+                -- 1. TP CỨU KẸT TUYỆT ĐỐI (CHỈ KÍCH HOẠT ĐÚNG 1 LẦN TRONG KHOẢNG 2.0s - 2.2s)
                 if _G.DaDenDich and (not toSeller) and (not ghostDoor) then
-                    if elapsed >= 2.0 and not _G.DaGiartFrame then 
+                    if elapsed >= 2.0 and elapsed <= 2.2 and not _G.DaGiartFrame then 
                         local currentPos = hrp.Position
-                        local safeY = tPos.Y + (hrp.Size.Y / 2) + 5.0 -- Ép cao hẳn lên 5 block vượt mặt đất
+                        local safeY = tPos.Y + (hrp.Size.Y / 2) + 5.0 -- Ép bốc thẳng lên cao hẳn 5 block
                         
-                        -- Chỉ bốc trục Y lên, giữ nguyên vị trí X, Z và hướng xoay cũ để không bị bắn văng
+                        -- Chỉ bốc trục Y lên, giữ nguyên vị trí X, Z và hướng xoay cũ để không bị bắn văng hình
                         hrp.CFrame = CFrame.new(Vector3.new(currentPos.X, safeY, currentPos.Z)) * hrp.CFrame.Rotation
-                        _G.DaGiartFrame = true -- Khóa cứng, không bao giờ lặp lại tại mục tiêu này
+                        _G.DaGiartFrame = true -- Khóa cứng luôn, cấm tuyệt đối không cho giật nhấp nhô liên tục
                     end
                 end
 
-                -- 2. ĐIỀU KIỆN ĐỘT TỬ ĐƯỢC SIẾT CHẶT (SAU 4 GIÂY)
+                -- 2. ĐIỀU KIỆN ĐỘT TỬ ĐƯỢC SIẾT CHẶT (ĐÚNG 4 GIÂY LÀ KÍCH NỔ DỨT KHOÁT)
                 local pGui = LocalPlayer:FindFirstChildWhichIsA("PlayerGui")
                 local isQuestMenuOpen = false
 
@@ -1001,8 +1002,8 @@ local function StartBot()
                     return
                 end
 
-                -- Giữ vị trí tương tác chuẩn
-                if elapsed < 2.0 or toSeller or ghostDoor then
+                -- Khóa cố định vị trí tương tác chuẩn (Nếu nằm ngoài khoảng thời gian giật Frame 2.0s - 2.2s)
+                if elapsed < 2.0 or elapsed > 2.2 or toSeller or ghostDoor then
                     hrp.CFrame = CFrame.new(stopPos, Vector3.new(tPos.X, stopPos.Y, tPos.Z)) 
                 end
             else
