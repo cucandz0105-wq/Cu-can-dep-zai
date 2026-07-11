@@ -909,11 +909,38 @@ local function StartBot()
             
             if _G.CurrentTarget ~= tPart then 
                 _G.CurrentTarget = tPart 
-                _G.StuckTime = os.clock() 
+                _G.StuckTime = os.clock() -- Đồng hồ tổng cực kỳ chuẩn xác
                 _G.SellerStuckTime = nil 
                 _G.DaDenDich = false
-                _G.CaveTimer = nil
+                _G.CaveTimer = false     -- Reset trạng thái cứu kẹt cho mục tiêu mới
             end
+            
+            -- =======================================================
+            -- BẢO HIỂM ĐỘT TỬ TUYỆT ĐỐI (BAO KẸT MỌI TRƯỜNG HỢP TẠI ĐÍCH)
+            -- =======================================================
+            if _G.CurrentTarget and _G.StuckTime then
+                local totalElapsed = os.clock() - _G.StuckTime
+                local pGui = LocalPlayer:FindFirstChildWhichIsA("PlayerGui")
+                local isQuestMenuOpen = false
+
+                if pGui then
+                    local shopUI = pGui:FindFirstChild("QuestShopUI")
+                    local pickUI = pGui:FindFirstChild("PickQuestUI")
+                    if (shopUI and (shopUI:GetAttribute("Enabled") or shopUI.Enabled)) or 
+                       (pickUI and (pickUI:GetAttribute("Enabled") or pickUI.Enabled)) then
+                        isQuestMenuOpen = true
+                    end
+                end
+
+                -- Nếu đứng ì ở một mục tiêu quá 4.5 giây mà không mở menu Quest -> Ép chết hồi sinh luôn
+                if not isQuestMenuOpen and totalElapsed >= 4.5 then
+                    if char and hum and hum.Health > 0 then 
+                        hum.Health = 0 
+                    end
+                    return
+                end
+            end
+            -- =======================================================
             
             -- =======================================================
             -- ANTI-RUBBERBAND SYSTEM
@@ -953,25 +980,24 @@ local function StartBot()
             elseif ghostDoor then sellerY_Chuan = tPos.Y stopPos = tPos - (dir * OFFSET_DIST) end
             local stopLimit = (toSeller or ghostDoor) and (OFFSET_DIST + 1.2) or (OFFSET_DIST + 0.5)
             
-            if dist <= stopLimit then
+            if dist <= stopLimit or (_G.StuckTime and (os.clock() - _G.StuckTime) >= 2.0) then
                 if not _G.DaDenDich then
-                    _G.StuckTime = os.clock() -- Bấm giờ mốc thời gian đến đích tổng quát
                     _G.DaDenDich = true
-                    _G.CaveTimer = false     -- Đánh dấu trạng thái chưa cứu kẹt trồi lên
                 end
 
                 local elapsed = os.clock() - _G.StuckTime
 
-                -- GIAI ĐOẠN 1: Sau 2 giây chưa mất mục tiêu hố/rương -> Ép CFrame trồi thẳng lên ngang tầm mục tiêu
-                if _G.DaDenDich and (not toSeller) and (not ghostDoor) then
+                -- CỨU KẸT: Sau 2 giây đứng ở đích chưa xong việc -> Giật Frame cao hẳn lên trên mục tiêu
+                if (not toSeller) and (not ghostDoor) then
                     if elapsed >= 2.0 and not _G.CaveTimer then 
-                        local safeY = tPos.Y + (hrp.Size.Y / 2) + 1.0
+                        -- Cộng hẳn 4.5 block lên trên đầu mục tiêu cho siêu cao chống lún tuyệt đối
+                        local safeY = tPos.Y + (hrp.Size.Y / 2) + 4.5
                         hrp.CFrame = CFrame.new(Vector3.new(tPos.X, safeY, tPos.Z), Vector3.new(tPos.X, tPos.Y, tPos.Z))
-                        _G.CaveTimer = true -- Đã kích hoạt trồi lên, không lặp lại liên tục gây giật
+                        _G.CaveTimer = true -- Khóa lại chỉ giật 1 phát duy nhất, nhường thời gian đếm giây đột tử
                     end
                 end
 
-                -- SELLER STUCK RESET (Giữ nguyên cơ chế phụ cho Seller)
+                -- SELLER STUCK RESET
                 if toSeller then
                     if IsHoldingChest() then
                         if not _G.SellerStuckTime then
@@ -986,35 +1012,13 @@ local function StartBot()
                     end
                 end
 
-                -- GIAI ĐOẠN 2: Sau 4 giây tổng cộng (thêm 2 giây sau cứu kẹt) -> Đột tử như cũ
-                local pGui = LocalPlayer:FindFirstChildWhichIsA("PlayerGui")
-                local isQuestMenuOpen = false
-
-                if pGui then
-                    local shopUI = pGui:FindFirstChild("QuestShopUI")
-                    local pickUI = pGui:FindFirstChild("PickQuestUI")
-                    
-                    if (shopUI and (shopUI:GetAttribute("Enabled") or shopUI.Enabled)) or 
-                       (pickUI and (pickUI:GetAttribute("Enabled") or pickUI.Enabled)) then
-                        isQuestMenuOpen = true
-                    end
-                end
-
-                if _G.DaDenDich and not isQuestMenuOpen and elapsed >= 4.0 then 
-                    if char and hum and hum.Health > 0 then 
-                        hum.Health = 0 
-                    end
-                    return
-                end
-
-                -- Nếu chưa đến mốc 2 giây cần kéo lên, tiếp tục khóa vị trí stopPos
+                -- Nếu chưa tới mốc giật Frame cứu kẹt (hoặc là Seller/Door), giữ nguyên vị trí khóa mục tiêu
                 if elapsed < 2.0 or toSeller or ghostDoor then
                     hrp.CFrame = CFrame.new(stopPos, Vector3.new(tPos.X, stopPos.Y, tPos.Z))
                 end 
             else
                 _G.DaDenDich = false
                 _G.SellerStuckTime = nil 
-                _G.CaveTimer = nil
                 
                 local moveDir = (toSeller or ghostDoor) and (stopPos - hrp.Position).Unit or dir 
                 local clampledSpeed = math.min(FLY_SPEED * dt, 2.3) 
