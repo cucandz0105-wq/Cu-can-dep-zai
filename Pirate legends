@@ -851,21 +851,19 @@ _G.AntiAFKConnection = game:GetService("Players").LocalPlayer.Idled:Connect(func
 end)
 -- =======================================================
 
--- DANH SÁCH WHITELIST RƯƠNG ĐƯỢC PHÉP LỤM
-local allowedChests = {"Captain's Chest", "Gold Chests", "Silver Chests"}
-
--- Hàm kiểm tra danh tính rương xịn
+-- Hàm kiểm tra danh tính rương xịn (Quét thông minh, không lo đổi tên)
 local function IsValidChest(object)
     if not object or not object.Name then return false end
-    for _, name in ipairs(allowedChests) do
-        if string.find(object.Name, name) then
+    local nameLower = string.lower(object.Name)
+    if string.find(nameLower, "captain") or string.find(nameLower, "gold") or string.find(nameLower, "silver") then
+        if string.find(nameLower, "chest") then
             return true
         end
     end
     return false
 end
 
--- TOÁN HỌC ĐỈNH CAO: HÀM TÌM RƯƠNG THÔNG MINH + LỌC WHITELIST
+-- HÀM TÌM RƯƠNG THÔNG MINH + CƠ CHẾ CHỌN GIÀU
 local function GetNearestDroppedChest()
     local char = LocalPlayer.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
@@ -876,20 +874,20 @@ local function GetNearestDroppedChest()
 
     -- BẢNG BÙA ĐIỂM PRIORITY
     local priorityWeight = {
-        ["Captain's Chest"] = -150, 
-        ["Gold Chests"] = -70,      
-        ["Silver Chests"] = 0       
+        ["captain"] = -150, 
+        ["gold"] = -70,      
+        ["silver"] = 0       
     }
 
-    -- Quét toàn bộ các object trong Workspace
+    -- Quét toàn bộ các đối tượng trong Workspace
     for _, v in ipairs(Workspace:GetChildren()) do
-        -- CHỈ XÉT NHỮNG ĐỐI TƯỢNG NẰM TRONG WHITELIST RƯƠNG XỊN
         if v:IsA("BasePart") and IsValidChest(v) then
             local realDist = (hrp.Position - v.Position).Magnitude
             local bonus = 0
+            local nameLower = string.lower(v.Name)
 
-            for chestName, weight in pairs(priorityWeight) do
-                if string.find(v.Name, chestName) then
+            for chestKey, weight in pairs(priorityWeight) do
+                if string.find(nameLower, chestKey) then
                     bonus = weight
                     break
                 end
@@ -956,14 +954,27 @@ local function StartBot()
                 end
             end
             
+            -- ƯU TIÊN SẮP XẾP LẠI KHÔNG CHO TRÙNG LẶP LỘ TRÌNH
             if not _G.IsTeleportingHome and not tPos then
-                if IsHoldingChest() then npc = GetNearestSeller() if npc then tPos, toSeller = npc:GetPivot().Position, true tPart = npc end
+                if IsHoldingChest() then 
+                    -- Đang ôm rương trên tay thì đi bán
+                    npc = GetNearestSeller() 
+                    if npc then tPos, toSeller = npc:GetPivot().Position, true tPart = npc end
                 else 
-                    tPart = _G.AutoChestOnly and GetNearestDroppedChest() or (_G.AutoDigAndPick and (GetChestAtFeet() or GetNearestBuriedChest())) 
-                    -- KHÓA KIỂM TRA: Chỉ đi tới nếu mục tiêu là rương hợp lệ (hoặc đang đào)
-                    if tPart and (_G.AutoDigAndPick or IsValidChest(tPart)) then 
+                    -- Không ôm rương thì tìm rương dưới đất TRƯỚC
+                    local droppedChest = GetNearestDroppedChest()
+                    
+                    if _G.AutoChestOnly and droppedChest then
+                        tPart = droppedChest
+                    elseif _G.AutoDigAndPick then
+                        tPart = GetChestAtFeet() or GetNearestBuriedChest() or droppedChest
+                    end
+                    
+                    -- Nếu có rương thì bay tới húp, không thèm về seller nữa!
+                    if tPart then 
                         tPos = tPart.Position 
                     else 
+                        -- Hết sạch rương dưới đất mới xét đi tìm Seller hoặc Cửa ma
                         npc = GetNearestSeller() 
                         if npc then 
                             tPos, toSeller = npc:GetPivot().Position, true tPart = npc 
@@ -1025,9 +1036,9 @@ local function StartBot()
             
             if dist <= stopLimit then
                 if not _G.DaDenDich then
-                    _G.StuckTime = os.clock() -- Bấm giờ Đột tử 4s
+                    _G.StuckTime = os.clock() 
                     _G.DaDenDich = true
-                    _G.CaveTimer = os.clock() -- Bấm giờ TP cứu kẹt 2s
+                    _G.CaveTimer = os.clock() 
                 end
 
                 -- 1. TP CỨU KẸT (2 GIÂY)
@@ -1039,7 +1050,7 @@ local function StartBot()
                     end
                 end
 
-                -- KÍCH HOẠT PROXIMITY PROMPT (CHỈ KHI LÀ RƯƠNG HỢP LỆ HOẶC NPC BÁN)
+                -- KÍCH HOẠT PROXIMITY PROMPT
                 if tPart and (toSeller or ghostDoor or IsValidChest(tPart)) then
                     local prompt = tPart:FindFirstChildWhichIsA("ProximityPrompt") or (tPart.Parent and tPart.Parent:FindFirstChildWhichIsA("ProximityPrompt"))
                     if prompt and fireproximityprompt then
