@@ -912,7 +912,7 @@ local function StartBot()
                 _G.StuckTime = os.clock() 
                 _G.SellerStuckTime = nil 
                 _G.DaDenDich = false
-                -- Không để nhánh target đổi reset nhầm biến khóa nữa
+                _G.DaGiartFrame = nil -- Reset khóa cứu kẹt khi đổi mục tiêu mới
             end
             
             -- =======================================================
@@ -953,23 +953,20 @@ local function StartBot()
             elseif ghostDoor then sellerY_Chuan = tPos.Y stopPos = tPos - (dir * OFFSET_DIST) end
             local stopLimit = (toSeller or ghostDoor) and (OFFSET_DIST + 1.2) or (OFFSET_DIST + 0.5)
             
-            if dist <= stopLimit then
-                if not _G.DaDenDich then
-                    _G.StuckTime = os.clock() -- Bấm giờ tổng cho mục tiêu
-                    _G.DaDenDich = true
-                end
+            -- Biến tính thời gian kẹt chạy xuyên suốt dựa trên lúc bắt đầu nhắm Target
+            local elapsed = os.clock() - _G.StuckTime
 
-                local elapsed = os.clock() - _G.StuckTime
+            if dist <= stopLimit then
+                _G.DaDenDich = true
 
                 -- 1. TP CỨU KẸT NÂNG CẤP (CHỈ KÍCH HOẠT ĐÚNG 1 LẦN DUY NHẤT / 1 MỤC TIÊU)
-                if _G.DaDenDich and (not toSeller) and (not ghostDoor) then
+                if (not toSeller) and (not ghostDoor) then
                     if elapsed >= 2.0 and _G.DaGiartFrame ~= _G.CurrentTarget then 
                         local currentPos = hrp.Position
-                        local safeY = tPos.Y + (hrp.Size.Y / 2) + 5.0 -- Nhấc cao hẳn lên 5 block vượt mặt đất
+                        local safeY = tPos.Y + (hrp.Size.Y / 2) + 6.0 -- Nhấc cao lên 6 block để vượt mặt đất kẹt
                         
-                        -- Chỉ dịch chuyển trục Y lên trên, giữ nguyên X, Z và hướng nhìn hiện tại để chống bay đảo
                         hrp.CFrame = CFrame.new(Vector3.new(currentPos.X, safeY, currentPos.Z)) * hrp.CFrame.Rotation
-                        _G.DaGiartFrame = _G.CurrentTarget -- Khóa cứng theo ID mục tiêu này luôn!
+                        _G.DaGiartFrame = _G.CurrentTarget -- Khóa cứng theo ID mục tiêu này
                     end
                 end
 
@@ -1003,22 +1000,21 @@ local function StartBot()
                     end
                 end
 
-                if _G.DaDenDich and notNpcOrDoor and not isQuestMenuOpen and elapsed >= 4.0 then 
+                if notNpcOrDoor and not isQuestMenuOpen and elapsed >= 4.0 then 
                     if char and hum and hum.Health > 0 then 
                         hum.Health = 0 
                     end
-                    _G.DaGiartFrame = nil -- Giải phóng khóa khi chết
+                    _G.DaGiartFrame = nil 
                     return
                 end
 
-                -- Giữ vị trí tương tác (Nếu chưa đến 2s hoặc đã qua lượt giật cứu kẹt thì cố định vị trí chuẩn)
+                -- Giữ vị trí tương tác
                 if elapsed < 2.0 or _G.DaGiartFrame == _G.CurrentTarget or toSeller or ghostDoor then
                     hrp.CFrame = CFrame.new(stopPos, Vector3.new(tPos.X, stopPos.Y, tPos.Z)) 
                 end
             else
-                _G.DaDenDich = false
+                -- TUYỆT ĐỐI KHÔNG RESET _G.DaDenDich VÀ _G.StuckTime Ở ĐÂY NỮA
                 _G.SellerStuckTime = nil 
-                -- Tuyệt đối không reset _G.DaGiartFrame ở nhánh else để chống lặp khi lag khoảng cách
                 
                 local moveDir = (toSeller or ghostDoor) and (stopPos - hrp.Position).Unit or dir 
                 local clampledSpeed = math.min(FLY_SPEED * dt, 2.3) 
