@@ -851,40 +851,16 @@ _G.AntiAFKConnection = game:GetService("Players").LocalPlayer.Idled:Connect(func
 end)
 -- =======================================================
 
--- Hàm kiểm tra danh tính rương xịn (Chỉ lọc Captain, Gold, Silver)
-local function IsValidChest(object)
-    if not object or not object.Name then return false end
-    local nameLower = string.lower(object.Name)
-    if string.find(nameLower, "captain") or string.find(nameLower, "gold") or string.find(nameLower, "silver") then
-        if string.find(nameLower, "chest") then
-            return true
-        end
+-- Hàm lọc rương: Loại bỏ thẳng tay các loại thùng gỗ, thùng rác rưởi
+local function IsPremiumChest(chestPart)
+    if not chestPart or not chestPart.Name then return false end
+    local nameLower = string.lower(chestPart.Name)
+    -- Nếu tên chứa chữ "thùng gỗ" (wood/barrel/cast) thì bỏ qua không lụm
+    if string.find(nameLower, "wood") or string.find(nameLower, "barrel") or string.find(nameLower, "cast") then
+        return false
     end
-    return false
+    return true
 end
-
--- HÀM TÌM RƯƠNG QUÉT SÂU TOÀN DIỆN (LỤC TUNG MỌI FOLDER CON)
-local function GetNearestDroppedChest()
-    local char = LocalPlayer.Character
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return nil end
-
-    local bestChest = nil
-    local minDistance = math.huge
-
-    -- Quét sạch sành sanh mọi ngóc ngách, ngầm, folder ẩn trong Workspace
-    for _, v in ipairs(Workspace:GetDescendants()) do
-        if v:IsA("BasePart") and IsValidChest(v) then
-            local dist = (hrp.Position - v.Position).Magnitude
-            if dist < minDistance then
-                minDistance = dist
-                bestChest = v
-            end
-        end
-    end
-    return bestChest
-end
--- =======================================================
 
 local FLY_SPEED, FALL_LIMIT, CLIMB_LIMIT, OFFSET_DIST, LERP_SMOOTH, MAX_HEIGHT, SEA_LEVEL = 60, 80, 45, 3.5, 0.25, 8.0, 12.5
 
@@ -934,12 +910,26 @@ local function StartBot()
                 end
             end
             
-            -- BẢN GỐC KHUNG CHUẨN KẾT HỢP HÀM QUÉT SÂU MỚI
             if not _G.IsTeleportingHome and not tPos then
                 if IsHoldingChest() then npc = GetNearestSeller() if npc then tPos, toSeller = npc:GetPivot().Position, true tPart = npc end
                 else tPart = _G.AutoChestOnly and GetNearestDroppedChest() or (_G.AutoDigAndPick and (GetChestAtFeet() or GetNearestBuriedChest())) if tPart then tPos = tPart.Position else npc = GetNearestSeller() if npc then tPos, toSeller = npc:GetPivot().Position, true tPart = npc elseif gd and distToDoor > 200 then ghostDoor = gd tPos = gd:GetPivot().Position tPart = gd end end end
             end
             
+            -- ÉP WHITELIST VÀO LOGIC: Nếu mục tiêu là rương rác/thùng gỗ thì huỷ ngay, đi tìm Seller luôn
+            if tPart and not toSeller and not ghostDoor and not IsPremiumChest(tPart) then
+                tPart = nil
+                tPos = nil
+                npc = GetNearestSeller()
+                if npc then 
+                    tPos, toSeller = npc:GetPivot().Position, true 
+                    tPart = npc 
+                elseif gd and distToDoor > 200 then 
+                    ghostDoor = gd 
+                    tPos = gd:GetPivot().Position 
+                    tPart = gd 
+                end
+            end
+
             if not tPos then _G.CurrentTarget = nil _G.FakeFallSpeed = 0 hrp.AssemblyLinearVelocity = Vector3.new(0,0,0) hrp.AssemblyAngularVelocity = Vector3.new(0,0,0) return end
             hrp.AssemblyLinearVelocity, hrp.AssemblyAngularVelocity = Vector3.new(0,0,0), Vector3.new(0,0,0)
             
@@ -996,7 +986,7 @@ local function StartBot()
                     _G.CaveTimer = os.clock() 
                 end
 
-                -- 1. TP CỨU KẸT TRONG HANG (2 GIÂY)
+                -- 1. TP CỨU KẸT (2 GIÂY)
                 if _G.DaDenDich and (not toSeller) and (not ghostDoor) then
                     if (os.clock() - _G.CaveTimer) >= 2.0 then 
                         local safeY = tPos.Y + (hrp.Size.Y / 2) + 1.5
@@ -1005,15 +995,7 @@ local function StartBot()
                     end
                 end
 
-                -- KÍCH HOẠT PROXIMITY PROMPT
-                if tPart and (toSeller or ghostDoor or IsValidChest(tPart)) then
-                    local prompt = tPart:FindFirstChildWhichIsA("ProximityPrompt") or (tPart.Parent and tPart.Parent:FindFirstChildWhichIsA("ProximityPrompt"))
-                    if prompt and fireproximityprompt then
-                        fireproximityprompt(prompt)
-                    end
-                end
-
-                -- 2. CƠ CHẾ ĐỘT TỬ TỔNG LỰC (4.5s BAO LAG NÚT E TOÀN DIỆN CHO CẢ RƯƠNG VÀ SELLER)
+                -- FIX CHÍ MẠNG: ĐỘT TỬ TỔNG LỰC CHO CẢ SELLER VÀ RƯƠNG (4.5 GIÂY)
                 local pGui = LocalPlayer:FindFirstChildWhichIsA("PlayerGui")
                 local isQuestMenuOpen = false
 
@@ -1027,7 +1009,8 @@ local function StartBot()
                     end
                 end
 
-                if not isQuestMenuOpen and (os.clock() - _G.StuckTime) >= 4.5 then 
+                -- Đến đích quá 4.5 giây mà không đổi mục tiêu/không bán được đồ -> Tự huỷ!
+                if _G.DaDenDich and not isQuestMenuOpen and (os.clock() - _G.StuckTime) >= 4.5 then 
                     if char and hum and hum.Health > 0 then 
                         hum.Health = 0 
                     end
