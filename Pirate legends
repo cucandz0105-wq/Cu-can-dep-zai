@@ -851,7 +851,7 @@ _G.AntiAFKConnection = game:GetService("Players").LocalPlayer.Idled:Connect(func
 end)
 -- =======================================================
 
--- Hàm kiểm tra danh tính rương xịn (Chỉ lọc Captain, Gold, Silver)
+-- Hàm lọc rương quý tộc (Chống kẹt thùng gỗ, thùng rác)
 local function IsValidChest(object)
     if not object or not object.Name then return false end
     local nameLower = string.lower(object.Name)
@@ -863,7 +863,7 @@ local function IsValidChest(object)
     return false
 end
 
--- HÀM TÌM RƯƠNG GẦN NHẤT THUẦN TÚY (THẤY LÀ HÚP!)
+-- ĐỘ LẠI HÀM: TÌM RƯƠNG GẦN NHẤT THUẦN TÚY (CHỌN LỌC GIÀU NGHÈO)
 local function GetNearestDroppedChest()
     local char = LocalPlayer.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
@@ -883,7 +883,6 @@ local function GetNearestDroppedChest()
     end
     return bestChest
 end
--- =======================================================
 
 local FLY_SPEED, FALL_LIMIT, CLIMB_LIMIT, OFFSET_DIST, LERP_SMOOTH, MAX_HEIGHT, SEA_LEVEL = 60, 80, 45, 3.5, 0.25, 8.0, 12.5
 
@@ -933,33 +932,9 @@ local function StartBot()
                 end
             end
             
-            -- ĐIỀU PHỐI LỘ TRÌNH ƯU TIÊN
             if not _G.IsTeleportingHome and not tPos then
-                if IsHoldingChest() then 
-                    npc = GetNearestSeller() 
-                    if npc then tPos, toSeller = npc:GetPivot().Position, true tPart = npc end
-                else 
-                    local droppedChest = GetNearestDroppedChest()
-                    
-                    if droppedChest then
-                        tPart = droppedChest
-                        tPos = droppedChest.Position
-                    else
-                        if _G.AutoDigAndPick then
-                            tPart = GetChestAtFeet() or GetNearestBuriedChest()
-                            if tPart then tPos = tPart.Position end
-                        end
-                        
-                        if not tPos then
-                            npc = GetNearestSeller() 
-                            if npc then 
-                                tPos, toSeller = npc:GetPivot().Position, true tPart = npc 
-                            elseif gd and distToDoor > 200 then 
-                                ghostDoor = gd tPos = gd:GetPivot().Position tPart = gd 
-                            end 
-                        end
-                    end 
-                end
+                if IsHoldingChest() then npc = GetNearestSeller() if npc then tPos, toSeller = npc:GetPivot().Position, true tPart = npc end
+                else tPart = _G.AutoChestOnly and GetNearestDroppedChest() or (_G.AutoDigAndPick and (GetChestAtFeet() or GetNearestBuriedChest())) if tPart then tPos = tPart.Position else npc = GetNearestSeller() if npc then tPos, toSeller = npc:GetPivot().Position, true tPart = npc elseif gd and distToDoor > 200 then ghostDoor = gd tPos = gd:GetPivot().Position tPart = gd end end end
             end
             
             if not tPos then _G.CurrentTarget = nil _G.FakeFallSpeed = 0 hrp.AssemblyLinearVelocity = Vector3.new(0,0,0) hrp.AssemblyAngularVelocity = Vector3.new(0,0,0) return end
@@ -968,6 +943,7 @@ local function StartBot()
             if _G.CurrentTarget ~= tPart then 
                 _G.CurrentTarget = tPart 
                 _G.StuckTime = os.clock() 
+                _G.SellerStuckTime = nil 
                 _G.DaDenDich = false
                 _G.CaveTimer = nil
             end
@@ -993,7 +969,9 @@ local function StartBot()
                 _G.LastRubberbandTime = os.clock()
                 
                 if _G.RubberbandCount >= 8 then 
-                    if char and hum and hum.Health > 0 then hum.Health = 0 end
+                    if char and hum and hum.Health > 0 then 
+                        hum.Health = 0 
+                    end
                     _G.RubberbandCount = 0
                     _G.LastHrpPosition = hrp.Position
                     return
@@ -1015,7 +993,7 @@ local function StartBot()
                     _G.CaveTimer = os.clock() 
                 end
 
-                -- 1. TP CỨU KẸT TRONG HANG
+                -- 1. TP CỨU KẸT TRONG HANG (2 GIÂY)
                 if _G.DaDenDich and (not toSeller) and (not ghostDoor) then
                     if (os.clock() - _G.CaveTimer) >= 2.0 then 
                         local safeY = tPos.Y + (hrp.Size.Y / 2) + 1.5
@@ -1032,9 +1010,10 @@ local function StartBot()
                     end
                 end
 
-                -- 2. CƠ CHẾ ĐỘT TỬ TỔNG LỰC (BAO LAG NÚT E CHO CẢ SELLER VÀ RƯƠNG)
+                -- 2. CƠ CHẾ ĐỘT TỬ TỔNG LỰC (4.5s BAO LAG NÚT E TOÀN DIỆN)
                 local pGui = LocalPlayer:FindFirstChildWhichIsA("PlayerGui")
                 local isQuestMenuOpen = false
+
                 if pGui then
                     local shopUI = pGui:FindFirstChild("QuestShopUI")
                     local pickUI = pGui:FindFirstChild("PickQuestUI")
@@ -1045,13 +1024,16 @@ local function StartBot()
                 end
 
                 if not isQuestMenuOpen and (os.clock() - _G.StuckTime) >= 4.5 then 
-                    if char and hum and hum.Health > 0 then hum.Health = 0 end
+                    if char and hum and hum.Health > 0 then 
+                        hum.Health = 0 
+                    end
                     return
                 end
 
                 hrp.CFrame = CFrame.new(stopPos, Vector3.new(tPos.X, stopPos.Y, tPos.Z)) 
             else
                 _G.DaDenDich = false
+                _G.SellerStuckTime = nil 
                 _G.CaveTimer = nil
                 
                 local moveDir = (toSeller or ghostDoor) and (stopPos - hrp.Position).Unit or dir 
@@ -1078,6 +1060,7 @@ local function StartBot()
                     if hrp.Position.Y > SEA_LEVEL then 
                         _G.FakeFallSpeed = _G.FakeFallSpeed + (workspace.Gravity * dt) 
                         if _G.FakeFallSpeed > 110 then _G.FakeFallSpeed = 110 end 
+                        
                         local deltaY = _G.FakeFallSpeed * dt
                         if deltaY > 1.4 then deltaY = 1.4 end
                         finalY = hrp.Position.Y - deltaY
@@ -1090,10 +1073,14 @@ local function StartBot()
                     if targetY < hrp.Position.Y - 2 then 
                         local duKienY = hrp.Position.Y - (FALL_LIMIT * dt)
                         if duKienY < targetY then duKienY = targetY end
+                        
                         local doLechY = hrp.Position.Y - duKienY
                         if doLechY > 1.4 then duKienY = hrp.Position.Y - 1.4 end
+                        
                         finalY = duKienY
-                        if finalY <= targetY then finalY = targetY end 
+                        if finalY <= targetY then 
+                            finalY = targetY 
+                        end 
                     elseif targetY > hrp.Position.Y + 2 then 
                         finalY = hrp.Position.Y + (CLIMB_LIMIT * dt) 
                         if finalY > targetY then finalY = targetY end 
@@ -1125,6 +1112,7 @@ local function StopBot()
         end
         _G.IsDigging, _G.FakeFallSpeed, _G.CurrentTarget, _G.StuckTime, _G.IsTeleportingHome = false, 0, nil, 0, false
         _G.DaDenDich = false
+        _G.SellerStuckTime = nil
         _G.LastHrpPosition = nil
         _G.RubberbandCount = 0
         _G.CaveTimer = nil
@@ -1167,7 +1155,7 @@ if BtnPick then
             TweenService:Create(BtnPick, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(0, 170, 255)}):Play() 
             StartBot()
         else 
-            BtnPick.Text = "CHEST ONLY [OFF]" 
+            BtnPick.Text = "CHEST Only [OFF]" 
             TweenService:Create(BtnPick, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(45, 45, 45)}):Play() 
             StopBot() 
         end
