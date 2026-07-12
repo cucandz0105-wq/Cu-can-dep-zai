@@ -914,6 +914,7 @@ local function StartBot()
                 _G.DaDenDich = false
                 _G.DaGiartFrame = nil 
                 _G.TimeAfterTP = nil 
+                _G.TimeAtTarget = nil -- Reset đồng hồ tại đích khi đổi mục tiêu mới
             end
             
             -- =======================================================
@@ -954,14 +955,20 @@ local function StartBot()
             elseif ghostDoor then sellerY_Chuan = tPos.Y stopPos = tPos - (dir * OFFSET_DIST) end
             local stopLimit = (toSeller or ghostDoor) and (OFFSET_DIST + 1.2) or (OFFSET_DIST + 0.5)
             
-            local elapsed = os.clock() - _G.StuckTime
 
             if dist <= stopLimit then
                 _G.DaDenDich = true
+                
+                -- BẮT ĐẦU BẤM GIỜ TẠI ĐÍCH (Chỉ đếm khi thực sự chạm phạm vi rương/hố)
+                if not _G.TimeAtTarget then
+                    _G.TimeAtTarget = os.clock()
+                end
+                
+                local elapsedAtTarget = os.clock() - _G.TimeAtTarget
 
-                -- 1. TP CỨU KẸT NÂNG CẤP
+                -- 1. TP CỨU KẸT NÂNG CẤP (Giữ nguyên frame gốc, nhấc lên cao 6 block)
                 if (not toSeller) and (not ghostDoor) then
-                    if elapsed >= 2.0 and _G.DaGiartFrame ~= _G.CurrentTarget then 
+                    if elapsedAtTarget >= 2.0 and _G.DaGiartFrame ~= _G.CurrentTarget then 
                         local currentPos = hrp.Position
                         local safeY = tPos.Y + (hrp.Size.Y / 2) + 6.0 
                         
@@ -986,7 +993,7 @@ local function StartBot()
                     end
                 end
 
-                -- 3. CƠ CHẾ ĐỘT TỬ (ĐẾM SAU TP)
+                -- 3. CƠ CHẾ ĐỘT TỬ (Đếm chính xác sau khi đã qua bước TP)
                 local notNpcOrDoor = (not toSeller) and (not ghostDoor)
                 local pGui = LocalPlayer:FindFirstChildWhichIsA("PlayerGui")
                 local isQuestMenuOpen = false
@@ -994,7 +1001,6 @@ local function StartBot()
                 if pGui then
                     local shopUI = pGui:FindFirstChild("QuestShopUI")
                     local pickUI = pGui:FindFirstChild("PickQuestUI")
-                    
                     if (shopUI and (shopUI:GetAttribute("Enabled") or shopUI.Enabled)) or 
                        (pickUI and (pickUI:GetAttribute("Enabled") or pickUI.Enabled)) then
                         isQuestMenuOpen = true
@@ -1008,16 +1014,18 @@ local function StartBot()
                         end
                         _G.DaGiartFrame = nil 
                         _G.TimeAfterTP = nil
+                        _G.TimeAtTarget = nil
                         return
                     end
                 end
 
                 -- Giữ vị trí tương tác
-                if elapsed < 2.0 or _G.DaGiartFrame == _G.CurrentTarget or toSeller or ghostDoor then
+                if elapsedAtTarget < 2.0 or _G.DaGiartFrame == _G.CurrentTarget or toSeller or ghostDoor then
                     hrp.CFrame = CFrame.new(stopPos, Vector3.new(tPos.X, stopPos.Y, tPos.Z)) 
                 end
             else
                 _G.SellerStuckTime = nil 
+                _G.TimeAtTarget = nil -- Khi bay xa/đang di chuyển thì xoá đồng hồ tại đích để tránh tính gộp thời gian bay
                 
                 local moveDir = (toSeller or ghostDoor) and (stopPos - hrp.Position).Unit or dir 
                 local clampledSpeed = math.min(FLY_SPEED * dt, 2.3) 
@@ -1033,7 +1041,6 @@ local function StartBot()
                     if Workspace:FindFirstChild("IslandsModel") and Workspace["IslandsModel"]:FindFirstChild("NPCs") then table.insert(ignore, Workspace["IslandsModel"]["NPCs"]) end
                     if Workspace:FindFirstChild("Trees") then table.insert(ignore, Workspace["Trees"]) end if Workspace:FindFirstChild("TreeFolder") then table.insert(ignore, Workspace["TreeFolder"]) end
                     params.FilterDescendantsInstances = ignore 
-                    -- FIX LỖI Ở ĐÂY: Thay origin thành nextPos.Z chuẩn bản gốc
                     local ray = Workspace:Raycast(Vector3.new(nextPos.X, nextPos.Y + 100, nextPos.Z), Vector3.new(0, -200, 0), params)
                     if ray and ray.Instance then groundY = ray.Position.Y targetY = groundY + (hrp.Size.Y / 2) + 0.01 if tPos.Y < hrp.Position.Y - 5 and targetY > tPos.Y + 10 then targetY = tPos.Y + (hrp.Size.Y / 2) + 0.01 end else targetY, trenBien = SEA_LEVEL, true end
                 else targetY = math.max(tPos.Y + (hrp.Size.Y / 2) + 0.01, -30) end
@@ -1102,6 +1109,7 @@ local function StopBot()
         _G.RubberbandCount = 0
         _G.DaGiartFrame = nil
         _G.TimeAfterTP = nil
+        _G.TimeAtTarget = nil
     end
 end
 
@@ -1147,4 +1155,3 @@ if BtnPick then
         end
     end)
 end
-
