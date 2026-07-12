@@ -853,13 +853,13 @@ end)
 
 local FLY_SPEED, FALL_LIMIT, CLIMB_LIMIT, OFFSET_DIST, LERP_SMOOTH, MAX_HEIGHT, SEA_LEVEL = 60, 80, 45, 3.5, 0.25, 8.0, 12.5
 
--- [FIX ĐIỀU KIỆN]: Tự động xóa sạch dữ liệu kẹt cũ khi nhân vật hồi sinh
+-- [NÚT RESET TỔNG]: Xóa sạch toàn bộ ký ức kẹt khi nhân vật vừa hồi sinh
 if _G.CharAddedConnection then _G.CharAddedConnection:Disconnect() end
 _G.CharAddedConnection = game:GetService("Players").LocalPlayer.CharacterAdded:Connect(function()
     _G.DaGiartFrame = nil
     _G.TimeAfterTP = nil
     _G.TimeAtTarget = nil
-    _G.CurrentTarget = nil -- Ép bot phải nhận diện lại mục tiêu từ đầu (kể cả rương cũ chưa mất)
+    _G.CurrentTarget = nil -- Ép bot phải nhận diện lại mục tiêu (kể cả hố cũ/rương cũ chưa biến mất)
     _G.SellerStuckTime = nil
     _G.RubberbandCount = 0
     _G.LastHrpPosition = nil
@@ -1039,9 +1039,7 @@ local function StartBot()
                 _G.SellerStuckTime = nil 
                 _G.TimeAtTarget = nil -- Khi bay xa/đang di chuyển thì xoá đồng hồ tại đích để tránh tính gộp thời gian bay
                 
-                -- [FIX ĐIỀU KIỆN]: Giải phóng biến tạm khi bay xa để chuẩn bị cho chu kỳ tiếp cận tiếp theo
-                _G.DaGiartFrame = nil
-                _G.TimeAfterTP = nil
+                -- [ĐÃ FIX CHỖ NÀY]: Xóa bỏ hoàn toàn 2 dòng reset biến tạm cũ ở đây để tránh bị ghi đè khi bot bay giật lên cứu kẹt.
                 
                 local moveDir = (toSeller or ghostDoor) and (stopPos - hrp.Position).Unit or dir 
                 local clampledSpeed = math.min(FLY_SPEED * dt, 2.3) 
