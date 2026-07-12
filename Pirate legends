@@ -840,82 +840,18 @@ task.spawn(function()
     end 
 end)
 -- =======================================================
--- DEFINE SERVICES & PLAYERS (BẢO HIỂM CHỐNG LỖI NGẦM)
--- =======================================================
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
-local Workspace = game:GetService("Workspace")
-local LocalPlayer = Players.LocalPlayer
-local Camera = Workspace.CurrentCamera
-
--- =======================================================
 -- ANTI-AFK SYSTEM (PREVENTS 20-MIN IDLE KICK)
 -- =======================================================
 local VirtualUser = game:GetService("VirtualUser")
 if _G.AntiAFKConnection then _G.AntiAFKConnection:Disconnect() end
 
-_G.AntiAFKConnection = Players.LocalPlayer.Idled:Connect(function()
+_G.AntiAFKConnection = game:GetService("Players").LocalPlayer.Idled:Connect(function()
     VirtualUser:CaptureController()
     VirtualUser:ClickButton2(Vector2.new(0, 0))
 end)
 -- =======================================================
 
 local FLY_SPEED, FALL_LIMIT, CLIMB_LIMIT, OFFSET_DIST, LERP_SMOOTH, MAX_HEIGHT, SEA_LEVEL = 60, 80, 45, 3.5, 0.25, 8.0, 12.5
-
--- Hàm phụ quét rương rơi theo kiểu gốc nhưng có tích hợp Mắt Thần chọn hàng hiệu
-local function GetNearestDroppedChestGoc()
-    local char = LocalPlayer.Character
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return nil end
-
-    local nearestChest = nil
-    local maxPriority = -1
-    local minDistance = math.huge
-    local SMART_ZONE = 40 
-
-    local CHEST_PRIORITIES = {
-        ["Captain"] = 4,
-        ["Gold"] = 3,
-        ["Silver"] = 2,
-        ["Castaway"] = 1
-    }
-
-    local chestFolder = Workspace:FindFirstChild("DroppedChests") or Workspace:FindFirstChild("Chests") or Workspace
-    if chestFolder then
-        for _, chest in ipairs(chestFolder:GetChildren()) do
-            if chest:IsA("BasePart") or chest:FindFirstChildWhichIsA("BasePart") or chest.Name:find("Chest") then
-                local cPos = chest:GetPivot().Position
-                local dist = (hrp.Position - cPos).Magnitude
-
-                local currentPriority = 0
-                for keyword, priority in pairs(CHEST_PRIORITIES) do
-                    if chest.Name:find(keyword) then
-                        currentPriority = priority
-                        break
-                    end
-                end
-
-                if dist < SMART_ZONE then
-                    if currentPriority > maxPriority then
-                        maxPriority = currentPriority
-                        minDistance = dist
-                        nearestChest = chest
-                    elseif currentPriority == maxPriority and dist < minDistance then
-                        minDistance = dist
-                        nearestChest = chest
-                    end
-                else
-                    if maxPriority <= 0 and dist < minDistance then
-                        minDistance = dist
-                        nearestChest = chest
-                    end
-                end
-            end
-        end
-    end
-    return nearestChest
-end
 
 local function StartBot()
     if _G.BotConnection then _G.BotConnection:Disconnect() _G.BotConnection = nil end 
@@ -964,22 +900,8 @@ local function StartBot()
             end
             
             if not _G.IsTeleportingHome and not tPos then
-                if IsHoldingChest() then 
-                    npc = GetNearestSeller() 
-                    if npc then tPos, toSeller = npc:GetPivot().Position, true tPart = npc end
-                else 
-                    tPart = _G.AutoChestOnly and GetNearestDroppedChestGoc() or (_G.AutoDigAndPick and (GetChestAtFeet() or GetNearestBuriedChest())) 
-                    if tPart then 
-                        tPos = tPart.Position 
-                    else 
-                        npc = GetNearestSeller() 
-                        if npc then 
-                            tPos, toSeller = npc:GetPivot().Position, true tPart = npc 
-                        elseif gd and distToDoor > 200 then 
-                            ghostDoor = gd tPos = gd:GetPivot().Position tPart = gd 
-                        end 
-                    end 
-                end
+                if IsHoldingChest() then npc = GetNearestSeller() if npc then tPos, toSeller = npc:GetPivot().Position, true tPart = npc end
+                else tPart = _G.AutoChestOnly and GetNearestDroppedChest() or (_G.AutoDigAndPick and (GetChestAtFeet() or GetNearestBuriedChest())) if tPart then tPos = tPart.Position else npc = GetNearestSeller() if npc then tPos, toSeller = npc:GetPivot().Position, true tPart = npc elseif gd and distToDoor > 200 then ghostDoor = gd tPos = gd:GetPivot().Position tPart = gd end end end
             end
             
             if not tPos then _G.CurrentTarget = nil _G.FakeFallSpeed = 0 hrp.AssemblyLinearVelocity = Vector3.new(0,0,0) hrp.AssemblyAngularVelocity = Vector3.new(0,0,0) return end
@@ -992,7 +914,7 @@ local function StartBot()
                 _G.DaDenDich = false
                 _G.DaGiartFrame = nil 
                 _G.TimeAfterTP = nil 
-                _G.TimeAtTarget = nil 
+                _G.TimeAtTarget = nil -- Reset đồng hồ tại đích khi đổi mục tiêu mới
             end
             
             -- =======================================================
@@ -1037,12 +959,14 @@ local function StartBot()
             if dist <= stopLimit then
                 _G.DaDenDich = true
                 
+                -- BẮT ĐẦU BẤM GIỜ TẠI ĐÍCH (Chỉ đếm khi thực sự chạm phạm vi rương/hố)
                 if not _G.TimeAtTarget then
                     _G.TimeAtTarget = os.clock()
                 end
                 
                 local elapsedAtTarget = os.clock() - _G.TimeAtTarget
 
+                -- 1. TP CỨU KẸT NÂNG CẤP (Giữ nguyên frame gốc, nhấc lên cao 6 block)
                 if (not toSeller) and (not ghostDoor) then
                     if elapsedAtTarget >= 2.0 and _G.DaGiartFrame ~= _G.CurrentTarget then 
                         local currentPos = hrp.Position
@@ -1054,6 +978,7 @@ local function StartBot()
                     end
                 end
 
+                -- 2. SELLER STUCK RESET
                 if toSeller then
                     if IsHoldingChest() then
                         if not _G.SellerStuckTime then
@@ -1068,6 +993,7 @@ local function StartBot()
                     end
                 end
 
+                -- 3. CƠ CHẾ ĐỘT TỬ (Đếm chính xác sau khi đã qua bước TP)
                 local notNpcOrDoor = (not toSeller) and (not ghostDoor)
                 local pGui = LocalPlayer:FindFirstChildWhichIsA("PlayerGui")
                 local isQuestMenuOpen = false
@@ -1093,12 +1019,13 @@ local function StartBot()
                     end
                 end
 
+                -- Giữ vị trí tương tác
                 if elapsedAtTarget < 2.0 or _G.DaGiartFrame == _G.CurrentTarget or toSeller or ghostDoor then
                     hrp.CFrame = CFrame.new(stopPos, Vector3.new(tPos.X, stopPos.Y, tPos.Z)) 
                 end
             else
                 _G.SellerStuckTime = nil 
-                _G.TimeAtTarget = nil 
+                _G.TimeAtTarget = nil -- Khi bay xa/đang di chuyển thì xoá đồng hồ tại đích để tránh tính gộp thời gian bay
                 
                 local moveDir = (toSeller or ghostDoor) and (stopPos - hrp.Position).Unit or dir 
                 local clampledSpeed = math.min(FLY_SPEED * dt, 2.3) 
