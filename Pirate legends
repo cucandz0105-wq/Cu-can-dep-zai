@@ -854,73 +854,60 @@ end)
 local FLY_SPEED, FALL_LIMIT, CLIMB_LIMIT, OFFSET_DIST, LERP_SMOOTH, MAX_HEIGHT, SEA_LEVEL = 60, 80, 45, 3.5, 0.25, 8.0, 12.5
 
 -- =======================================================
--- HÀM TÌM RƯƠNG THÔNG MINH (ƯU TIÊN ĐỘ XỊN TRONG TẦM MẮT)
+-- MẮT THẦN SIÊU CẤP CHỐNG MÙ (HÀM LẤY RƯƠNG RƠI)
 -- =======================================================
 local function GetNearestDroppedChest()
-    local nearestChest = nil
-    local minDistance = math.huge
-    
-    -- Vùng quét thông minh (Trong tầm 40 block xung quanh nhân vật)
-    local SMART_ZONE = 40 
-    local chestInZone = nil
-    local maxPriorityInZone = -1
-    local minDistInZone = math.huge
-
-    -- BẢNG XẾP HẠNG ĐỘ XỊN (Rút gọn từ khóa để chấp mọi loại tiền tố/hậu tố)
-    local ChestPriority = {
-        ["Captain's Chest"] = 3, -- Xịn nhất
-        ["Gold Chests"]     = 2, -- Xịn vừa
-        ["Silver Chests"]   = 1, -- Cùi nhất
-    }
-    
-    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    local char = game:GetService("Players").LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
     if not hrp then return nil end
-    
-    -- Kiểm tra thư mục chứa rương (Giữ nguyên logic quét của bro)
-    local chestFolder = Workspace:FindFirstChild("DroppedChests") or Workspace
+
+    local nearestChest = nil
+    local maxPriority = -1
+    local minDistance = math.huge
+    local SMART_ZONE = 40  -- Vùng ưu tiên hàng hiệu ở gần
+
+    local CHEST_PRIORITIES = {
+        ["Captain"] = 4,
+        ["Gold"] = 3,
+        ["Silver"] = 2,
+        ["Castaway"] = 1
+    }
+
+    local chestFolder = workspace:FindFirstChild("DroppedChests") or workspace:FindFirstChild("Chests") or workspace
     
     for _, chest in ipairs(chestFolder:GetChildren()) do
-        if chest:IsA("BasePart") or chest:FindFirstChildWhichIsA("ProximityPrompt") or chest:FindFirstChild("HumanoidRootPart") then
-            local dist = (hrp.Position - chest:GetPivot().Position).Magnitude
-            
-            -- Đọc độ xịn bằng cách tìm chuỗi con (chứa từ khóa là nhận)
+        if chest:IsA("BasePart") or chest:FindFirstChildWhichIsA("BasePart") or chest.Name:find("Chest") then
+            local cPos = chest:GetPivot().Position
+            local dist = (hrp.Position - cPos).Magnitude
+
             local currentPriority = 0
-            for chestName, priority in pairs(ChestPriority) do
-                if string.find(chest.Name, chestName) then
+            for keyword, priority in pairs(CHEST_PRIORITIES) do
+                if chest.Name:find(keyword) then
                     currentPriority = priority
                     break
                 end
             end
-            
-            -- NHÁNH 1: GOM HÀNG XỊN TRONG PHẠM VI GẦN (SMART ZONE)
-            if dist <= SMART_ZONE then
-                if currentPriority > maxPriorityInZone then
-                    maxPriorityInZone = currentPriority
-                    minDistInZone = dist
-                    chestInZone = chest
-                elseif currentPriority == maxPriorityInZone and dist < minDistInZone then
-                    minDistInZone = dist
-                    chestInZone = chest
-                end
-            end
 
-            -- NHÁNH 2: TÌM CÁI GẦN NHẤT TOÀN BẢN ĐỒ (ĐỂ DỰ PHÒNG ĐƯỜNG DÀI)
-            if dist < minDistance then
-                minDistance = dist
-                nearestChest = chest
+            if dist < SMART_ZONE then
+                if currentPriority > maxPriority then
+                    maxPriority = currentPriority
+                    minDistance = dist
+                    nearestChest = chest
+                elseif currentPriority == maxPriority and dist < minDistance then
+                    minDistance = dist
+                    nearestChest = chest
+                end
+            else
+                if maxPriority <= 0 and dist < minDistance then
+                    minDistance = dist
+                    nearestChest = chest
+                end
             end
         end
     end
-    
-    -- KẾT LUẬN LOGIC: 
-    -- Nếu quanh mình (bán kính 40 block) có rương, bốc thằng xịn nhất trước. 
-    -- Nếu xung quanh trống trơn, cứ tìm thằng gần nhất map mà bay tới để tiết kiệm thời gian.
-    if chestInZone then
-        return chestInZone
-    else
-        return nearestChest
-    end
+    return nearestChest
 end
+-- =======================================================
 
 local function StartBot()
     if _G.BotConnection then _G.BotConnection:Disconnect() _G.BotConnection = nil end 
@@ -983,7 +970,7 @@ local function StartBot()
                 _G.DaDenDich = false
                 _G.DaGiartFrame = nil 
                 _G.TimeAfterTP = nil 
-                _G.TimeAtTarget = nil -- Reset đồng hồ tại đích khi đổi mục tiêu mới
+                _G.TimeAtTarget = nil 
             end
             
             -- =======================================================
@@ -1028,14 +1015,12 @@ local function StartBot()
             if dist <= stopLimit then
                 _G.DaDenDich = true
                 
-                -- BẮT ĐẦU BẤM GIỜ TẠI ĐÍCH (Chỉ đếm khi thực sự chạm phạm vi rương/hố)
                 if not _G.TimeAtTarget then
                     _G.TimeAtTarget = os.clock()
                 end
                 
                 local elapsedAtTarget = os.clock() - _G.TimeAtTarget
 
-                -- 1. TP CỨU KẸT NÂNG CẤP (Giữ nguyên frame gốc, nhấc lên cao 6 block)
                 if (not toSeller) and (not ghostDoor) then
                     if elapsedAtTarget >= 2.0 and _G.DaGiartFrame ~= _G.CurrentTarget then 
                         local currentPos = hrp.Position
@@ -1047,7 +1032,6 @@ local function StartBot()
                     end
                 end
 
-                -- 2. SELLER STUCK RESET
                 if toSeller then
                     if IsHoldingChest() then
                         if not _G.SellerStuckTime then
@@ -1062,7 +1046,6 @@ local function StartBot()
                     end
                 end
 
-                -- 3. CƠ CHẾ ĐỘT TỬ (Đếm chính xác sau khi đã qua bước TP)
                 local notNpcOrDoor = (not toSeller) and (not ghostDoor)
                 local pGui = LocalPlayer:FindFirstChildWhichIsA("PlayerGui")
                 local isQuestMenuOpen = false
@@ -1088,13 +1071,12 @@ local function StartBot()
                     end
                 end
 
-                -- Giữ vị trí tương tác
                 if elapsedAtTarget < 2.0 or _G.DaGiartFrame == _G.CurrentTarget or toSeller or ghostDoor then
                     hrp.CFrame = CFrame.new(stopPos, Vector3.new(tPos.X, stopPos.Y, tPos.Z)) 
                 end
             else
                 _G.SellerStuckTime = nil 
-                _G.TimeAtTarget = nil -- Khi bay xa/đang di chuyển thì xoá đồng hồ tại đích để tránh tính gộp thời gian bay
+                _G.TimeAtTarget = nil 
                 
                 local moveDir = (toSeller or ghostDoor) and (stopPos - hrp.Position).Unit or dir 
                 local clampledSpeed = math.min(FLY_SPEED * dt, 2.3) 
