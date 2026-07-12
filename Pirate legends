@@ -959,22 +959,51 @@ local function StartBot()
             if dist <= stopLimit then
                 _G.DaDenDich = true
                 
-                -- BẮT ĐẦU BẤM GIỜ TẠI ĐÍCH (Chỉ đếm khi thực sự chạm phạm vi rương/hố)
+                -- ĐỒNG HỒ 1: Bắt đầu bấm giờ kẹt tại đích
                 if not _G.TimeAtTarget then
                     _G.TimeAtTarget = os.clock()
                 end
                 
                 local elapsedAtTarget = os.clock() - _G.TimeAtTarget
 
-                -- 1. TP CỨU KẸT NÂNG CẤP (Giữ nguyên frame gốc, nhấc lên cao 6 block)
-                if (not toSeller) and (not ghostDoor) then
+                local notNpcOrDoor = (not toSeller) and (not ghostDoor)
+                local pGui = LocalPlayer:FindFirstChildWhichIsA("PlayerGui")
+                local isQuestMenuOpen = false
+
+                if pGui then
+                    local shopUI = pGui:FindFirstChild("QuestShopUI")
+                    local pickUI = pGui:FindFirstChild("PickQuestUI")
+                    if (shopUI and (shopUI:GetAttribute("Enabled") or shopUI.Enabled)) or 
+                       (pickUI and (pickUI:GetAttribute("Enabled") or pickUI.Enabled)) then
+                        isQuestMenuOpen = true
+                    end
+                end
+
+                if notNpcOrDoor and not isQuestMenuOpen then
+                    -- CHU KỲ 1: Đợi kẹt đủ 2s ban đầu -> Kích hoạt lệnh TP cứu kẹt lên trên đầu rương
                     if elapsedAtTarget >= 2.0 and _G.DaGiartFrame ~= _G.CurrentTarget then 
                         local currentPos = hrp.Position
-                        local safeY = tPos.Y + (hrp.Size.Y / 2) + 6.0 
+                        local safeY = tPos.Y + (hrp.Size.Y / 2) + 6.0 -- Nhấc bổng frame lên trời 6 block theo ý bro
                         
                         hrp.CFrame = CFrame.new(Vector3.new(currentPos.X, safeY, currentPos.Z)) * hrp.CFrame.Rotation
+                        
+                        -- Khóa luồng TP này lại, đồng thời "bật công tắc" cho phép đồng hồ Đột tử chạy riêng
                         _G.DaGiartFrame = _G.CurrentTarget 
                         _G.TimeAfterTP = os.clock() 
+                    end
+
+                    -- CHU KỲ 2 (TÁCH BIỆT HOÀN TOÀN): Đồng hồ Đột tử chỉ chạy khi TP cứu kẹt đã kích hoạt thành công
+                    if _G.DaGiartFrame == _G.CurrentTarget and _G.TimeAfterTP then
+                        local elapsedAfterTP = os.clock() - _G.TimeAfterTP
+                        if elapsedAfterTP >= 2.0 then
+                            if char and hum and hum.Health > 0 then 
+                                hum.Health = 0 
+                            end
+                            _G.DaGiartFrame = nil 
+                            _G.TimeAfterTP = nil
+                            _G.TimeAtTarget = nil
+                            return -- Cúc lập tức, ngắt luôn luồng tại đây
+                        end
                     end
                 end
 
@@ -993,35 +1022,9 @@ local function StartBot()
                     end
                 end
 
-                -- 3. CƠ CHẾ ĐỘT TỬ (Đếm chính xác sau khi đã qua bước TP)
-                local notNpcOrDoor = (not toSeller) and (not ghostDoor)
-                local pGui = LocalPlayer:FindFirstChildWhichIsA("PlayerGui")
-                local isQuestMenuOpen = false
-
-                if pGui then
-                    local shopUI = pGui:FindFirstChild("QuestShopUI")
-                    local pickUI = pGui:FindFirstChild("PickQuestUI")
-                    if (shopUI and (shopUI:GetAttribute("Enabled") or shopUI.Enabled)) or 
-                       (pickUI and (pickUI:GetAttribute("Enabled") or pickUI.Enabled)) then
-                        isQuestMenuOpen = true
-                    end
-                end
-
-                if notNpcOrDoor and not isQuestMenuOpen and _G.DaGiartFrame == _G.CurrentTarget and _G.TimeAfterTP then 
-                    if (os.clock() - _G.TimeAfterTP) >= 2.0 then
-                        if char and hum and hum.Health > 0 then 
-                            hum.Health = 0 
-                        end
-                        _G.DaGiartFrame = nil 
-                        _G.TimeAfterTP = nil
-                        _G.TimeAtTarget = nil
-                        return
-                    end
-                end
-
-                -- [VÁ LỖI BẪY CHÂN]: Giữ vị trí tương tác thông minh
-                -- Nếu chưa TP cứu kẹt thì khóa cố định dưới đất. Nếu đã TP cứu kẹt thì ghim cứng trên cao, cấm kéo tụt chân xuống đất.
-                if _G.DaGiartFrame ~= _G.CurrentTarget then
+                -- 3. GHIM VỊ TRÍ TƯƠNG TÁC THÔNG MINH (CHỐNG KÉO CHÂN)
+                -- Nếu CHƯA TP cứu kẹt thì ghim dưới đất. Nếu ĐÃ TP cứu kẹt thì ghim cứng trên cao để ko bị kéo giật xuống.
+                if _G.DaGiartFrame ~= _G.CurrentTarget or toSeller or ghostDoor then
                     if elapsedAtTarget < 2.0 or toSeller or ghostDoor then
                         hrp.CFrame = CFrame.new(stopPos, Vector3.new(tPos.X, stopPos.Y, tPos.Z)) 
                     end
@@ -1033,8 +1036,7 @@ local function StartBot()
                 _G.SellerStuckTime = nil 
                 _G.TimeAtTarget = nil -- Khi bay xa/đang di chuyển thì xoá đồng hồ tại đích để tránh tính gộp thời gian bay
                 
-                -- [VÁ LỖI TRÀN BIẾN]: Khi bot ở xa mục tiêu (đang bay tới, hoặc vừa hồi sinh bay lại rương kẹt cũ)
-                -- Lập tức dọn dẹp biến kẹt cũ để bot có quyền giật TP cứu kẹt cho chu kỳ tiếp theo.
+                -- LÀM SẠCH BIẾN KHI BOT ĐI XA (Phòng trường hợp hồi sinh bay lại rương cũ hoặc đổi mục tiêu)
                 if _G.DaGiartFrame == _G.CurrentTarget then
                     _G.DaGiartFrame = nil
                     _G.TimeAfterTP = nil
