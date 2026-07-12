@@ -853,6 +853,75 @@ end)
 
 local FLY_SPEED, FALL_LIMIT, CLIMB_LIMIT, OFFSET_DIST, LERP_SMOOTH, MAX_HEIGHT, SEA_LEVEL = 60, 80, 45, 3.5, 0.25, 8.0, 12.5
 
+-- =======================================================
+-- HÀM TÌM RƯƠNG THÔNG MINH (ƯU TIÊN ĐỘ XỊN TRONG TẦM MẮT)
+-- =======================================================
+local function GetNearestDroppedChest()
+    local nearestChest = nil
+    local minDistance = math.huge
+    
+    -- Vùng quét thông minh (Trong tầm 40 block xung quanh nhân vật)
+    local SMART_ZONE = 40 
+    local chestInZone = nil
+    local maxPriorityInZone = -1
+    local minDistInZone = math.huge
+
+    -- BẢNG XẾP HẠNG ĐỘ XỊN (Rút gọn từ khóa để chấp mọi loại tiền tố/hậu tố)
+    local ChestPriority = {
+        ["Captain's Chest"] = 3, -- Xịn nhất
+        ["Gold Chests"]     = 2, -- Xịn vừa
+        ["Silver Chests"]   = 1, -- Cùi nhất
+    }
+    
+    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return nil end
+    
+    -- Kiểm tra thư mục chứa rương (Giữ nguyên logic quét của bro)
+    local chestFolder = Workspace:FindFirstChild("DroppedChests") or Workspace
+    
+    for _, chest in ipairs(chestFolder:GetChildren()) do
+        if chest:IsA("BasePart") or chest:FindFirstChildWhichIsA("ProximityPrompt") or chest:FindFirstChild("HumanoidRootPart") then
+            local dist = (hrp.Position - chest:GetPivot().Position).Magnitude
+            
+            -- Đọc độ xịn bằng cách tìm chuỗi con (chứa từ khóa là nhận)
+            local currentPriority = 0
+            for chestName, priority in pairs(ChestPriority) do
+                if string.find(chest.Name, chestName) then
+                    currentPriority = priority
+                    break
+                end
+            end
+            
+            -- NHÁNH 1: GOM HÀNG XỊN TRONG PHẠM VI GẦN (SMART ZONE)
+            if dist <= SMART_ZONE then
+                if currentPriority > maxPriorityInZone then
+                    maxPriorityInZone = currentPriority
+                    minDistInZone = dist
+                    chestInZone = chest
+                elseif currentPriority == maxPriorityInZone and dist < minDistInZone then
+                    minDistInZone = dist
+                    chestInZone = chest
+                end
+            end
+
+            -- NHÁNH 2: TÌM CÁI GẦN NHẤT TOÀN BẢN ĐỒ (ĐỂ DỰ PHÒNG ĐƯỜNG DÀI)
+            if dist < minDistance then
+                minDistance = dist
+                nearestChest = chest
+            end
+        end
+    end
+    
+    -- KẾT LUẬN LOGIC: 
+    -- Nếu quanh mình (bán kính 40 block) có rương, bốc thằng xịn nhất trước. 
+    -- Nếu xung quanh trống trơn, cứ tìm thằng gần nhất map mà bay tới để tiết kiệm thời gian.
+    if chestInZone then
+        return chestInZone
+    else
+        return nearestChest
+    end
+end
+
 local function StartBot()
     if _G.BotConnection then _G.BotConnection:Disconnect() _G.BotConnection = nil end 
     if _G.NoclipConnection then _G.NoclipConnection:Disconnect() _G.NoclipConnection = nil end
