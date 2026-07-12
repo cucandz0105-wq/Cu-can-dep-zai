@@ -914,7 +914,7 @@ local function StartBot()
                 _G.DaDenDich = false
                 _G.DaGiartFrame = nil 
                 _G.TimeAfterTP = nil 
-                _G.TimeAtTarget = nil -- Reset đồng hồ tại đích khi đổi mục tiêu mới
+                _G.TimeAtTarget = nil 
             end
             
             -- =======================================================
@@ -955,55 +955,57 @@ local function StartBot()
             elseif ghostDoor then sellerY_Chuan = tPos.Y stopPos = tPos - (dir * OFFSET_DIST) end
             local stopLimit = (toSeller or ghostDoor) and (OFFSET_DIST + 1.2) or (OFFSET_DIST + 0.5)
             
+            -- =======================================================================
+            -- CHU KỲ 2 ĐỘC LẬP TỰ DO: ĐƯA RA NGOÀI VÒNG LẶP KHOẢNG CÁCH KHÔNG PHỤ THUỘC DIST
+            -- =======================================================================
+            local notNpcOrDoor = (not toSeller) and (not ghostDoor)
+            local pGui = LocalPlayer:FindFirstChildWhichIsA("PlayerGui")
+            local isQuestMenuOpen = false
+
+            if pGui then
+                local shopUI = pGui:FindFirstChild("QuestShopUI")
+                local pickUI = pGui:FindFirstChild("PickQuestUI")
+                if (shopUI and (shopUI:GetAttribute("Enabled") or shopUI.Enabled)) or 
+                   (pickUI and (pickUI:GetAttribute("Enabled") or pickUI.Enabled)) then
+                    isQuestMenuOpen = true
+                end
+            end
+
+            -- Lệnh đột tử chỉ được kích hoạt chạy khi và chỉ khi chu kỳ TP cứu kẹt ở dưới đã mở khóa công tắc trước đó
+            if notNpcOrDoor and not isQuestMenuOpen and (_G.DaGiartFrame == _G.CurrentTarget) and _G.TimeAfterTP then
+                local elapsedAfterTP = os.clock() - _G.TimeAfterTP
+                if elapsedAfterTP >= 2.0 then
+                    if char and hum and hum.Health > 0 then 
+                        hum.Health = 0 
+                    end
+                    _G.DaGiartFrame = nil 
+                    _G.TimeAfterTP = nil
+                    _G.TimeAtTarget = nil
+                    return -- Cúc lập tức, ngắt luồng tại đây không chạy xuống dưới
+                end
+            end
+            -- =======================================================================
 
             if dist <= stopLimit then
                 _G.DaDenDich = true
                 
-                -- ĐỒNG HỒ 1: Bắt đầu bấm giờ kẹt tại đích
                 if not _G.TimeAtTarget then
                     _G.TimeAtTarget = os.clock()
                 end
                 
                 local elapsedAtTarget = os.clock() - _G.TimeAtTarget
 
-                local notNpcOrDoor = (not toSeller) and (not ghostDoor)
-                local pGui = LocalPlayer:FindFirstChildWhichIsA("PlayerGui")
-                local isQuestMenuOpen = false
-
-                if pGui then
-                    local shopUI = pGui:FindFirstChild("QuestShopUI")
-                    local pickUI = pGui:FindFirstChild("PickQuestUI")
-                    if (shopUI and (shopUI:GetAttribute("Enabled") or shopUI.Enabled)) or 
-                       (pickUI and (pickUI:GetAttribute("Enabled") or pickUI.Enabled)) then
-                        isQuestMenuOpen = true
-                    end
-                end
-
+                -- CHU KỲ 1: Đợi kẹt đủ 2s ban đầu dưới đất -> Bắn lệnh TP cứu kẹt
                 if notNpcOrDoor and not isQuestMenuOpen then
-                    -- CHU KỲ 1: Đợi kẹt đủ 2s ban đầu -> Kích hoạt lệnh TP cứu kẹt lên trên đầu rương
                     if elapsedAtTarget >= 2.0 and _G.DaGiartFrame ~= _G.CurrentTarget then 
                         local currentPos = hrp.Position
-                        local safeY = tPos.Y + (hrp.Size.Y / 2) + 6.0 -- Nhấc bổng frame lên trời 6 block theo ý bro
+                        local safeY = tPos.Y + (hrp.Size.Y / 2) + 6.0 
                         
                         hrp.CFrame = CFrame.new(Vector3.new(currentPos.X, safeY, currentPos.Z)) * hrp.CFrame.Rotation
                         
-                        -- Khóa luồng TP này lại, đồng thời "bật công tắc" cho phép đồng hồ Đột tử chạy riêng
+                        -- Khóa luồng TP của mục tiêu này lại, đồng thời mở khóa "TimeAfterTP" cho chu kỳ Đột tử phía trên bắt đầu đếm giờ
                         _G.DaGiartFrame = _G.CurrentTarget 
                         _G.TimeAfterTP = os.clock() 
-                    end
-
-                    -- CHU KỲ 2 (TÁCH BIỆT HOÀN TOÀN): Đồng hồ Đột tử chỉ chạy khi TP cứu kẹt đã kích hoạt thành công
-                    if _G.DaGiartFrame == _G.CurrentTarget and _G.TimeAfterTP then
-                        local elapsedAfterTP = os.clock() - _G.TimeAfterTP
-                        if elapsedAfterTP >= 2.0 then
-                            if char and hum and hum.Health > 0 then 
-                                hum.Health = 0 
-                            end
-                            _G.DaGiartFrame = nil 
-                            _G.TimeAfterTP = nil
-                            _G.TimeAtTarget = nil
-                            return -- Cúc lập tức, ngắt luôn luồng tại đây
-                        end
                     end
                 end
 
@@ -1022,35 +1024,48 @@ local function StartBot()
                     end
                 end
 
-                -- 3. GHIM VỊ TRÍ TƯƠNG TÁC THÔNG MINH (CHỐNG KÉO CHÂN)
-                -- Nếu CHƯA TP cứu kẹt thì ghim dưới đất. Nếu ĐÃ TP cứu kẹt thì ghim cứng trên cao để ko bị kéo giật xuống.
+                -- GHIM VỊ TRÍ TƯƠNG TÁC THÔNG MINH Chống kéo chân tụt xuống đất
                 if _G.DaGiartFrame ~= _G.CurrentTarget or toSeller or ghostDoor then
                     if elapsedAtTarget < 2.0 or toSeller or ghostDoor then
                         hrp.CFrame = CFrame.new(stopPos, Vector3.new(tPos.X, stopPos.Y, tPos.Z)) 
                     end
                 else
+                    -- Nếu đã TP cứu kẹt lên cao, ghim cứng thăng bằng trên cao 6 block chờ chết hoặc rương mất
                     local safeY = tPos.Y + (hrp.Size.Y / 2) + 6.0
                     hrp.CFrame = CFrame.new(Vector3.new(hrp.Position.X, safeY, hrp.Position.Z), Vector3.new(tPos.X, safeY, tPos.Z))
                 end
             else
                 _G.SellerStuckTime = nil 
-                _G.TimeAtTarget = nil -- Khi bay xa/đang di chuyển thì xoá đồng hồ tại đích để tránh tính gộp thời gian bay
+                _G.TimeAtTarget = nil 
                 
-                -- LÀM SẠCH BIẾN KHI BOT ĐI XA (Phòng trường hợp hồi sinh bay lại rương cũ hoặc đổi mục tiêu)
-                if _G.DaGiartFrame == _G.CurrentTarget then
+                -- CHỈ XÓA BÀI LÀM SẠCH BIẾN KHI THỰC SỰ ĐÃ ĐI XA HẲN MỤC TIÊU (> 15 block)
+                if _G.DaGiartFrame == _G.CurrentTarget and dist > 15 then
                     _G.DaGiartFrame = nil
                     _G.TimeAfterTP = nil
                 end
                 
                 local moveDir = (toSeller or ghostDoor) and (stopPos - hrp.Position).Unit or dir 
                 local clampledSpeed = math.min(FLY_SPEED * dt, 2.3) 
-                local nextPos = hrp.Position + (moveDir * clampledSpeed)
+                
+                -- KHÓA DI CHUYỂN KHI ĐANG TRONG CHU KỲ CHỜ CHẾT
+                local nextPos
+                if _G.DaGiartFrame == _G.CurrentTarget and _G.TimeAfterTP then
+                    nextPos = hrp.Position -- Giữ đứng im cố định trên cao, cấm code di chuyển kéo tụt xuống
+                else
+                    nextPos = hrp.Position + (moveDir * clampledSpeed)
+                end
                 
                 local inCave = (not toSeller) and (not ghostDoor) and (tPos.Y < 20) 
                 local targetY, groundY, trenBien = hrp.Position.Y, nil, false 
                 local ganMucTieu = dist < 30
                 
-                if ganMucTieu then targetY = (toSeller or ghostDoor) and sellerY_Chuan or (tPos.Y + (hrp.Size.Y / 2) + 0.5) nextPos = Vector3.new(nextPos.X, targetY, nextPos.Z)
+                if ganMucTieu then 
+                    if _G.DaGiartFrame == _G.CurrentTarget and _G.TimeAfterTP then
+                        targetY = tPos.Y + (hrp.Size.Y / 2) + 6.0 -- Khóa chặt cao độ an toàn
+                    else
+                        targetY = (toSeller or ghostDoor) and sellerY_Chuan or (tPos.Y + (hrp.Size.Y / 2) + 0.5) 
+                    end
+                    nextPos = Vector3.new(nextPos.X, targetY, nextPos.Z)
                 elseif not inCave then
                     local params = RaycastParams.new() params.FilterType = Enum.RaycastFilterType.Exclude local ignore = {char}
                     if Workspace:FindFirstChild("IslandsModel") and Workspace["IslandsModel"]:FindFirstChild("NPCs") then table.insert(ignore, Workspace["IslandsModel"]["NPCs"]) end
