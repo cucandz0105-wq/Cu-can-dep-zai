@@ -853,14 +853,16 @@ end)
 
 local FLY_SPEED, FALL_LIMIT, CLIMB_LIMIT, OFFSET_DIST, LERP_SMOOTH, MAX_HEIGHT, SEA_LEVEL = 60, 80, 45, 3.5, 0.25, 8.0, 12.5
 
--- Tự động dọn dẹp biến khi nhân vật hồi sinh (Tránh lỗi đột tử xong bị xích dữ liệu cũ)
+-- [FIX ĐIỀU KIỆN]: Tự động xóa sạch dữ liệu kẹt cũ khi nhân vật hồi sinh
 if _G.CharAddedConnection then _G.CharAddedConnection:Disconnect() end
 _G.CharAddedConnection = game:GetService("Players").LocalPlayer.CharacterAdded:Connect(function()
     _G.DaGiartFrame = nil
     _G.TimeAfterTP = nil
     _G.TimeAtTarget = nil
-    _G.CurrentTarget = nil
+    _G.CurrentTarget = nil -- Ép bot phải nhận diện lại mục tiêu từ đầu (kể cả rương cũ chưa mất)
     _G.SellerStuckTime = nil
+    _G.RubberbandCount = 0
+    _G.LastHrpPosition = nil
 end)
 
 local function StartBot()
@@ -1037,7 +1039,7 @@ local function StartBot()
                 _G.SellerStuckTime = nil 
                 _G.TimeAtTarget = nil -- Khi bay xa/đang di chuyển thì xoá đồng hồ tại đích để tránh tính gộp thời gian bay
                 
-                -- FIX CHÍ MẠNG Ở ĐÂY: Reset các biến trạng thái kẹt cũ khi đang di chuyển tiếp cận mục tiêu từ xa
+                -- [FIX ĐIỀU KIỆN]: Giải phóng biến tạm khi bay xa để chuẩn bị cho chu kỳ tiếp cận tiếp theo
                 _G.DaGiartFrame = nil
                 _G.TimeAfterTP = nil
                 
