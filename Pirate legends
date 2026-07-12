@@ -913,7 +913,7 @@ local function StartBot()
                 _G.SellerStuckTime = nil 
                 _G.DaDenDich = false
                 _G.DaGiartFrame = nil 
-                _G.TimeAfterTP = nil -- Reset đồng hồ tự sát khi đổi mục tiêu mới
+                _G.TimeAfterTP = nil 
             end
             
             -- =======================================================
@@ -959,7 +959,7 @@ local function StartBot()
             if dist <= stopLimit then
                 _G.DaDenDich = true
 
-                -- 1. TP CỨU KẸT NÂNG CẤP (CHỈ KÍCH HOẠT ĐÚNG 1 LẦN DUY NHẤT / 1 MỤC TIÊU)
+                -- 1. TP CỨU KẸT NÂNG CẤP
                 if (not toSeller) and (not ghostDoor) then
                     if elapsed >= 2.0 and _G.DaGiartFrame ~= _G.CurrentTarget then 
                         local currentPos = hrp.Position
@@ -967,11 +967,11 @@ local function StartBot()
                         
                         hrp.CFrame = CFrame.new(Vector3.new(currentPos.X, safeY, currentPos.Z)) * hrp.CFrame.Rotation
                         _G.DaGiartFrame = _G.CurrentTarget 
-                        _G.TimeAfterTP = os.clock() -- BẮT ĐẦU BẤM GIỜ TỰ SÁT NGAY KHI TP XONG
+                        _G.TimeAfterTP = os.clock() 
                     end
                 end
 
-                -- 2. SELLER STUCK RESET (3 SECONDS)
+                -- 2. SELLER STUCK RESET
                 if toSeller then
                     if IsHoldingChest() then
                         if not _G.SellerStuckTime then
@@ -986,7 +986,7 @@ local function StartBot()
                     end
                 end
 
-                -- 3. CƠ CHẾ ĐỘT TỬ ĐƯỢC SIẾT CHẶT (CHỈ ĐẾM SAU KHI ĐÃ QUA BƯỚC TP CỨU KẸT)
+                -- 3. CƠ CHẾ ĐỘT TỬ (ĐẾM SAU TP)
                 local notNpcOrDoor = (not toSeller) and (not ghostDoor)
                 local pGui = LocalPlayer:FindFirstChildWhichIsA("PlayerGui")
                 local isQuestMenuOpen = false
@@ -1001,7 +1001,6 @@ local function StartBot()
                     end
                 end
 
-                -- Phải đảm bảo bot đã TP cứu kẹt mục tiêu này rồi mới tính 2 giây tự sát tiếp theo
                 if notNpcOrDoor and not isQuestMenuOpen and _G.DaGiartFrame == _G.CurrentTarget and _G.TimeAfterTP then 
                     if (os.clock() - _G.TimeAfterTP) >= 2.0 then
                         if char and hum and hum.Health > 0 then 
@@ -1033,7 +1032,9 @@ local function StartBot()
                     local params = RaycastParams.new() params.FilterType = Enum.RaycastFilterType.Exclude local ignore = {char}
                     if Workspace:FindFirstChild("IslandsModel") and Workspace["IslandsModel"]:FindFirstChild("NPCs") then table.insert(ignore, Workspace["IslandsModel"]["NPCs"]) end
                     if Workspace:FindFirstChild("Trees") then table.insert(ignore, Workspace["Trees"]) end if Workspace:FindFirstChild("TreeFolder") then table.insert(ignore, Workspace["TreeFolder"]) end
-                    params.FilterDescendantsInstances = ignore local ray = Workspace:Raycast(Vector3.new(nextPos.X, nextPos.Y + 100, origin), Vector3.new(0, -200, 0), params)
+                    params.FilterDescendantsInstances = ignore 
+                    -- FIX LỖI Ở ĐÂY: Thay origin thành nextPos.Z chuẩn bản gốc
+                    local ray = Workspace:Raycast(Vector3.new(nextPos.X, nextPos.Y + 100, nextPos.Z), Vector3.new(0, -200, 0), params)
                     if ray and ray.Instance then groundY = ray.Position.Y targetY = groundY + (hrp.Size.Y / 2) + 0.01 if tPos.Y < hrp.Position.Y - 5 and targetY > tPos.Y + 10 then targetY = tPos.Y + (hrp.Size.Y / 2) + 0.01 end else targetY, trenBien = SEA_LEVEL, true end
                 else targetY = math.max(tPos.Y + (hrp.Size.Y / 2) + 0.01, -30) end
                 
@@ -1146,3 +1147,4 @@ if BtnPick then
         end
     end)
 end
+
