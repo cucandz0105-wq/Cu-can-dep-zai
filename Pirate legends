@@ -840,12 +840,22 @@ task.spawn(function()
     end 
 end)
 -- =======================================================
+-- DEFINE SERVICES & PLAYERS (SỬA LỖI ĐƠ LIỆT NÚT)
+-- =======================================================
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local Workspace = game:GetService("Workspace")
+local LocalPlayer = Players.LocalPlayer
+local Camera = Workspace.CurrentCamera
+
+-- =======================================================
 -- ANTI-AFK SYSTEM (PREVENTS 20-MIN IDLE KICK)
 -- =======================================================
 local VirtualUser = game:GetService("VirtualUser")
 if _G.AntiAFKConnection then _G.AntiAFKConnection:Disconnect() end
 
-_G.AntiAFKConnection = game:GetService("Players").LocalPlayer.Idled:Connect(function()
+_G.AntiAFKConnection = Players.LocalPlayer.Idled:Connect(function()
     VirtualUser:CaptureController()
     VirtualUser:ClickButton2(Vector2.new(0, 0))
 end)
@@ -940,7 +950,7 @@ local function StartBot()
                 _G.DaDenDich = false
                 _G.DaGiartFrame = nil 
                 _G.TimeAfterTP = nil 
-                _G.TimeAtTarget = nil -- Reset chuẩn chỉ khi đổi mục tiêu
+                _G.TimeAtTarget = nil 
             end
             
             -- =======================================================
@@ -991,7 +1001,7 @@ local function StartBot()
                 
                 local elapsedAtTarget = os.clock() - _G.TimeAtTarget
 
-                -- 1. TP CỨU KẸT NÂNG CẤP (Sửa lại điều kiện check flag thông minh)
+                -- 1. TP CỨU KẸT NÂNG CẤP
                 if (not toSeller) and (not ghostDoor) then
                     if elapsedAtTarget >= 2.0 and _G.DaGiartFrame == nil then 
                         local currentPos = hrp.Position
@@ -1037,7 +1047,6 @@ local function StartBot()
                         if char and hum and hum.Health > 0 then 
                             hum.Health = 0 
                         end
-                        -- Reset ngay lập tức sau khi đột tử
                         _G.DaGiartFrame = nil 
                         _G.TimeAfterTP = nil
                         _G.TimeAtTarget = nil
@@ -1045,12 +1054,11 @@ local function StartBot()
                     end
                 end
 
-                -- Giữ vị trí tương tác
                 if elapsedAtTarget < 2.0 or _G.DaGiartFrame ~= nil or toSeller or ghostDoor then
                     hrp.CFrame = CFrame.new(stopPos, Vector3.new(tPos.X, stopPos.Y, tPos.Z)) 
                 end
             else
-                -- Khi di chuyển ra xa, reset lại trạng thái cứu kẹt hoàn toàn
+                -- Khi di chuyển ra xa, dọn dẹp sạch sẽ biến cứu kẹt
                 _G.SellerStuckTime = nil 
                 _G.TimeAtTarget = nil 
                 _G.DaGiartFrame = nil
@@ -1118,3 +1126,70 @@ local function StartBot()
         end
     end)
 end
+
+local function StopBot()
+    if not _G.AutoDigAndPick and not _G.AutoChestOnly then
+        if _G.BotConnection then _G.BotConnection:Disconnect() _G.BotConnection = nil end 
+        if _G.NoclipConnection then _G.NoclipConnection:Disconnect() _G.NoclipConnection = nil end
+        if LocalPlayer.Character then 
+            local hum = LocalPlayer.Character:FindFirstChildWhichIsA("Humanoid") 
+            if hum then 
+                hum:ChangeState(Enum.HumanoidStateType.GettingUp) 
+                hum:SetStateEnabled(Enum.HumanoidStateType.Seated, true) 
+            end 
+            local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart") if hrp then hrp.AssemblyLinearVelocity = Vector3.new(0,0,0) end 
+        end
+        _G.IsDigging, _G.FakeFallSpeed, _G.CurrentTarget, _G.StuckTime, _G.IsTeleportingHome = false, 0, nil, 0, false
+        _G.DaDenDich = false
+        _G.SellerStuckTime = nil
+        _G.LastHrpPosition = nil
+        _G.RubberbandCount = 0
+        _G.DaGiartFrame = nil
+        _G.TimeAfterTP = nil
+        _G.TimeAtTarget = nil
+    end
+end
+
+-- =======================================================
+-- BUTTON GUI CLICK EVENTS
+-- =======================================================
+if BtnDig then
+    BtnDig.MouseButton1Click:Connect(function()
+        _G.AutoDigAndPick = not _G.AutoDigAndPick
+        if _G.AutoDigAndPick then
+            _G.AutoChestOnly = false 
+            if BtnPick then 
+                BtnPick.Text = "CHEST ONLY [OFF]" 
+                BtnPick.BackgroundColor3 = Color3.fromRGB(45, 45, 45) 
+            end 
+            BtnDig.Text = "DIG HOLE [RUNNING]"
+            TweenService:Create(BtnDig, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255, 0, 128)}):Play() 
+            StartBot()
+        else 
+            BtnDig.Text = "DIG HOLE [OFF]" 
+            TweenService:Create(BtnDig, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(45, 45, 45)}):Play() 
+            StopBot() 
+        end
+    end)
+end
+
+if BtnPick then
+    BtnPick.MouseButton1Click:Connect(function()
+        _G.AutoChestOnly = not _G.AutoChestOnly
+        if _G.AutoChestOnly then
+            _G.AutoDigAndPick = false 
+            if BtnDig then 
+                BtnDig.Text = "DIG HOLE [OFF]" 
+                BtnDig.BackgroundColor3 = Color3.fromRGB(45, 45, 45) 
+            end 
+            BtnPick.Text = "CHEST ONLY [RUNNING]"
+            TweenService:Create(BtnPick, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(0, 170, 255)}):Play() 
+            StartBot()
+        else 
+            BtnPick.Text = "CHEST ONLY [OFF]" 
+            TweenService:Create(BtnPick, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(45, 45, 45)}):Play() 
+            StopBot() 
+        end
+    end)
+end
+
