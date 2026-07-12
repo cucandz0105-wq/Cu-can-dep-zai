@@ -840,12 +840,22 @@ task.spawn(function()
     end 
 end)
 -- =======================================================
+-- DEFINE SERVICES & PLAYERS (BẢO HIỂM CHỐNG LỖI NGẦM)
+-- =======================================================
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local Workspace = game:GetService("Workspace")
+local LocalPlayer = Players.LocalPlayer
+local Camera = Workspace.CurrentCamera
+
+-- =======================================================
 -- ANTI-AFK SYSTEM (PREVENTS 20-MIN IDLE KICK)
 -- =======================================================
 local VirtualUser = game:GetService("VirtualUser")
 if _G.AntiAFKConnection then _G.AntiAFKConnection:Disconnect() end
 
-_G.AntiAFKConnection = game:GetService("Players").LocalPlayer.Idled:Connect(function()
+_G.AntiAFKConnection = Players.LocalPlayer.Idled:Connect(function()
     VirtualUser:CaptureController()
     VirtualUser:ClickButton2(Vector2.new(0, 0))
 end)
@@ -953,13 +963,11 @@ local function StartBot()
                 end
             end
             
-            -- Giữ nguyên 100% logic cấu trúc rẽ nhánh nguyên bản của bro
             if not _G.IsTeleportingHome and not tPos then
                 if IsHoldingChest() then 
                     npc = GetNearestSeller() 
                     if npc then tPos, toSeller = npc:GetPivot().Position, true tPart = npc end
                 else 
-                    -- Thay thế hàm gốc bằng hàm quét tích hợp mắt thần
                     tPart = _G.AutoChestOnly and GetNearestDroppedChestGoc() or (_G.AutoDigAndPick and (GetChestAtFeet() or GetNearestBuriedChest())) 
                     if tPart then 
                         tPos = tPart.Position 
