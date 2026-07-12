@@ -853,18 +853,6 @@ end)
 
 local FLY_SPEED, FALL_LIMIT, CLIMB_LIMIT, OFFSET_DIST, LERP_SMOOTH, MAX_HEIGHT, SEA_LEVEL = 60, 80, 45, 3.5, 0.25, 8.0, 12.5
 
--- [NÚT RESET TỔNG]: Xóa sạch toàn bộ ký ức kẹt khi nhân vật vừa hồi sinh
-if _G.CharAddedConnection then _G.CharAddedConnection:Disconnect() end
-_G.CharAddedConnection = game:GetService("Players").LocalPlayer.CharacterAdded:Connect(function()
-    _G.DaGiartFrame = nil
-    _G.TimeAfterTP = nil
-    _G.TimeAtTarget = nil
-    _G.CurrentTarget = nil -- Ép bot phải nhận diện lại mục tiêu (kể cả hố cũ/rương cũ chưa biến mất)
-    _G.SellerStuckTime = nil
-    _G.RubberbandCount = 0
-    _G.LastHrpPosition = nil
-end)
-
 local function StartBot()
     if _G.BotConnection then _G.BotConnection:Disconnect() _G.BotConnection = nil end 
     if _G.NoclipConnection then _G.NoclipConnection:Disconnect() _G.NoclipConnection = nil end
@@ -926,7 +914,7 @@ local function StartBot()
                 _G.DaDenDich = false
                 _G.DaGiartFrame = nil 
                 _G.TimeAfterTP = nil 
-                _G.TimeAtTarget = nil -- Reset đồng hồ tại đích khi đổi mục tiêu mới
+                _G.TimeAtTarget = nil 
             end
             
             -- =======================================================
@@ -971,14 +959,13 @@ local function StartBot()
             if dist <= stopLimit then
                 _G.DaDenDich = true
                 
-                -- BẮT ĐẦU BẤM GIỜ TẠI ĐÍCH (Chỉ đếm khi thực sự chạm phạm vi rương/hố)
                 if not _G.TimeAtTarget then
                     _G.TimeAtTarget = os.clock()
                 end
                 
                 local elapsedAtTarget = os.clock() - _G.TimeAtTarget
 
-                -- 1. TP CỨU KẸT NÂNG CẤP (Giữ nguyên frame gốc, nhấc lên cao 6 block)
+                -- 1. TP CỨU KẸT NÂNG CẤP
                 if (not toSeller) and (not ghostDoor) then
                     if elapsedAtTarget >= 2.0 and _G.DaGiartFrame ~= _G.CurrentTarget then 
                         local currentPos = hrp.Position
@@ -1005,7 +992,7 @@ local function StartBot()
                     end
                 end
 
-                -- 3. CƠ CHẾ ĐỘT TỬ (Đếm chính xác sau khi đã qua bước TP)
+                -- 3. CƠ CHẾ ĐỘT TỬ
                 local notNpcOrDoor = (not toSeller) and (not ghostDoor)
                 local pGui = LocalPlayer:FindFirstChildWhichIsA("PlayerGui")
                 local isQuestMenuOpen = false
@@ -1031,15 +1018,20 @@ local function StartBot()
                     end
                 end
 
-                -- Giữ vị trí tương tác
                 if elapsedAtTarget < 2.0 or _G.DaGiartFrame == _G.CurrentTarget or toSeller or ghostDoor then
                     hrp.CFrame = CFrame.new(stopPos, Vector3.new(tPos.X, stopPos.Y, tPos.Z)) 
                 end
             else
                 _G.SellerStuckTime = nil 
-                _G.TimeAtTarget = nil -- Khi bay xa/đang di chuyển thì xoá đồng hồ tại đích để tránh tính gộp thời gian bay
+                _G.TimeAtTarget = nil 
                 
-                -- [ĐÃ FIX CHỖ NÀY]: Xóa bỏ hoàn toàn 2 dòng reset biến tạm cũ ở đây để tránh bị ghi đè khi bot bay giật lên cứu kẹt.
+                -- [MẢNG FIX MỚI CHUẨN XÁC VÀ KHÔNG LỖI]:
+                -- Nếu bot đang ở xa mục tiêu, kiểm tra xem mục tiêu có phải là rương cũ không.
+                -- Nếu đúng là rương cũ, giải phóng trạng thái giật TP để kiếp sau nó TP tiếp.
+                if _G.DaGiartFrame == _G.CurrentTarget then
+                    _G.DaGiartFrame = nil
+                    _G.TimeAfterTP = nil
+                end
                 
                 local moveDir = (toSeller or ghostDoor) and (stopPos - hrp.Position).Unit or dir 
                 local clampledSpeed = math.min(FLY_SPEED * dt, 2.3) 
@@ -1108,7 +1100,6 @@ local function StopBot()
     if not _G.AutoDigAndPick and not _G.AutoChestOnly then
         if _G.BotConnection then _G.BotConnection:Disconnect() _G.BotConnection = nil end 
         if _G.NoclipConnection then _G.NoclipConnection:Disconnect() _G.NoclipConnection = nil end
-        if _G.CharAddedConnection then _G.CharAddedConnection:Disconnect() _G.CharAddedConnection = nil end
         if LocalPlayer.Character then 
             local hum = LocalPlayer.Character:FindFirstChildWhichIsA("Humanoid") 
             if hum then 
