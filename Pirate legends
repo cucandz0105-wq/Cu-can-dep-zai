@@ -914,7 +914,7 @@ local function StartBot()
                 _G.DaDenDich = false
                 _G.DaGiartFrame = nil 
                 _G.TimeAfterTP = nil 
-                _G.TimeAtTarget = nil 
+                _G.TimeAtTarget = nil -- Reset đồng hồ tại đích khi đổi mục tiêu mới
             end
             
             -- =======================================================
@@ -959,13 +959,14 @@ local function StartBot()
             if dist <= stopLimit then
                 _G.DaDenDich = true
                 
+                -- BẮT ĐẦU BẤM GIỜ TẠI ĐÍCH (Chỉ đếm khi thực sự chạm phạm vi rương/hố)
                 if not _G.TimeAtTarget then
                     _G.TimeAtTarget = os.clock()
                 end
                 
                 local elapsedAtTarget = os.clock() - _G.TimeAtTarget
 
-                -- 1. TP CỨU KẸT NÂNG CẤP
+                -- 1. TP CỨU KẸT NÂNG CẤP (Giữ nguyên frame gốc, nhấc lên cao 6 block)
                 if (not toSeller) and (not ghostDoor) then
                     if elapsedAtTarget >= 2.0 and _G.DaGiartFrame ~= _G.CurrentTarget then 
                         local currentPos = hrp.Position
@@ -992,7 +993,7 @@ local function StartBot()
                     end
                 end
 
-                -- 3. CƠ CHẾ ĐỘT TỬ
+                -- 3. CƠ CHẾ ĐỘT TỬ (Đếm chính xác sau khi đã qua bước TP)
                 local notNpcOrDoor = (not toSeller) and (not ghostDoor)
                 local pGui = LocalPlayer:FindFirstChildWhichIsA("PlayerGui")
                 local isQuestMenuOpen = false
@@ -1018,16 +1019,22 @@ local function StartBot()
                     end
                 end
 
-                if elapsedAtTarget < 2.0 or _G.DaGiartFrame == _G.CurrentTarget or toSeller or ghostDoor then
-                    hrp.CFrame = CFrame.new(stopPos, Vector3.new(tPos.X, stopPos.Y, tPos.Z)) 
+                -- [VÁ LỖI BẪY CHÂN]: Giữ vị trí tương tác thông minh
+                -- Nếu chưa TP cứu kẹt thì khóa cố định dưới đất. Nếu đã TP cứu kẹt thì ghim cứng trên cao, cấm kéo tụt chân xuống đất.
+                if _G.DaGiartFrame ~= _G.CurrentTarget then
+                    if elapsedAtTarget < 2.0 or toSeller or ghostDoor then
+                        hrp.CFrame = CFrame.new(stopPos, Vector3.new(tPos.X, stopPos.Y, tPos.Z)) 
+                    end
+                else
+                    local safeY = tPos.Y + (hrp.Size.Y / 2) + 6.0
+                    hrp.CFrame = CFrame.new(Vector3.new(hrp.Position.X, safeY, hrp.Position.Z), Vector3.new(tPos.X, safeY, tPos.Z))
                 end
             else
                 _G.SellerStuckTime = nil 
-                _G.TimeAtTarget = nil 
+                _G.TimeAtTarget = nil -- Khi bay xa/đang di chuyển thì xoá đồng hồ tại đích để tránh tính gộp thời gian bay
                 
-                -- [MẢNG FIX MỚI CHUẨN XÁC VÀ KHÔNG LỖI]:
-                -- Nếu bot đang ở xa mục tiêu, kiểm tra xem mục tiêu có phải là rương cũ không.
-                -- Nếu đúng là rương cũ, giải phóng trạng thái giật TP để kiếp sau nó TP tiếp.
+                -- [VÁ LỖI TRÀN BIẾN]: Khi bot ở xa mục tiêu (đang bay tới, hoặc vừa hồi sinh bay lại rương kẹt cũ)
+                -- Lập tức dọn dẹp biến kẹt cũ để bot có quyền giật TP cứu kẹt cho chu kỳ tiếp theo.
                 if _G.DaGiartFrame == _G.CurrentTarget then
                     _G.DaGiartFrame = nil
                     _G.TimeAfterTP = nil
