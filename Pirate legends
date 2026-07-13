@@ -956,7 +956,7 @@ local function StartBot()
             local stopLimit = (toSeller or ghostDoor) and (OFFSET_DIST + 1.2) or (OFFSET_DIST + 0.5)
             
             -- =======================================================================
-            -- CHU KỲ ĐỘT TỬ ĐỘC LẬP TỰ DO (ĐÃ ĐƯỢC NÂNG CẤP BẢO HIỂM 2 LỚP)
+            -- CHU KỲ ĐỘT TỬ ĐỘC LẬP TỰ DO (ĐÃ PHÂN CHIA LOGIC CHO FARM & CHEST ONLY)
             -- =======================================================================
             local notNpcOrDoor = (not toSeller) and (not ghostDoor)
             local pGui = LocalPlayer:FindFirstChildWhichIsA("PlayerGui")
@@ -971,7 +971,7 @@ local function StartBot()
                 end
             end
 
-            -- LỚP 1: Lệnh đột tử cứu kẹt Rương (Đứng im lơ lửng đủ 2s -> Reset)
+            -- LỚP 1: Lệnh đột tử cứu kẹt Rương (Đứng lơ lửng trên cao đủ 2s chờ reset)
             if notNpcOrDoor and not isQuestMenuOpen and (_G.DaGiartFrame == _G.CurrentTarget) and _G.TimeAfterTP then
                 local elapsedAfterTP = os.clock() - _G.TimeAfterTP
                 if elapsedAfterTP >= 2.0 then
@@ -985,13 +985,24 @@ local function StartBot()
                 end
             end
 
-            -- LỚP 2: Lệnh đột tử cứu kẹt Seller (Đứng sát Seller quá 3s không mở được bảng nhiệm vụ -> Cút)
+            -- LỚP 2: Lệnh đột tử cứu kẹt Seller (Chia điều kiện chuẩn chỉ chống lỗi Chest Only)
             if toSeller then
-                if not isQuestMenuOpen then
+                local shouldCheckStuck = false
+                
+                if _G.AutoDigAndPick then
+                    -- Chế độ Farm: Check xem đang bưng rương đi bán HOẶC bảng nhiệm vụ chưa được mở lên
+                    shouldCheckStuck = IsHoldingChest() or (not isQuestMenuOpen)
+                elseif _G.AutoChestOnly then
+                    -- Chế độ Chest Only: Chỉ check kẹt KHI VÀ CHỈ KHI đang bưng rương trên tay
+                    shouldCheckStuck = IsHoldingChest()
+                end
+
+                if shouldCheckStuck then
                     if dist < 15 then
                         if not _G.SellerStuckTime then
                             _G.SellerStuckTime = os.clock()
                         elseif (os.clock() - _G.SellerStuckTime) >= 3.0 then
+                            -- Quá 3 giây bị đứng nghẽn tại Seller -> Tiễn vong đi reset kiếp mới
                             if char and hum and hum.Health > 0 then 
                                 hum.Health = 0 
                             end
@@ -1000,7 +1011,7 @@ local function StartBot()
                         end
                     end
                 else
-                    -- Bảng đã mở lên thành công -> Giải phóng bộ đếm, bảo toàn mạng sống
+                    -- Không thuộc diện kẹt (Ví dụ: Chest Only đứng đợi map hồi rương, hoặc Farm đã mở UI thành công) -> Tắt đếm giờ
                     _G.SellerStuckTime = nil
                 end
             else
@@ -1017,7 +1028,7 @@ local function StartBot()
                 
                 local elapsedAtTarget = os.clock() - _G.TimeAtTarget
 
-                -- CHU KỲ 1: Đợi kẹt đủ 2s ban đầu dưới đất -> Bắn lệnh TP cứu kẹt
+                -- CHU KỲ 1: Đợi kẹt đủ 2s ban đầu dưới đất -> Bắn lệnh TP cứu kẹt lên cao
                 if notNpcOrDoor and not isQuestMenuOpen then
                     if elapsedAtTarget >= 2.0 and _G.DaGiartFrame ~= _G.CurrentTarget then 
                         local currentPos = hrp.Position
