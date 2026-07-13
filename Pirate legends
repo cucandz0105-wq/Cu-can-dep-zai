@@ -956,7 +956,7 @@ local function StartBot()
             local stopLimit = (toSeller or ghostDoor) and (OFFSET_DIST + 1.2) or (OFFSET_DIST + 0.5)
             
             -- =======================================================================
-            -- CHU KỲ 2 ĐỘC LẬP TỰ DO: ĐƯA RA NGOÀI VÒNG LẶP KHOẢNG CÁCH KHÔNG PHỤ THUỘC DIST
+            -- CHU KỲ ĐỘT TỬ ĐỘC LẬP TỰ DO (ĐÃ ĐƯỢC NÂNG CẤP BẢO HIỂM 2 LỚP)
             -- =======================================================================
             local notNpcOrDoor = (not toSeller) and (not ghostDoor)
             local pGui = LocalPlayer:FindFirstChildWhichIsA("PlayerGui")
@@ -971,7 +971,7 @@ local function StartBot()
                 end
             end
 
-            -- Lệnh đột tử chỉ được kích hoạt chạy khi và chỉ khi chu kỳ TP cứu kẹt ở dưới đã mở khóa công tắc trước đó
+            -- LỚP 1: Lệnh đột tử cứu kẹt Rương (Đứng im lơ lửng đủ 2s -> Reset)
             if notNpcOrDoor and not isQuestMenuOpen and (_G.DaGiartFrame == _G.CurrentTarget) and _G.TimeAfterTP then
                 local elapsedAfterTP = os.clock() - _G.TimeAfterTP
                 if elapsedAfterTP >= 2.0 then
@@ -981,8 +981,30 @@ local function StartBot()
                     _G.DaGiartFrame = nil 
                     _G.TimeAfterTP = nil
                     _G.TimeAtTarget = nil
-                    return -- Cúc lập tức, ngắt luồng tại đây không chạy xuống dưới
+                    return 
                 end
+            end
+
+            -- LỚP 2: Lệnh đột tử cứu kẹt Seller (Đứng sát Seller quá 3s không mở được bảng nhiệm vụ -> Cút)
+            if toSeller then
+                if not isQuestMenuOpen then
+                    if dist < 15 then
+                        if not _G.SellerStuckTime then
+                            _G.SellerStuckTime = os.clock()
+                        elseif (os.clock() - _G.SellerStuckTime) >= 3.0 then
+                            if char and hum and hum.Health > 0 then 
+                                hum.Health = 0 
+                            end
+                            _G.SellerStuckTime = nil
+                            return
+                        end
+                    end
+                else
+                    -- Bảng đã mở lên thành công -> Giải phóng bộ đếm, bảo toàn mạng sống
+                    _G.SellerStuckTime = nil
+                end
+            else
+                _G.SellerStuckTime = nil
             end
             -- =======================================================================
 
@@ -1009,21 +1031,6 @@ local function StartBot()
                     end
                 end
 
-                -- 2. SELLER STUCK RESET
-                if toSeller then
-                    if IsHoldingChest() then
-                        if not _G.SellerStuckTime then
-                            _G.SellerStuckTime = os.clock()
-                        elseif (os.clock() - _G.SellerStuckTime) >= 3.0 then
-                            if char and hum and hum.Health > 0 then hum.Health = 0 end
-                            _G.SellerStuckTime = nil
-                            return
-                        end
-                    else
-                        _G.SellerStuckTime = nil
-                    end
-                end
-
                 -- GHIM VỊ TRÍ TƯƠNG TÁC THÔNG MINH Chống kéo chân tụt xuống đất
                 if _G.DaGiartFrame ~= _G.CurrentTarget or toSeller or ghostDoor then
                     if elapsedAtTarget < 2.0 or toSeller or ghostDoor then
@@ -1035,7 +1042,6 @@ local function StartBot()
                     hrp.CFrame = CFrame.new(Vector3.new(hrp.Position.X, safeY, hrp.Position.Z), Vector3.new(tPos.X, safeY, tPos.Z))
                 end
             else
-                _G.SellerStuckTime = nil 
                 _G.TimeAtTarget = nil 
                 
                 -- CHỈ XÓA BÀI LÀM SẠCH BIẾN KHI THỰC SỰ ĐÃ ĐI XA HẲN MỤC TIÊU (> 15 block)
