@@ -5,7 +5,7 @@ local Players = game:GetService("Players")
 if blacklist[Players.LocalPlayer.Name] or blacklist[Players.LocalPlayer.UserId] then
     pcall(function()
         game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "HỆ THỐNG",
+            Title = "CHECKING",
             Text = "MÀY ĐÃ BỊ CẤM",
             Duration = 5,
         })
@@ -16,7 +16,7 @@ end
 if not whitelist[Players.LocalPlayer.Name] and not whitelist[Players.LocalPlayer.UserId] then
     pcall(function()
         game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "HỆ THỐNG",
+            Title = "CHECKING",
             Text = "MÀY KHÔNG CÓ QUYỀN",
             Duration = 5,
         })
@@ -26,7 +26,7 @@ end
 
 pcall(function()
     game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "HỆ THỐNG",
+        Title = "CHECKING",
         Text = "KHỞI CHẠY THÀNH CÔNG",
         Duration = 5,
     })
