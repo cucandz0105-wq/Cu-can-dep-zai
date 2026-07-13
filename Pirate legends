@@ -1032,7 +1032,7 @@ local function StartBot()
                 if notNpcOrDoor and not isQuestMenuOpen then
                     if elapsedAtTarget >= 2.0 and _G.DaGiartFrame ~= _G.CurrentTarget then 
                         local currentPos = hrp.Position
-                        local safeY = tPos.Y + (hrp.Size.Y / 2) + 6.0 
+                        local safeY = tPos.Y + (hrp.Size.Y / 2) + 4.0 
                         
                         hrp.CFrame = CFrame.new(Vector3.new(currentPos.X, safeY, currentPos.Z)) * hrp.CFrame.Rotation
                         
@@ -1048,8 +1048,8 @@ local function StartBot()
                         hrp.CFrame = CFrame.new(stopPos, Vector3.new(tPos.X, stopPos.Y, tPos.Z)) 
                     end
                 else
-                    -- Nếu đã TP cứu kẹt lên cao, ghim cứng thăng bằng trên cao 6 block chờ chết hoặc rương mất
-                    local safeY = tPos.Y + (hrp.Size.Y / 2) + 6.0
+                    -- Nếu đã TP cứu kẹt lên cao, ghim cứng thăng bằng trên cao 4 block chờ chết hoặc rương mất
+                    local safeY = tPos.Y + (hrp.Size.Y / 2) + 4.0
                     hrp.CFrame = CFrame.new(Vector3.new(hrp.Position.X, safeY, hrp.Position.Z), Vector3.new(tPos.X, safeY, tPos.Z))
                 end
             else
