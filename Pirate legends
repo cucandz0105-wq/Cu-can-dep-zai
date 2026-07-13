@@ -5,7 +5,7 @@ local Players = game:GetService("Players")
 if blacklist[Players.LocalPlayer.Name] or blacklist[Players.LocalPlayer.UserId] then
     pcall(function()
         game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "HỆ THỐNG",
+            Title = "CHECKING",
             Text = "MÀY ĐÃ BỊ CẤM",
             Duration = 5,
         })
@@ -16,7 +16,7 @@ end
 if not whitelist[Players.LocalPlayer.Name] and not whitelist[Players.LocalPlayer.UserId] then
     pcall(function()
         game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "HỆ THỐNG",
+            Title = "CHECKING",
             Text = "MÀY KHÔNG CÓ QUYỀN",
             Duration = 5,
         })
@@ -26,7 +26,7 @@ end
 
 pcall(function()
     game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "HỆ THỐNG",
+        Title = "CHECKING",
         Text = "KHỞI CHẠY THÀNH CÔNG",
         Duration = 5,
     })
@@ -1032,7 +1032,7 @@ local function StartBot()
                 if notNpcOrDoor and not isQuestMenuOpen then
                     if elapsedAtTarget >= 2.0 and _G.DaGiartFrame ~= _G.CurrentTarget then 
                         local currentPos = hrp.Position
-                        local safeY = tPos.Y + (hrp.Size.Y / 2) + 4.0 
+                        local safeY = tPos.Y + (hrp.Size.Y / 2) + 3.0 
                         
                         hrp.CFrame = CFrame.new(Vector3.new(currentPos.X, safeY, currentPos.Z)) * hrp.CFrame.Rotation
                         
@@ -1048,8 +1048,8 @@ local function StartBot()
                         hrp.CFrame = CFrame.new(stopPos, Vector3.new(tPos.X, stopPos.Y, tPos.Z)) 
                     end
                 else
-                    -- Nếu đã TP cứu kẹt lên cao, ghim cứng thăng bằng trên cao 4 block chờ chết hoặc rương mất
-                    local safeY = tPos.Y + (hrp.Size.Y / 2) + 4.0
+                    -- Nếu đã TP cứu kẹt lên cao, ghim cứng thăng bằng trên cao số block chờ chết hoặc rương mất
+                    local safeY = tPos.Y + (hrp.Size.Y / 2) + 3.0
                     hrp.CFrame = CFrame.new(Vector3.new(hrp.Position.X, safeY, hrp.Position.Z), Vector3.new(tPos.X, safeY, tPos.Z))
                 end
             else
@@ -1078,7 +1078,7 @@ local function StartBot()
                 
                 if ganMucTieu then 
                     if _G.DaGiartFrame == _G.CurrentTarget and _G.TimeAfterTP then
-                        targetY = tPos.Y + (hrp.Size.Y / 2) + 4.0 -- Khóa chặt cao độ an toàn
+                        targetY = tPos.Y + (hrp.Size.Y / 2) + 3.0 -- Khóa chặt cao độ an toàn
                     else
                         targetY = (toSeller or ghostDoor) and sellerY_Chuan or (tPos.Y + (hrp.Size.Y / 2) + 0.5) 
                     end
