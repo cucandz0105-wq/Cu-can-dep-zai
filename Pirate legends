@@ -1080,7 +1080,7 @@ local function StartBot()
                     if _G.DaGiartFrame == _G.CurrentTarget and _G.TimeAfterTP then
                         targetY = tPos.Y + (hrp.Size.Y / 2) + 6.0 -- Khóa chặt cao độ an toàn
                     else
-                        targetY = (toSeller or ghostDoor) and sellerY_Chuan or (tPos.Y + (hrp.Size.Y / 2) + 0.5) 
+                        targetY = (toSeller or ghostDoor) and sellerY_Chuan or (tPos.Y + (hrp.Size.Y / 2) + 0.2) 
                     end
                     nextPos = Vector3.new(nextPos.X, targetY, nextPos.Z)
                 elseif not inCave then
