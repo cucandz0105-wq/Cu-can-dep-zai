@@ -864,7 +864,7 @@ local FLY_SPEED, FALL_LIMIT, CLIMB_LIMIT, OFFSET_DIST, LERP_SMOOTH, MAX_HEIGHT, 
 -- =======================================================================
 -- HÀM ÉP KÍCH HOẠT NÚT TƯƠNG TÁC (TỰ ĐỘNG CHUYỂN PHƯƠNG THỨC NẾU EXECUTOR LỖI)
 -- =======================================================================
-local isInteracting = false 
+local isInteracting = false -- Khóa chống spam gửi lệnh liên tục mỗi frame
 local function AutoTriggerPrompt(target)
     if not target or isInteracting then return end
     local prompt = target:IsA("ProximityPrompt") and target or target:FindFirstChildOfClass("ProximityPrompt", true)
@@ -872,10 +872,11 @@ local function AutoTriggerPrompt(target)
     if prompt and prompt.Enabled then
         isInteracting = true
         task.spawn(function()
+            -- Tăng tầm nhận diện lên 30 studs và tắt góc nhìn vật cản để tránh bị hụt khi đang bay cứu kẹt
             prompt.RequiresLineOfSight = false
             prompt.MaxActivationDistance = 30
             
-            task.wait(0.05) 
+            task.wait(0.05) -- Đợi tọa độ mượt một chút
             
             if fireproximityprompt then
                 fireproximityprompt(prompt)
@@ -1094,13 +1095,7 @@ local function StartBot()
                 if _G.IsEscapingStuck then
                     nextPos = hrp.Position 
                 else
-                    -- FIX ĐOẠN NÀY: Nếu gần mục tiêu rương dưới 30 block, ép Vector di chuyển đi ngang (bỏ chúc đầu)
-                    if dist < 30 and not toSeller and not ghostDoor then
-                        local flatDir = Vector3.new(moveDir.X, 0, moveDir.Z).Unit
-                        nextPos = hrp.Position + (flatDir * clampledSpeed)
-                    else
-                        nextPos = hrp.Position + (moveDir * clampledSpeed)
-                    end
+                    nextPos = hrp.Position + (moveDir * clampledSpeed)
                 end
                 
                 local inCave = (not toSeller) and (not ghostDoor) and (tPos.Y < 20) 
@@ -1111,22 +1106,7 @@ local function StartBot()
                     if _G.IsEscapingStuck then
                         targetY = tPos.Y + (hrp.Size.Y / 2) + 1.2
                     else
-                        if toSeller or ghostDoor then
-                            targetY = sellerY_Chuan
-                        else
-                            -- TÌM ĐẤT GỐC TUYỆT ĐỐI
-                            local mapParams = RaycastParams.new()
-                            mapParams.FilterType = Enum.RaycastFilterType.Exclude
-                            mapParams.FilterDescendantsInstances = {char, tPart} 
-                            
-                            local rayRealGround = Workspace:Raycast(Vector3.new(tPos.X, tPos.Y + 20, tPos.Z), Vector3.new(0, -50, 0), mapParams)
-                            
-                            if rayRealGround and rayRealGround.Instance then
-                                targetY = rayRealGround.Position.Y + (hrp.Size.Y / 2) + 0.1
-                            else
-                                targetY = tPos.Y + (hrp.Size.Y / 2) + 0.5
-                            end
-                        end
+                        targetY = (toSeller or ghostDoor) and sellerY_Chuan or (tPos.Y + (hrp.Size.Y / 2) + 0.5) 
                     end
                     nextPos = Vector3.new(nextPos.X, targetY, nextPos.Z)
                 elseif not inCave then
@@ -1140,7 +1120,6 @@ local function StartBot()
                 
                 local finalY = hrp.Position.Y
                 if ganMucTieu then 
-                    -- KHÓA CỨNG TRỤC Y TẠI ĐÍCH ĐẾN KHÔNG CHO PHÉP LERP LÀM LÚN XUỐNG
                     finalY = targetY
                 elseif trenBien then 
                     if hrp.Position.Y > SEA_LEVEL then 
@@ -1205,7 +1184,6 @@ local function StopBot()
         isInteracting = false
     end
 end
-
 if BtnDig then
     BtnDig.MouseButton1Click:Connect(function()
         _G.AutoDigAndPick = not _G.AutoDigAndPick
