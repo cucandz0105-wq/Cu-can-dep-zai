@@ -854,20 +854,29 @@ end)
 
 local FLY_SPEED, FALL_LIMIT, CLIMB_LIMIT, OFFSET_DIST, LERP_SMOOTH, MAX_HEIGHT, SEA_LEVEL = 60, 80, 45, 3.5, 0.25, 8.0, 12.5
 
--- =======================================================
--- HÀM ÉP KÍCH HOẠT NÚT TƯƠNG TÁC (TỰ ĐỘNG FIRE PROMPT)
--- =======================================================
+-- =======================================================================
+-- HÀM ÉP KÍCH HOẠT NÚT TƯƠNG TÁC BYPASS TẦM NHÌN (LINE OF SIGHT)
+-- =======================================================================
 local function AutoTriggerPrompt(target)
     if not target then return end
-    -- Tìm ProximityPrompt trong mục tiêu hoặc con của nó
+    -- Tìm ProximityPrompt trong mục tiêu hoặc các con của nó
     local prompt = target:IsA("ProximityPrompt") and target or target:FindFirstChildOfClass("ProximityPrompt", true)
     if prompt and fireproximityprompt then
         task.spawn(function()
-            fireproximityprompt(prompt) -- Ép tương tác không cần nút hiện
+            -- Bẻ gãy cơ chế check tầm nhìn của Roblox (Bypass việc quay camera đi chỗ khác)
+            if prompt.RequiresLineOfSight then
+                prompt.RequiresLineOfSight = false
+            end
+            -- Ép tăng khoảng cách bấm tối đa lên 10 studs cho chắc cú
+            if prompt.MaxActivationDistance < 10 then
+                prompt.MaxActivationDistance = 10
+            end
+            
+            fireproximityprompt(prompt) -- "Vả" lệnh tương tác thẳng lên server
         end)
     end
 end
--- =======================================================
+-- =======================================================================
 
 local function StartBot()
     if _G.BotConnection then _G.BotConnection:Disconnect() _G.BotConnection = nil end 
@@ -1040,7 +1049,7 @@ local function StartBot()
                 
                 local elapsedAtTarget = os.clock() - _G.TimeAtTarget
 
-                -- Tự động ép kích hoạt prompt liên tục khi đứng tại đích
+                -- [MỚI] Tự động bẻ gãy check tầm nhìn & ép bấm nút liên tục khi đã chạm đích
                 AutoTriggerPrompt(tPart)
 
                 -- CHU KỲ 1: Đợi kẹt đủ 2s ban đầu dưới đất -> Bắn lệnh TP cứu kẹt lên cao
