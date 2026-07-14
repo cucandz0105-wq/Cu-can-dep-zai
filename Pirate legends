@@ -843,6 +843,7 @@ end)
 -- ANTI-AFK SYSTEM (PREVENTS 20-MIN IDLE KICK)
 -- =======================================================
 local VirtualUser = game:GetService("VirtualUser")
+local RunService = game:GetService("RunService")
 if _G.AntiAFKConnection then _G.AntiAFKConnection:Disconnect() end
 
 _G.AntiAFKConnection = game:GetService("Players").LocalPlayer.Idled:Connect(function()
@@ -852,6 +853,21 @@ end)
 -- =======================================================
 
 local FLY_SPEED, FALL_LIMIT, CLIMB_LIMIT, OFFSET_DIST, LERP_SMOOTH, MAX_HEIGHT, SEA_LEVEL = 60, 80, 45, 3.5, 0.25, 8.0, 12.5
+
+-- =======================================================
+-- HÀM ÉP KÍCH HOẠT NÚT TƯƠNG TÁC (TỰ ĐỘNG FIRE PROMPT)
+-- =======================================================
+local function AutoTriggerPrompt(target)
+    if not target then return end
+    -- Tìm ProximityPrompt trong mục tiêu hoặc con của nó
+    local prompt = target:IsA("ProximityPrompt") and target or target:FindFirstChildOfClass("ProximityPrompt", true)
+    if prompt and fireproximityprompt then
+        task.spawn(function()
+            fireproximityprompt(prompt) -- Ép tương tác không cần nút hiện
+        end)
+    end
+end
+-- =======================================================
 
 local function StartBot()
     if _G.BotConnection then _G.BotConnection:Disconnect() _G.BotConnection = nil end 
@@ -990,10 +1006,8 @@ local function StartBot()
                 local shouldCheckStuck = false
                 
                 if _G.AutoDigAndPick then
-                    -- Chế độ Farm: Check xem đang bưng rương đi bán HOẶC bảng nhiệm vụ chưa được mở lên
                     shouldCheckStuck = IsHoldingChest() or (not isQuestMenuOpen)
                 elseif _G.AutoChestOnly then
-                    -- Chế độ Chest Only: Chỉ check kẹt KHI VÀ CHỈ KHI đang bưng rương trên tay
                     shouldCheckStuck = IsHoldingChest()
                 end
 
@@ -1002,7 +1016,6 @@ local function StartBot()
                         if not _G.SellerStuckTime then
                             _G.SellerStuckTime = os.clock()
                         elseif (os.clock() - _G.SellerStuckTime) >= 3.0 then
-                            -- Quá 3 giây bị đứng nghẽn tại Seller -> Tiễn vong đi reset kiếp mới
                             if char and hum and hum.Health > 0 then 
                                 hum.Health = 0 
                             end
@@ -1011,7 +1024,6 @@ local function StartBot()
                         end
                     end
                 else
-                    -- Không thuộc diện kẹt (Ví dụ: Chest Only đứng đợi map hồi rương, hoặc Farm đã mở UI thành công) -> Tắt đếm giờ
                     _G.SellerStuckTime = nil
                 end
             else
@@ -1028,6 +1040,9 @@ local function StartBot()
                 
                 local elapsedAtTarget = os.clock() - _G.TimeAtTarget
 
+                -- Tự động ép kích hoạt prompt liên tục khi đứng tại đích
+                AutoTriggerPrompt(tPart)
+
                 -- CHU KỲ 1: Đợi kẹt đủ 2s ban đầu dưới đất -> Bắn lệnh TP cứu kẹt lên cao
                 if notNpcOrDoor and not isQuestMenuOpen then
                     if elapsedAtTarget >= 2.0 and _G.DaGiartFrame ~= _G.CurrentTarget then 
@@ -1036,26 +1051,23 @@ local function StartBot()
                         
                         hrp.CFrame = CFrame.new(Vector3.new(currentPos.X, safeY, currentPos.Z)) * hrp.CFrame.Rotation
                         
-                        -- Khóa luồng TP của mục tiêu này lại, đồng thời mở khóa "TimeAfterTP" cho chu kỳ Đột tử phía trên bắt đầu đếm giờ
                         _G.DaGiartFrame = _G.CurrentTarget 
                         _G.TimeAfterTP = os.clock() 
                     end
                 end
 
-                -- GHIM VỊ TRÍ TƯƠNG TÁC THÔNG MINH Chống kéo chân tụt xuống đất
+                -- GHIM VỊ TRÍ TƯƠNG TÁC THÔNG MINH
                 if _G.DaGiartFrame ~= _G.CurrentTarget or toSeller or ghostDoor then
                     if elapsedAtTarget < 2.0 or toSeller or ghostDoor then
                         hrp.CFrame = CFrame.new(stopPos, Vector3.new(tPos.X, stopPos.Y, tPos.Z)) 
                     end
                 else
-                    -- Nếu đã TP cứu kẹt lên cao, ghim cứng thăng bằng trên cao số block chờ chết hoặc rương mất
                     local safeY = tPos.Y + (hrp.Size.Y / 2) + 3.0
                     hrp.CFrame = CFrame.new(Vector3.new(hrp.Position.X, safeY, hrp.Position.Z), Vector3.new(tPos.X, safeY, tPos.Z))
                 end
             else
                 _G.TimeAtTarget = nil 
                 
-                -- CHỈ XÓA BÀI LÀM SẠCH BIẾN KHI THỰC SỰ ĐÃ ĐI XA HẲN MỤC TIÊU (> 15 block)
                 if _G.DaGiartFrame == _G.CurrentTarget and dist > 15 then
                     _G.DaGiartFrame = nil
                     _G.TimeAfterTP = nil
@@ -1064,10 +1076,9 @@ local function StartBot()
                 local moveDir = (toSeller or ghostDoor) and (stopPos - hrp.Position).Unit or dir 
                 local clampledSpeed = math.min(FLY_SPEED * dt, 2.3) 
                 
-                -- KHÓA DI CHUYỂN KHI ĐANG TRONG CHU KỲ CHỜ CHẾT
                 local nextPos
                 if _G.DaGiartFrame == _G.CurrentTarget and _G.TimeAfterTP then
-                    nextPos = hrp.Position -- Giữ đứng im cố định trên cao, cấm code di chuyển kéo tụt xuống
+                    nextPos = hrp.Position 
                 else
                     nextPos = hrp.Position + (moveDir * clampledSpeed)
                 end
@@ -1078,7 +1089,7 @@ local function StartBot()
                 
                 if ganMucTieu then 
                     if _G.DaGiartFrame == _G.CurrentTarget and _G.TimeAfterTP then
-                        targetY = tPos.Y + (hrp.Size.Y / 2) + 3.0 -- Khóa chặt cao độ an toàn
+                        targetY = tPos.Y + (hrp.Size.Y / 2) + 3.0 
                     else
                         targetY = (toSeller or ghostDoor) and sellerY_Chuan or (tPos.Y + (hrp.Size.Y / 2) + 0.5) 
                     end
