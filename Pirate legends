@@ -864,7 +864,7 @@ local FLY_SPEED, FALL_LIMIT, CLIMB_LIMIT, OFFSET_DIST, LERP_SMOOTH, MAX_HEIGHT, 
 -- =======================================================================
 -- HÀM ÉP KÍCH HOẠT NÚT TƯƠNG TÁC (TỰ ĐỘNG CHUYỂN PHƯƠNG THỨC NẾU EXECUTOR LỖI)
 -- =======================================================================
-local isInteracting = false -- Khóa chống spam gửi lệnh liên tục mỗi frame
+local isInteracting = false 
 local function AutoTriggerPrompt(target)
     if not target or isInteracting then return end
     local prompt = target:IsA("ProximityPrompt") and target or target:FindFirstChildOfClass("ProximityPrompt", true)
@@ -872,11 +872,10 @@ local function AutoTriggerPrompt(target)
     if prompt and prompt.Enabled then
         isInteracting = true
         task.spawn(function()
-            -- Tăng tầm nhận diện lên 30 studs và tắt góc nhìn vật cản để tránh bị hụt khi đang bay cứu kẹt
             prompt.RequiresLineOfSight = false
             prompt.MaxActivationDistance = 30
             
-            task.wait(0.05) -- Đợi tọa độ mượt một chút
+            task.wait(0.05) 
             
             if fireproximityprompt then
                 fireproximityprompt(prompt)
@@ -1095,7 +1094,13 @@ local function StartBot()
                 if _G.IsEscapingStuck then
                     nextPos = hrp.Position 
                 else
-                    nextPos = hrp.Position + (moveDir * clampledSpeed)
+                    -- FIX ĐOẠN NÀY: Nếu gần mục tiêu rương dưới 30 block, ép Vector di chuyển đi ngang (bỏ chúc đầu)
+                    if dist < 30 and not toSeller and not ghostDoor then
+                        local flatDir = Vector3.new(moveDir.X, 0, moveDir.Z).Unit
+                        nextPos = hrp.Position + (flatDir * clampledSpeed)
+                    else
+                        nextPos = hrp.Position + (moveDir * clampledSpeed)
+                    end
                 end
                 
                 local inCave = (not toSeller) and (not ghostDoor) and (tPos.Y < 20) 
@@ -1109,7 +1114,7 @@ local function StartBot()
                         if toSeller or ghostDoor then
                             targetY = sellerY_Chuan
                         else
-                            -- SỬA ĐÚNG "LONG MẠCH" THEO Ý BRO: BẮN TIA TÌM MẶT ĐẤT THẬT ĐỂ ĐỨNG THẲNG NHƯ SELLER
+                            -- TÌM ĐẤT GỐC TUYỆT ĐỐI
                             local mapParams = RaycastParams.new()
                             mapParams.FilterType = Enum.RaycastFilterType.Exclude
                             mapParams.FilterDescendantsInstances = {char, tPart} 
@@ -1135,6 +1140,7 @@ local function StartBot()
                 
                 local finalY = hrp.Position.Y
                 if ganMucTieu then 
+                    -- KHÓA CỨNG TRỤC Y TẠI ĐÍCH ĐẾN KHÔNG CHO PHÉP LERP LÀM LÚN XUỐNG
                     finalY = targetY
                 elseif trenBien then 
                     if hrp.Position.Y > SEA_LEVEL then 
