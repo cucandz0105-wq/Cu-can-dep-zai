@@ -1073,7 +1073,7 @@ local function StartBot()
                 if not _G.TimeAtTarget then _G.TimeAtTarget = os.clock() end
                 local elapsedAtTarget = os.clock() - _G.TimeAtTarget
 
-                -- 1. ĐIỀU KIỆN CHỈ ANCHOR KHI CHẠM MỤC TIÊU (CHỈ ÁP DỤNG CHO RƯƠNG/HỐ, NÉ SELLER)
+                -- 1. ĐIỀU KIỆN CHỈ ANCHOR KHI CHẠM MỤC TIÊU (CHỈ ÁP DỤNG CHO RƯƠNG/HỐ, NÉ SELLER/GATE)
                 if notNpcOrDoor and not isQuestMenuOpen and not _G.IsEscapingStuck then
                     if elapsedAtTarget < 2.5 then -- Đóng đinh vị trí trong 2.5s đầu để hốt rương an toàn
                         hrp.Anchored = true
@@ -1202,8 +1202,15 @@ local function StopBot()
             end 
             local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart") 
             if hrp then 
-                hrp.AssemblyLinearVelocity = Vector3.new(0,0,0) 
-                hrp.Anchored = false -- Nhả Neo khi tắt bot hoàn toàn
+                -- PHANH KHẨN CẤP: Đóng băng toàn bộ vận tốc tích tụ để triệt tiêu lực đẩy của game trước khi nhả Neo
+                hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                hrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+                
+                task.wait(0.05) -- Chờ 1 chút cho hệ thống vật lý giải nén xong an toàn
+                hrp.Anchored = false -- Nhả Neo tự do sau khi đã xả sạch lực dồn nén
+                
+                -- Khóa thêm một phát cuối đề phòng game cố đẩy
+                hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
             end 
         end
         _G.IsDigging, _G.FakeFallSpeed, _G.CurrentTarget, _G.StuckTime, _G.IsTeleportingHome = false, 0, nil, 0, false
@@ -1218,6 +1225,9 @@ local function StopBot()
     end
 end
 
+-- =======================================================
+-- ĐOẠN ĐƯỢC BÙ LẠI: KẾT NỐI UI VÀ KHỞI ĐỘNG CÔNG TẮC FARM
+-- =======================================================
 if BtnDig then
     BtnDig.MouseButton1Click:Connect(function()
         _G.AutoDigAndPick = not _G.AutoDigAndPick
