@@ -843,7 +843,6 @@ end)
 -- ANTI-AFK SYSTEM (PREVENTS 20-MIN IDLE KICK)
 -- =======================================================
 local VirtualUser = game:GetService("VirtualUser")
-local RunService = game:GetService("RunService")
 if _G.AntiAFKConnection then _G.AntiAFKConnection:Disconnect() end
 
 _G.AntiAFKConnection = game:GetService("Players").LocalPlayer.Idled:Connect(function()
@@ -853,30 +852,6 @@ end)
 -- =======================================================
 
 local FLY_SPEED, FALL_LIMIT, CLIMB_LIMIT, OFFSET_DIST, LERP_SMOOTH, MAX_HEIGHT, SEA_LEVEL = 60, 80, 45, 3.5, 0.25, 8.0, 12.5
-
--- =======================================================
--- HÀM LƯỚT KHẨN CẤP GỌN NHẸ (LÙI 10 STUDS RỒI TIẾN LẠI)
--- =======================================================
-local function DoFlyBackAndForth(hrp)
-    _G.IsBackingUp = true
-    local startCF = hrp.CFrame
-    local diemLui = startCF.Position - (startCF.LookVector * 10) -- Lùi thẳng 10 studs siêu nhanh
-    
-    local function luyenFrame(viTriDich)
-        while (hrp.Position - viTriDich).Magnitude > 0.2 and _G.IsBackingUp do
-            local dt = RunService.Heartbeat:Wait()
-            if not hrp or not hrp.Parent then break end
-            local nextPos = hrp.Position + ((viTriDich - hrp.Position).Unit * math.min(FLY_SPEED * dt, (viTriDich - hrp.Position).Magnitude))
-            hrp.CFrame = CFrame.new(nextPos, startCF.Position + startCF.LookVector)
-        end
-    end
-    
-    luyenFrame(diemLui)
-    task.wait(0.1) -- Nghỉ nhịp ngắn ép server load nút E
-    luyenFrame(startCF.Position)
-    _G.IsBackingUp = false
-end
--- =======================================================
 
 local function StartBot()
     if _G.BotConnection then _G.BotConnection:Disconnect() _G.BotConnection = nil end 
@@ -889,6 +864,7 @@ local function StartBot()
             hum:ChangeState(Enum.HumanoidStateType.Physics) 
             hum:SetStateEnabled(Enum.HumanoidStateType.Seated, false)
             if hum.Sit then hum.Sit = false end 
+            
             for _, child in ipairs(char:GetChildren()) do 
                 if child:IsA("BasePart") then child.CanCollide = false end 
             end 
@@ -896,8 +872,6 @@ local function StartBot()
     end)
     
     _G.BotConnection = RunService.Heartbeat:Connect(function(dt)
-        if _G.IsBackingUp then return end -- Tạm dừng luồng chính khi đang lướt cứu kẹt
-
         local char = LocalPlayer.Character local hrp, hum = char and char:FindFirstChild("HumanoidRootPart"), char and char:FindFirstChildWhichIsA("Humanoid")
         if not hrp or not hum then _G.CurrentTarget = nil _G.FakeFallSpeed = 0 return end
         if (_G.AutoDigAndPick or _G.AutoChestOnly) then
@@ -905,14 +879,24 @@ local function StartBot()
             local galleon = Workspace:FindFirstChild("Ferryman's Galleon") local gd = galleon and galleon:FindFirstChild("SpiritTeleport") and galleon["SpiritTeleport"]:FindFirstChild("Main")
             
             local distToDoor = math.huge
-            if gd then distToDoor = (hrp.Position - gd:GetPivot().Position).Magnitude end
+            if gd then
+                distToDoor = (hrp.Position - gd:GetPivot().Position).Magnitude
+            end
 
-            if hum.Health <= 0 or distToDoor < 150 then _G.IsTeleportingHome = true end
-            if hum.Health > 0 and distToDoor > 200 then _G.IsTeleportingHome = false end
+            if hum.Health <= 0 or distToDoor < 150 then
+                _G.IsTeleportingHome = true
+            end
+            
+            if hum.Health > 0 and distToDoor > 200 then
+                _G.IsTeleportingHome = false
+            end
             
             if _G.IsTeleportingHome then
-                if gd then ghostDoor = gd tPos = gd:GetPivot().Position tPart = gd 
-                else _G.CurrentTarget = nil hrp.AssemblyLinearVelocity = Vector3.new(0,0,0) return end
+                if gd then 
+                    ghostDoor = gd tPos = gd:GetPivot().Position tPart = gd 
+                else
+                    _G.CurrentTarget = nil hrp.AssemblyLinearVelocity = Vector3.new(0,0,0) return
+                end
             end
             
             if not _G.IsTeleportingHome and not tPos then
@@ -942,7 +926,9 @@ local function StartBot()
                 _G.LastRubberbandTime = os.clock()
             end
 
-            if os.clock() - _G.LastRubberbandTime > 3.0 then _G.RubberbandCount = 0 end
+            if os.clock() - _G.LastRubberbandTime > 3.0 then
+                _G.RubberbandCount = 0
+            end
 
             local currentDistToTarget = (hrp.Position - tPos).Magnitude
             local lastDistToTarget = (_G.LastHrpPosition - tPos).Magnitude
@@ -950,8 +936,11 @@ local function StartBot()
             if (currentDistToTarget - lastDistToTarget) > 10.0 then
                 _G.RubberbandCount = _G.RubberbandCount + 1
                 _G.LastRubberbandTime = os.clock()
+                
                 if _G.RubberbandCount >= 8 then 
-                    if char and hum and hum.Health > 0 then hum.Health = 0 end
+                    if char and hum and hum.Health > 0 then 
+                        hum.Health = 0 
+                    end
                     _G.RubberbandCount = 0
                     _G.LastHrpPosition = hrp.Position
                     return
@@ -967,7 +956,7 @@ local function StartBot()
             local stopLimit = (toSeller or ghostDoor) and (OFFSET_DIST + 1.2) or (OFFSET_DIST + 0.5)
             
             -- =======================================================================
-            -- CHU KỲ ĐỘT TỬ ĐỘC LẬP TỰ DO
+            -- CHU KỲ ĐỘT TỬ ĐỘC LẬP TỰ DO (ĐÃ PHÂN CHIA LOGIC CHO FARM & CHEST ONLY)
             -- =======================================================================
             local notNpcOrDoor = (not toSeller) and (not ghostDoor)
             local pGui = LocalPlayer:FindFirstChildWhichIsA("PlayerGui")
@@ -982,11 +971,13 @@ local function StartBot()
                 end
             end
 
-            -- LỚP 1: Đột tử cứu kẹt Rương (Đếm ngược 2s sạch sau khi đã TP + Lướt xong)
+            -- LỚP 1: Lệnh đột tử cứu kẹt Rương (Đứng lơ lửng trên cao đủ 2s chờ reset)
             if notNpcOrDoor and not isQuestMenuOpen and (_G.DaGiartFrame == _G.CurrentTarget) and _G.TimeAfterTP then
                 local elapsedAfterTP = os.clock() - _G.TimeAfterTP
                 if elapsedAfterTP >= 2.0 then
-                    if char and hum and hum.Health > 0 then hum.Health = 0 end
+                    if char and hum and hum.Health > 0 then 
+                        hum.Health = 0 
+                    end
                     _G.DaGiartFrame = nil 
                     _G.TimeAfterTP = nil
                     _G.TimeAtTarget = nil
@@ -994,57 +985,77 @@ local function StartBot()
                 end
             end
 
-            -- LỚP 2: Đột tử cứu kẹt Seller
+            -- LỚP 2: Lệnh đột tử cứu kẹt Seller (Chia điều kiện chuẩn chỉ chống lỗi Chest Only)
             if toSeller then
-                local shouldCheckStuck = _G.AutoDigAndPick and (IsHoldingChest() or not isQuestMenuOpen) or (_G.AutoChestOnly and IsHoldingChest())
+                local shouldCheckStuck = false
+                
+                if _G.AutoDigAndPick then
+                    -- Chế độ Farm: Check xem đang bưng rương đi bán HOẶC bảng nhiệm vụ chưa được mở lên
+                    shouldCheckStuck = IsHoldingChest() or (not isQuestMenuOpen)
+                elseif _G.AutoChestOnly then
+                    -- Chế độ Chest Only: Chỉ check kẹt KHI VÀ CHỈ KHI đang bưng rương trên tay
+                    shouldCheckStuck = IsHoldingChest()
+                end
+
                 if shouldCheckStuck then
                     if dist < 15 then
-                        if not _G.SellerStuckTime then _G.SellerStuckTime = os.clock()
+                        if not _G.SellerStuckTime then
+                            _G.SellerStuckTime = os.clock()
                         elseif (os.clock() - _G.SellerStuckTime) >= 3.0 then
-                            if char and hum and hum.Health > 0 then hum.Health = 0 end
+                            -- Quá 3 giây bị đứng nghẽn tại Seller -> Tiễn vong đi reset kiếp mới
+                            if char and hum and hum.Health > 0 then 
+                                hum.Health = 0 
+                            end
                             _G.SellerStuckTime = nil
                             return
                         end
                     end
-                else _G.SellerStuckTime = nil end
-            else _G.SellerStuckTime = nil end
+                else
+                    -- Không thuộc diện kẹt (Ví dụ: Chest Only đứng đợi map hồi rương, hoặc Farm đã mở UI thành công) -> Tắt đếm giờ
+                    _G.SellerStuckTime = nil
+                end
+            else
+                _G.SellerStuckTime = nil
+            end
             -- =======================================================================
 
             if dist <= stopLimit then
                 _G.DaDenDich = true
-                if not _G.TimeAtTarget then _G.TimeAtTarget = os.clock() end
+                
+                if not _G.TimeAtTarget then
+                    _G.TimeAtTarget = os.clock()
+                end
+                
                 local elapsedAtTarget = os.clock() - _G.TimeAtTarget
 
-                -- Kích hoạt TP lên cao + Bay lùi/tiến cứu kẹt tức thì sau 2 giây kẹt dưới đất
+                -- CHU KỲ 1: Đợi kẹt đủ 2s ban đầu dưới đất -> Bắn lệnh TP cứu kẹt lên cao
                 if notNpcOrDoor and not isQuestMenuOpen then
                     if elapsedAtTarget >= 2.0 and _G.DaGiartFrame ~= _G.CurrentTarget then 
                         local currentPos = hrp.Position
-                        local safeY = tPos.Y + (hrp.Size.Y / 2) + 6.0 
+                        local safeY = tPos.Y + (hrp.Size.Y / 2) + 3.0 
                         
-                        -- TP lên cao
                         hrp.CFrame = CFrame.new(Vector3.new(currentPos.X, safeY, currentPos.Z)) * hrp.CFrame.Rotation
-                        _G.DaGiartFrame = _G.CurrentTarget 
-                        _G.TimeAfterTP = nil -- Tạm khóa đếm ngược đột tử
                         
-                        -- Thực hiện lướt cứu kẹt bất đồng bộ
-                        task.spawn(function()
-                            DoFlyBackAndForth(hrp)
-                            _G.TimeAfterTP = os.clock() -- Lướt xong mới mở khóa đếm giờ đột tử
-                        end)
+                        -- Khóa luồng TP của mục tiêu này lại, đồng thời mở khóa "TimeAfterTP" cho chu kỳ Đột tử phía trên bắt đầu đếm giờ
+                        _G.DaGiartFrame = _G.CurrentTarget 
+                        _G.TimeAfterTP = os.clock() 
                     end
                 end
 
-                -- GHIM VỊ TRÍ TƯƠNG TÁC THÔNG MINH
+                -- GHIM VỊ TRÍ TƯƠNG TÁC THÔNG MINH Chống kéo chân tụt xuống đất
                 if _G.DaGiartFrame ~= _G.CurrentTarget or toSeller or ghostDoor then
                     if elapsedAtTarget < 2.0 or toSeller or ghostDoor then
                         hrp.CFrame = CFrame.new(stopPos, Vector3.new(tPos.X, stopPos.Y, tPos.Z)) 
                     end
                 else
-                    local safeY = tPos.Y + (hrp.Size.Y / 2) + 6.0
+                    -- Nếu đã TP cứu kẹt lên cao, ghim cứng thăng bằng trên cao số block chờ chết hoặc rương mất
+                    local safeY = tPos.Y + (hrp.Size.Y / 2) + 3.0
                     hrp.CFrame = CFrame.new(Vector3.new(hrp.Position.X, safeY, hrp.Position.Z), Vector3.new(tPos.X, safeY, tPos.Z))
                 end
             else
                 _G.TimeAtTarget = nil 
+                
+                -- CHỈ XÓA BÀI LÀM SẠCH BIẾN KHI THỰC SỰ ĐÃ ĐI XA HẲN MỤC TIÊU (> 15 block)
                 if _G.DaGiartFrame == _G.CurrentTarget and dist > 15 then
                     _G.DaGiartFrame = nil
                     _G.TimeAfterTP = nil
@@ -1053,14 +1064,24 @@ local function StartBot()
                 local moveDir = (toSeller or ghostDoor) and (stopPos - hrp.Position).Unit or dir 
                 local clampledSpeed = math.min(FLY_SPEED * dt, 2.3) 
                 
-                local nextPos = (_G.DaGiartFrame == _G.CurrentTarget and _G.TimeAfterTP) and hrp.Position or (hrp.Position + (moveDir * clampledSpeed))
+                -- KHÓA DI CHUYỂN KHI ĐANG TRONG CHU KỲ CHỜ CHẾT
+                local nextPos
+                if _G.DaGiartFrame == _G.CurrentTarget and _G.TimeAfterTP then
+                    nextPos = hrp.Position -- Giữ đứng im cố định trên cao, cấm code di chuyển kéo tụt xuống
+                else
+                    nextPos = hrp.Position + (moveDir * clampledSpeed)
+                end
                 
                 local inCave = (not toSeller) and (not ghostDoor) and (tPos.Y < 20) 
                 local targetY, groundY, trenBien = hrp.Position.Y, nil, false 
                 local ganMucTieu = dist < 30
                 
                 if ganMucTieu then 
-                    targetY = (_G.DaGiartFrame == _G.CurrentTarget and _G.TimeAfterTP) and (tPos.Y + (hrp.Size.Y / 2) + 6.0) or ((toSeller or ghostDoor) and sellerY_Chuan or (tPos.Y + (hrp.Size.Y / 2) + 0.5))
+                    if _G.DaGiartFrame == _G.CurrentTarget and _G.TimeAfterTP then
+                        targetY = tPos.Y + (hrp.Size.Y / 2) + 3.0 -- Khóa chặt cao độ an toàn
+                    else
+                        targetY = (toSeller or ghostDoor) and sellerY_Chuan or (tPos.Y + (hrp.Size.Y / 2) + 0.5) 
+                    end
                     nextPos = Vector3.new(nextPos.X, targetY, nextPos.Z)
                 elseif not inCave then
                     local params = RaycastParams.new() params.FilterType = Enum.RaycastFilterType.Exclude local ignore = {char}
@@ -1072,23 +1093,39 @@ local function StartBot()
                 else targetY = math.max(tPos.Y + (hrp.Size.Y / 2) + 0.01, -30) end
                 
                 local finalY = hrp.Position.Y
-                if ganMucTieu then finalY = targetY
+                if ganMucTieu then 
+                    finalY = targetY
                 elseif trenBien then 
                     if hrp.Position.Y > SEA_LEVEL then 
-                        _G.FakeFallSpeed = math.min(_G.FakeFallSpeed + (workspace.Gravity * dt), 110) 
-                        local deltaY = math.min(_G.FakeFallSpeed * dt, 1.4)
+                        _G.FakeFallSpeed = _G.FakeFallSpeed + (workspace.Gravity * dt) 
+                        if _G.FakeFallSpeed > 110 then _G.FakeFallSpeed = 110 end 
+                        
+                        local deltaY = _G.FakeFallSpeed * dt
+                        if deltaY > 1.4 then deltaY = 1.4 end
                         finalY = hrp.Position.Y - deltaY
                         if finalY < SEA_LEVEL then finalY, _G.FakeFallSpeed = SEA_LEVEL, 0 end 
-                    else finalY, _G.FakeFallSpeed = SEA_LEVEL, 0 end
+                    else 
+                        finalY, _G.FakeFallSpeed = SEA_LEVEL, 0 
+                    end
                 else 
                     _G.FakeFallSpeed = 0 
                     if targetY < hrp.Position.Y - 2 then 
-                        local duKienY = math.max(hrp.Position.Y - (FALL_LIMIT * dt), targetY)
-                        duKienY = math.max(duKienY, hrp.Position.Y - 1.4)
+                        local duKienY = hrp.Position.Y - (FALL_LIMIT * dt)
+                        if duKienY < targetY then duKienY = targetY end
+                        
+                        local doLechY = hrp.Position.Y - duKienY
+                        if doLechY > 1.4 then duKienY = hrp.Position.Y - 1.4 end
+                        
                         finalY = duKienY
+                        if finalY <= targetY then 
+                            finalY = targetY 
+                        end 
                     elseif targetY > hrp.Position.Y + 2 then 
-                        finalY = math.min(hrp.Position.Y + (CLIMB_LIMIT * dt), targetY)
-                    else finalY = hrp.Position.Y + (targetY - hrp.Position.Y) * LERP_SMOOTH end 
+                        finalY = hrp.Position.Y + (CLIMB_LIMIT * dt) 
+                        if finalY > targetY then finalY = targetY end 
+                    else 
+                        finalY = hrp.Position.Y + (targetY - hrp.Position.Y) * LERP_SMOOTH 
+                    end 
                 end
                 
                 if groundY and (finalY - groundY > MAX_HEIGHT) and not ganMucTieu then finalY = groundY + MAX_HEIGHT end
@@ -1113,7 +1150,13 @@ local function StopBot()
             local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart") if hrp then hrp.AssemblyLinearVelocity = Vector3.new(0,0,0) end 
         end
         _G.IsDigging, _G.FakeFallSpeed, _G.CurrentTarget, _G.StuckTime, _G.IsTeleportingHome = false, 0, nil, 0, false
-        _G.DaDenDich, _G.SellerStuckTime, _G.LastHrpPosition, _G.RubberbandCount, _G.DaGiartFrame, _G.TimeAfterTP, _G.TimeAtTarget, _G.IsBackingUp = false, nil, nil, 0, nil, nil, nil, false
+        _G.DaDenDich = false
+        _G.SellerStuckTime = nil
+        _G.LastHrpPosition = nil
+        _G.RubberbandCount = 0
+        _G.DaGiartFrame = nil
+        _G.TimeAfterTP = nil
+        _G.TimeAtTarget = nil
     end
 end
 
@@ -1125,7 +1168,10 @@ if BtnDig then
         _G.AutoDigAndPick = not _G.AutoDigAndPick
         if _G.AutoDigAndPick then
             _G.AutoChestOnly = false 
-            if BtnPick then BtnPick.Text = "CHEST ONLY [OFF]" BtnPick.BackgroundColor3 = Color3.fromRGB(45, 45, 45) end 
+            if BtnPick then 
+                BtnPick.Text = "CHEST ONLY [OFF]" 
+                BtnPick.BackgroundColor3 = Color3.fromRGB(45, 45, 45) 
+            end 
             BtnDig.Text = "DIG HOLE [RUNNING]"
             TweenService:Create(BtnDig, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255, 0, 128)}):Play() 
             StartBot()
@@ -1142,7 +1188,10 @@ if BtnPick then
         _G.AutoChestOnly = not _G.AutoChestOnly
         if _G.AutoChestOnly then
             _G.AutoDigAndPick = false 
-            if BtnDig then BtnDig.Text = "DIG HOLE [OFF]" BtnDig.BackgroundColor3 = Color3.fromRGB(45, 45, 45) end 
+            if BtnDig then 
+                BtnDig.Text = "DIG HOLE [OFF]" 
+                BtnDig.BackgroundColor3 = Color3.fromRGB(45, 45, 45) 
+            end 
             BtnPick.Text = "CHEST ONLY [RUNNING]"
             TweenService:Create(BtnPick, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(0, 170, 255)}):Play() 
             StartBot()
