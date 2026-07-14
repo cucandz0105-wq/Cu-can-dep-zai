@@ -855,24 +855,28 @@ end)
 local FLY_SPEED, FALL_LIMIT, CLIMB_LIMIT, OFFSET_DIST, LERP_SMOOTH, MAX_HEIGHT, SEA_LEVEL = 60, 80, 45, 3.5, 0.25, 8.0, 12.5
 
 -- =======================================================================
--- HÀM ÉP KÍCH HOẠT NÚT TƯƠNG TÁC BYPASS TẦM NHÌN (LINE OF SIGHT)
+-- HÀM ÉP KÍCH HOẠT NÚT TƯƠNG TÁC (TỰ ĐỘNG CHUYỂN PHƯƠNG THỨC NẾU EXECUTOR LỖI)
 -- =======================================================================
 local function AutoTriggerPrompt(target)
     if not target then return end
-    -- Tìm ProximityPrompt trong mục tiêu hoặc các con của nó
     local prompt = target:IsA("ProximityPrompt") and target or target:FindFirstChildOfClass("ProximityPrompt", true)
-    if prompt and fireproximityprompt then
+    
+    if prompt then
         task.spawn(function()
-            -- Bẻ gãy cơ chế check tầm nhìn của Roblox (Bypass việc quay camera đi chỗ khác)
             if prompt.RequiresLineOfSight then
                 prompt.RequiresLineOfSight = false
             end
-            -- Ép tăng khoảng cách bấm tối đa lên 10 studs cho chắc cú
             if prompt.MaxActivationDistance < 10 then
                 prompt.MaxActivationDistance = 10
             end
             
-            fireproximityprompt(prompt) -- "Vả" lệnh tương tác thẳng lên server
+            if fireproximityprompt then
+                fireproximityprompt(prompt)
+            else
+                prompt:InputHoldBegin()
+                task.wait(prompt.HoldDuration + 0.02)
+                prompt:InputHoldEnd()
+            end
         end)
     end
 end
@@ -981,7 +985,7 @@ local function StartBot()
             local stopLimit = (toSeller or ghostDoor) and (OFFSET_DIST + 1.2) or (OFFSET_DIST + 0.5)
             
             -- =======================================================================
-            -- CHU KỲ ĐỘT TỬ ĐỘC LẬP TỰ DO (ĐÃ PHÂN CHIA LOGIC CHO FARM & CHEST ONLY)
+            -- CHU KỲ ĐỘT TỬ ĐỘC LẬP TỰ DO
             -- =======================================================================
             local notNpcOrDoor = (not toSeller) and (not ghostDoor)
             local pGui = LocalPlayer:FindFirstChildWhichIsA("PlayerGui")
@@ -996,7 +1000,6 @@ local function StartBot()
                 end
             end
 
-            -- LỚP 1: Lệnh đột tử cứu kẹt Rương (Đứng lơ lửng trên cao đủ 2s chờ reset)
             if notNpcOrDoor and not isQuestMenuOpen and (_G.DaGiartFrame == _G.CurrentTarget) and _G.TimeAfterTP then
                 local elapsedAfterTP = os.clock() - _G.TimeAfterTP
                 if elapsedAfterTP >= 2.0 then
@@ -1010,10 +1013,8 @@ local function StartBot()
                 end
             end
 
-            -- LỚP 2: Lệnh đột tử cứu kẹt Seller (Chia điều kiện chuẩn chỉ chống lỗi Chest Only)
             if toSeller then
                 local shouldCheckStuck = false
-                
                 if _G.AutoDigAndPick then
                     shouldCheckStuck = IsHoldingChest() or (not isQuestMenuOpen)
                 elseif _G.AutoChestOnly then
@@ -1042,30 +1043,21 @@ local function StartBot()
 
             if dist <= stopLimit then
                 _G.DaDenDich = true
-                
-                if not _G.TimeAtTarget then
-                    _G.TimeAtTarget = os.clock()
-                end
-                
+                if not _G.TimeAtTarget then _G.TimeAtTarget = os.clock() end
                 local elapsedAtTarget = os.clock() - _G.TimeAtTarget
 
-                -- [MỚI] Tự động bẻ gãy check tầm nhìn & ép bấm nút liên tục khi đã chạm đích
                 AutoTriggerPrompt(tPart)
 
-                -- CHU KỲ 1: Đợi kẹt đủ 2s ban đầu dưới đất -> Bắn lệnh TP cứu kẹt lên cao
                 if notNpcOrDoor and not isQuestMenuOpen then
                     if elapsedAtTarget >= 2.0 and _G.DaGiartFrame ~= _G.CurrentTarget then 
                         local currentPos = hrp.Position
                         local safeY = tPos.Y + (hrp.Size.Y / 2) + 3.0 
-                        
                         hrp.CFrame = CFrame.new(Vector3.new(currentPos.X, safeY, currentPos.Z)) * hrp.CFrame.Rotation
-                        
                         _G.DaGiartFrame = _G.CurrentTarget 
                         _G.TimeAfterTP = os.clock() 
                     end
                 end
 
-                -- GHIM VỊ TRÍ TƯƠNG TÁC THÔNG MINH
                 if _G.DaGiartFrame ~= _G.CurrentTarget or toSeller or ghostDoor then
                     if elapsedAtTarget < 2.0 or toSeller or ghostDoor then
                         hrp.CFrame = CFrame.new(stopPos, Vector3.new(tPos.X, stopPos.Y, tPos.Z)) 
@@ -1076,7 +1068,6 @@ local function StartBot()
                 end
             else
                 _G.TimeAtTarget = nil 
-                
                 if _G.DaGiartFrame == _G.CurrentTarget and dist > 15 then
                     _G.DaGiartFrame = nil
                     _G.TimeAfterTP = nil
@@ -1119,7 +1110,6 @@ local function StartBot()
                     if hrp.Position.Y > SEA_LEVEL then 
                         _G.FakeFallSpeed = _G.FakeFallSpeed + (workspace.Gravity * dt) 
                         if _G.FakeFallSpeed > 110 then _G.FakeFallSpeed = 110 end 
-                        
                         local deltaY = _G.FakeFallSpeed * dt
                         if deltaY > 1.4 then deltaY = 1.4 end
                         finalY = hrp.Position.Y - deltaY
@@ -1132,14 +1122,10 @@ local function StartBot()
                     if targetY < hrp.Position.Y - 2 then 
                         local duKienY = hrp.Position.Y - (FALL_LIMIT * dt)
                         if duKienY < targetY then duKienY = targetY end
-                        
                         local doLechY = hrp.Position.Y - duKienY
                         if doLechY > 1.4 then duKienY = hrp.Position.Y - 1.4 end
-                        
                         finalY = duKienY
-                        if finalY <= targetY then 
-                            finalY = targetY 
-                        end 
+                        if finalY <= targetY then finalY = targetY end 
                     elseif targetY > hrp.Position.Y + 2 then 
                         finalY = hrp.Position.Y + (CLIMB_LIMIT * dt) 
                         if finalY > targetY then finalY = targetY end 
@@ -1151,12 +1137,11 @@ local function StartBot()
                 if groundY and (finalY - groundY > MAX_HEIGHT) and not ganMucTieu then finalY = groundY + MAX_HEIGHT end
                 finalY = math.max(finalY, -30)
                 if (Vector3.new(tPos.X, finalY, tPos.Z) - Vector3.new(nextPos.X, finalY, nextPos.Z)).Magnitude > 0.1 then hrp.CFrame = CFrame.new(Vector3.new(nextPos.X, finalY, nextPos.Z), Vector3.new(tPos.X, finalY, tPos.Z))
-                else hrp.CFrame = CFrame.new(Vector3.new(nextPos.X, finalY, nextPos.Z), nextPos.X + hrp.CFrame.LookVector) end
+                else hrp.CFrame = CFrame.new(Vector3.new(nextPos.X, finalY, finalY), nextPos.X + hrp.CFrame.LookVector) end
             end
         end
     end)
 end
-
 local function StopBot()
     if not _G.AutoDigAndPick and not _G.AutoChestOnly then
         if _G.BotConnection then _G.BotConnection:Disconnect() _G.BotConnection = nil end 
@@ -1181,7 +1166,7 @@ local function StopBot()
 end
 
 -- =======================================================
--- BUTTON GUI CLICK EVENTS
+-- BUTTON GUI CLICK EVENTS (FIXED CLOSING BRACKETS)
 -- =======================================================
 if BtnDig then
     BtnDig.MouseButton1Click:Connect(function()
