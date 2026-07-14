@@ -844,9 +844,16 @@ end)
 -- =======================================================
 local VirtualUser = game:GetService("VirtualUser")
 local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local Workspace = game:GetService("Workspace")
+local Players = game:GetService("Players")
+
+local LocalPlayer = Players.LocalPlayer
+local Camera = Workspace.CurrentCamera
+
 if _G.AntiAFKConnection then _G.AntiAFKConnection:Disconnect() end
 
-_G.AntiAFKConnection = game:GetService("Players").LocalPlayer.Idled:Connect(function()
+_G.AntiAFKConnection = LocalPlayer.Idled:Connect(function()
     VirtualUser:CaptureController()
     VirtualUser:ClickButton2(Vector2.new(0, 0))
 end)
@@ -857,26 +864,29 @@ local FLY_SPEED, FALL_LIMIT, CLIMB_LIMIT, OFFSET_DIST, LERP_SMOOTH, MAX_HEIGHT, 
 -- =======================================================================
 -- HÀM ÉP KÍCH HOẠT NÚT TƯƠNG TÁC (TỰ ĐỘNG CHUYỂN PHƯƠNG THỨC NẾU EXECUTOR LỖI)
 -- =======================================================================
+local isInteracting = false -- Khóa chống spam gửi lệnh liên tục mỗi frame
 local function AutoTriggerPrompt(target)
-    if not target then return end
+    if not target or isInteracting then return end
     local prompt = target:IsA("ProximityPrompt") and target or target:FindFirstChildOfClass("ProximityPrompt", true)
     
-    if prompt then
+    if prompt and prompt.Enabled then
+        isInteracting = true
         task.spawn(function()
-            if prompt.RequiresLineOfSight then
-                prompt.RequiresLineOfSight = false
-            end
-            if prompt.MaxActivationDistance < 10 then
-                prompt.MaxActivationDistance = 10
-            end
+            -- Tăng tầm nhận diện lên 30 studs và tắt góc nhìn vật cản để tránh bị hụt khi đang bay cứu kẹt
+            prompt.RequiresLineOfSight = false
+            prompt.MaxActivationDistance = 30
+            
+            task.wait(0.05) -- Đợi tọa độ mượt một chút
             
             if fireproximityprompt then
                 fireproximityprompt(prompt)
+                task.wait(0.2)
             else
                 prompt:InputHoldBegin()
-                task.wait(prompt.HoldDuration + 0.02)
+                task.wait(prompt.HoldDuration + 0.05)
                 prompt:InputHoldEnd()
             end
+            isInteracting = false
         end)
     end
 end
@@ -941,11 +951,11 @@ local function StartBot()
                 _G.StuckTime = os.clock() 
                 _G.SellerStuckTime = nil 
                 _G.DaDenDich = false
-                _G.DaGiartFrame = nil 
+                _G.IsEscapingStuck = false 
                 _G.TimeAfterTP = nil 
                 _G.TimeAtTarget = nil 
+                isInteracting = false
             end
-            
             -- =======================================================
             -- ANTI-RUBBERBAND SYSTEM
             -- =======================================================
@@ -1000,13 +1010,13 @@ local function StartBot()
                 end
             end
 
-            if notNpcOrDoor and not isQuestMenuOpen and (_G.DaGiartFrame == _G.CurrentTarget) and _G.TimeAfterTP then
+            if notNpcOrDoor and not isQuestMenuOpen and _G.IsEscapingStuck and _G.TimeAfterTP then
                 local elapsedAfterTP = os.clock() - _G.TimeAfterTP
                 if elapsedAfterTP >= 2.0 then
                     if char and hum and hum.Health > 0 then 
                         hum.Health = 0 
                     end
-                    _G.DaGiartFrame = nil 
+                    _G.IsEscapingStuck = false 
                     _G.TimeAfterTP = nil
                     _G.TimeAtTarget = nil
                     return 
@@ -1048,28 +1058,33 @@ local function StartBot()
 
                 AutoTriggerPrompt(tPart)
 
+                local safeY = tPos.Y + (hrp.Size.Y / 2) + 1.2
+
                 if notNpcOrDoor and not isQuestMenuOpen then
-                    if elapsedAtTarget >= 2.0 and _G.DaGiartFrame ~= _G.CurrentTarget then 
-                        local currentPos = hrp.Position
-                        local safeY = tPos.Y + (hrp.Size.Y / 2) + 3.0 
-                        hrp.CFrame = CFrame.new(Vector3.new(currentPos.X, safeY, currentPos.Z)) * hrp.CFrame.Rotation
-                        _G.DaGiartFrame = _G.CurrentTarget 
+                    if elapsedAtTarget >= 2.0 and not _G.IsEscapingStuck and hrp.Position.Y < safeY - 0.1 then 
+                        _G.IsEscapingStuck = true
                         _G.TimeAfterTP = os.clock() 
                     end
                 end
 
-                if _G.DaGiartFrame ~= _G.CurrentTarget or toSeller or ghostDoor then
+                if _G.IsEscapingStuck then
+                    if hrp.Position.Y < safeY then
+                        local newY = hrp.Position.Y + (60 * dt)
+                        if newY > safeY then newY = safeY end
+                        hrp.CFrame = CFrame.new(Vector3.new(hrp.Position.X, newY, hrp.Position.Z), Vector3.new(tPos.X, newY, tPos.Z))
+                    else
+                        hrp.CFrame = CFrame.new(Vector3.new(hrp.Position.X, safeY, hrp.Position.Z), Vector3.new(tPos.X, safeY, tPos.Z))
+                    end
+                else
                     if elapsedAtTarget < 2.0 or toSeller or ghostDoor then
                         hrp.CFrame = CFrame.new(stopPos, Vector3.new(tPos.X, stopPos.Y, tPos.Z)) 
                     end
-                else
-                    local safeY = tPos.Y + (hrp.Size.Y / 2) + 3.0
-                    hrp.CFrame = CFrame.new(Vector3.new(hrp.Position.X, safeY, hrp.Position.Z), Vector3.new(tPos.X, safeY, tPos.Z))
                 end
             else
                 _G.TimeAtTarget = nil 
-                if _G.DaGiartFrame == _G.CurrentTarget and dist > 15 then
-                    _G.DaGiartFrame = nil
+                
+                if _G.IsEscapingStuck and dist > 15 then
+                    _G.IsEscapingStuck = false
                     _G.TimeAfterTP = nil
                 end
                 
@@ -1077,7 +1092,7 @@ local function StartBot()
                 local clampledSpeed = math.min(FLY_SPEED * dt, 2.3) 
                 
                 local nextPos
-                if _G.DaGiartFrame == _G.CurrentTarget and _G.TimeAfterTP then
+                if _G.IsEscapingStuck then
                     nextPos = hrp.Position 
                 else
                     nextPos = hrp.Position + (moveDir * clampledSpeed)
@@ -1088,8 +1103,8 @@ local function StartBot()
                 local ganMucTieu = dist < 30
                 
                 if ganMucTieu then 
-                    if _G.DaGiartFrame == _G.CurrentTarget and _G.TimeAfterTP then
-                        targetY = tPos.Y + (hrp.Size.Y / 2) + 3.0 
+                    if _G.IsEscapingStuck then
+                        targetY = tPos.Y + (hrp.Size.Y / 2) + 1.2
                     else
                         targetY = (toSeller or ghostDoor) and sellerY_Chuan or (tPos.Y + (hrp.Size.Y / 2) + 0.5) 
                     end
@@ -1136,12 +1151,16 @@ local function StartBot()
                 
                 if groundY and (finalY - groundY > MAX_HEIGHT) and not ganMucTieu then finalY = groundY + MAX_HEIGHT end
                 finalY = math.max(finalY, -30)
-                if (Vector3.new(tPos.X, finalY, tPos.Z) - Vector3.new(nextPos.X, finalY, nextPos.Z)).Magnitude > 0.1 then hrp.CFrame = CFrame.new(Vector3.new(nextPos.X, finalY, nextPos.Z), Vector3.new(tPos.X, finalY, tPos.Z))
-                else hrp.CFrame = CFrame.new(Vector3.new(nextPos.X, finalY, finalY), nextPos.X + hrp.CFrame.LookVector) end
+                if (Vector3.new(tPos.X, finalY, tPos.Z) - Vector3.new(nextPos.X, finalY, nextPos.Z)).Magnitude > 0.1 then 
+                    hrp.CFrame = CFrame.new(Vector3.new(nextPos.X, finalY, nextPos.Z), Vector3.new(tPos.X, finalY, tPos.Z))
+                else 
+                    hrp.CFrame = CFrame.new(Vector3.new(nextPos.X, finalY, nextPos.Z), nextPos.X + hrp.CFrame.LookVector) 
+                end
             end
         end
     end)
 end
+
 local function StopBot()
     if not _G.AutoDigAndPick and not _G.AutoChestOnly then
         if _G.BotConnection then _G.BotConnection:Disconnect() _G.BotConnection = nil end 
@@ -1159,15 +1178,13 @@ local function StopBot()
         _G.SellerStuckTime = nil
         _G.LastHrpPosition = nil
         _G.RubberbandCount = 0
-        _G.DaGiartFrame = nil
+        _G.IsEscapingStuck = false
         _G.TimeAfterTP = nil
         _G.TimeAtTarget = nil
+        isInteracting = false
     end
 end
 
--- =======================================================
--- BUTTON GUI CLICK EVENTS (FIXED CLOSING BRACKETS)
--- =======================================================
 if BtnDig then
     BtnDig.MouseButton1Click:Connect(function()
         _G.AutoDigAndPick = not _G.AutoDigAndPick
