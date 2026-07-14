@@ -1106,7 +1106,22 @@ local function StartBot()
                     if _G.IsEscapingStuck then
                         targetY = tPos.Y + (hrp.Size.Y / 2) + 1.2
                     else
-                        targetY = (toSeller or ghostDoor) and sellerY_Chuan or (tPos.Y + (hrp.Size.Y / 2) + 0.5) 
+                        if toSeller or ghostDoor then
+                            targetY = sellerY_Chuan
+                        else
+                            -- SỬA ĐÚNG "LONG MẠCH" THEO Ý BRO: BẮN TIA TÌM MẶT ĐẤT THẬT ĐỂ ĐỨNG THẲNG NHƯ SELLER
+                            local mapParams = RaycastParams.new()
+                            mapParams.FilterType = Enum.RaycastFilterType.Exclude
+                            mapParams.FilterDescendantsInstances = {char, tPart} 
+                            
+                            local rayRealGround = Workspace:Raycast(Vector3.new(tPos.X, tPos.Y + 20, tPos.Z), Vector3.new(0, -50, 0), mapParams)
+                            
+                            if rayRealGround and rayRealGround.Instance then
+                                targetY = rayRealGround.Position.Y + (hrp.Size.Y / 2) + 0.1
+                            else
+                                targetY = tPos.Y + (hrp.Size.Y / 2) + 0.5
+                            end
+                        end
                     end
                     nextPos = Vector3.new(nextPos.X, targetY, nextPos.Z)
                 elseif not inCave then
