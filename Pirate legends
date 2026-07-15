@@ -1143,7 +1143,7 @@ local function StartBot()
                     if Workspace:FindFirstChild("Trees") then table.insert(ignore, Workspace["Trees"]) end if Workspace:FindFirstChild("TreeFolder") then table.insert(ignore, Workspace["TreeFolder"]) end
                     params.FilterDescendantsInstances = ignore 
                     
-                    local ray = Workspace:Raycast(Vector3.new(nextPos.X, nextPos.Y + 100, nextPos.Z), Vector3.new(0, -250, 0), params)
+                    local ray = Workspace:Raycast(Vector3.new(nextPos.X, nextPos.Y + 300, nextPos.Z), Vector3.new(0, -700, 0), params)
                     if ray and ray.Instance then 
                         groundY = ray.Position.Y 
                         targetY = groundY + (hrp.Size.Y / 2) + 0.01 
