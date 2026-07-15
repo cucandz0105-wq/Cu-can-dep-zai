@@ -1,5 +1,5 @@
 local blacklist = {}
-local whitelist = { [11012176034] = true, ["duy2778894"] = true, ["duy28954"] = true, ["cacchaba2355"] = true, ["candaodz"] = true, }
+local whitelist = { ["cucandepzai"] = true, }
 local Players = game:GetService("Players")
 
 if blacklist[Players.LocalPlayer.Name] or blacklist[Players.LocalPlayer.UserId] then
