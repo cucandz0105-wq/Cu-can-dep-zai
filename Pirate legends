@@ -1243,7 +1243,7 @@ local function StopBot()
 end
 
 -- =======================================================
--- KẾT NỐI UI VÀ KHỞI ĐỘNG CÔNG TÁC FARM
+-- KẾT NỐI UI VÀ KHỞI ĐỘNG CÔNG TÁC FARM (ĐÃ SỬA LỖI MỒI VÀ LỖI BÙP)
 -- =======================================================
 if BtnDig then
     BtnDig.MouseButton1Click:Connect(function()
@@ -1253,6 +1253,15 @@ if BtnDig then
             if BtnPick then BtnPick.Text = "CHEST ONLY [OFF]" BtnPick.BackgroundColor3 = Color3.fromRGB(45, 45, 45) end 
             BtnDig.Text = "DIG HOLE [RUNNING]"
             TweenService:Create(BtnDig, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255, 0, 128)}):Play() 
+            
+            -- ĐỒNG BỘ NGAY LẬP TỨC ĐỂ KHÔNG CẦN MỒI
+            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                _G.LastHrpPosition = LocalPlayer.Character.HumanoidRootPart.Position
+                _G.RubberbandCount = 0
+                _G.LastRubberbandTime = os.clock()
+                _G.FakeFallSpeed = 0
+            end
+            
             StartBot()
         else 
             BtnDig.Text = "DIG HOLE [OFF]" 
@@ -1270,6 +1279,15 @@ if BtnPick then
             if BtnDig then BtnDig.Text = "DIG HOLE [OFF]" BtnDig.BackgroundColor3 = Color3.fromRGB(45, 45, 45) end 
             BtnPick.Text = "CHEST ONLY [RUNNING]"
             TweenService:Create(BtnPick, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(0, 170, 255)}):Play() 
+            
+            -- ĐỒNG BỘ NGAY LẬP TỨC CHO CHEST ONLY (HẾT GIẬT BỤP)
+            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                _G.LastHrpPosition = LocalPlayer.Character.HumanoidRootPart.Position
+                _G.RubberbandCount = 0
+                _G.LastRubberbandTime = os.clock()
+                _G.FakeFallSpeed = 0
+            end
+            
             StartBot()
         else 
             BtnPick.Text = "CHEST ONLY [OFF]" 
