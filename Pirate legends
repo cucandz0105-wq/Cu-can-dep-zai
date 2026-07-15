@@ -1073,12 +1073,12 @@ local function StartBot()
                 if not _G.TimeAtTarget then _G.TimeAtTarget = os.clock() end
                 local elapsedAtTarget = os.clock() - _G.TimeAtTarget
 
-                -- 1. ĐIỀU KIỆN CHỈ ANCHOR KHI CHẠM MỤC TIÊU (CHỈ ÁP DỤNG CHO RƯƠNG/HỐ, NÉ SELLER/GATE)
+                -- TỐI ƯU CỰC HẠN: Chỉ khựng đúng 0.1 giây rồi nhả tự do ngay lập tức
                 if notNpcOrDoor and not isQuestMenuOpen and not _G.IsEscapingStuck then
-                    if elapsedAtTarget < 2.5 then -- Đóng đinh vị trí trong 2.5s đầu để hốt rương an toàn
+                    if elapsedAtTarget < 0.1 then 
                         hrp.Anchored = true
                     else
-                        hrp.Anchored = false -- Quá 2.5s chưa nhặt xong -> Nhả Anchor để bộ cứu kẹt gốc xử lý
+                        hrp.Anchored = false 
                     end
                 end
 
@@ -1087,7 +1087,6 @@ local function StartBot()
                 local safeY = tPos.Y + (hrp.Size.Y / 2) + 1.2
 
                 if notNpcOrDoor and not isQuestMenuOpen then
-                    -- Nếu quá 2.0s lún dưới safeY, kích hoạt IsEscapingStuck (Lúc này Anchor đã nhả ở trên)
                     if elapsedAtTarget >= 2.0 and not _G.IsEscapingStuck and hrp.Position.Y < safeY - 0.1 then 
                         _G.IsEscapingStuck = true
                         _G.TimeAfterTP = os.clock() 
@@ -1108,7 +1107,6 @@ local function StartBot()
                     end
                 end
             else
-                -- 2. KHI ĐANG BAY TRÊN ĐƯỜNG THÌ LUÔN NHẢ ANCHOR ĐỂ BOT CHẠY
                 hrp.Anchored = false
                 _G.TimeAtTarget = nil 
                 
@@ -1131,14 +1129,12 @@ local function StartBot()
                 local targetY, groundY, trenBien = hrp.Position.Y, nil, false 
                 local ganMucTieu = dist < 30
                 
-                -- TỐI ƯU GIAO ĐOẠN GẦN MỤC TIÊU: Chỉ định vị X Z của mục tiêu trước, cao độ Y xử lý mượt mà ở dưới
                 if ganMucTieu then 
                     if _G.IsEscapingStuck then
                         targetY = tPos.Y + (hrp.Size.Y / 2) + 1.2
                     else
                         targetY = (toSeller or ghostDoor) and sellerY_Chuan or (tPos.Y + (hrp.Size.Y / 2) + 0.5) 
                     end
-                    -- XÓA BỎ gán cứng trực tiếp trục Y để chặn đứng cú giật "bụp"
                     nextPos = Vector3.new(nextPos.X, hrp.Position.Y, nextPos.Z)
                 elseif not inCave then
                     local params = RaycastParams.new() params.FilterType = Enum.RaycastFilterType.Exclude local ignore = {char}
@@ -1149,7 +1145,6 @@ local function StartBot()
                     if ray and ray.Instance then groundY = ray.Position.Y targetY = groundY + (hrp.Size.Y / 2) + 0.01 if tPos.Y < hrp.Position.Y - 5 and targetY > tPos.Y + 10 then targetY = tPos.Y + (hrp.Size.Y / 2) + 0.01 end else targetY, trenBien = SEA_LEVEL, true end
                 else targetY = math.max(tPos.Y + (hrp.Size.Y / 2) + 0.01, -30) end
                 
-                -- BỘ LỌC CHIỀU CAO TOÀN DIỆN (CHỐNG PHÓNG LÊN TRỜI KHI LÊN GẦN ĐÍCH)
                 local finalY = hrp.Position.Y
                 if trenBien and not ganMucTieu then 
                     if hrp.Position.Y > SEA_LEVEL then 
@@ -1165,7 +1160,6 @@ local function StartBot()
                 else 
                     _G.FakeFallSpeed = 0 
                     if targetY < hrp.Position.Y - 2 then 
-                        -- HẠ XUỐNG TỪ TỪ
                         local duKienY = hrp.Position.Y - (FALL_LIMIT * dt)
                         if duKienY < targetY then duKienY = targetY end
                         local doLechY = hrp.Position.Y - duKienY
@@ -1173,10 +1167,9 @@ local function StartBot()
                         finalY = duKienY
                         if finalY <= targetY then finalY = targetY end 
                     elseif targetY > hrp.Position.Y + 2 then 
-                        -- TRỒI LÊN TỪ TỪ (Giới hạn tốc độ trồi lên mượt mà khi ở gần rương để không bị giật lên cái bụp)
                         local tocDoClimb = ganMucTieu and 25 or CLIMB_LIMIT
                         local duKienLenY = hrp.Position.Y + (tocDoClimb * dt)
-                        if (duKienLenY - hrp.Position.Y) > 1.2 then duKienLenY = hrp.Position.Y + 1.2 end -- Khống chế stud mỗi frame
+                        if (duKienLenY - hrp.Position.Y) > 1.2 then duKienLenY = hrp.Position.Y + 1.2 end 
                         finalY = duKienLenY
                         if finalY > targetY then finalY = targetY end 
                     else 
