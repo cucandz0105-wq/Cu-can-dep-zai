@@ -970,7 +970,7 @@ local function StartBot()
                 _G.TimeAtTarget = nil 
                 isInteracting = false
             end
-              -- =======================================================
+            -- =======================================================
             -- ANTI-RUBBERBAND SYSTEM (Giữ nguyên)
             -- =======================================================
             if not _G.LastHrpPosition then 
@@ -1074,7 +1074,7 @@ local function StartBot()
                 local elapsedAtTarget = os.clock() - _G.TimeAtTarget
 
                 if notNpcOrDoor and not isQuestMenuOpen and not _G.IsEscapingStuck then
-                    if elapsedAtTarget < 0.1 then 
+                    if elapsedAtTarget < 0.01 then -- Giữ mốc siêu tốc của bro
                         hrp.Anchored = true
                     else
                         hrp.Anchored = false 
@@ -1129,7 +1129,6 @@ local function StartBot()
                 local targetY, groundY, trenBien = hrp.Position.Y, nil, false 
                 local ganMucTieu = dist < 30
                 
-                -- BẬT LẠI RAYCAST 100% ĐỂ BÁM ĐỊA HÌNH CHO AN TOÀN
                 if ganMucTieu then 
                     if _G.IsEscapingStuck then
                         targetY = tPos.Y + (hrp.Size.Y / 2) + 2.5
@@ -1151,7 +1150,6 @@ local function StartBot()
                             targetY = tPos.Y + (hrp.Size.Y / 2) + 0.01 
                         end 
                     else 
-                        -- Nếu ở giữa biển, hạ sát xuống mặt nước lướt đi chứ không lơ lửng trên trời
                         targetY, trenBien = SEA_LEVEL, true 
                     end
                 else 
@@ -1173,12 +1171,17 @@ local function StartBot()
                 else 
                     _G.FakeFallSpeed = 0 
                     if targetY < hrp.Position.Y - 2 then 
+                        -- ÁP DỤNG PHANH HÃM FRAME KHI XUỐNG DỐC / LAO VỰC ĐỘT NGỘT
                         local duKienY = hrp.Position.Y - (FALL_LIMIT * dt)
+                        
+                        -- Phanh khống chế: Mỗi khung hình chỉ cho phép tụt tối đa 1.5 studs
+                        local maxRoiMoiFrame = 1.5 
+                        if (hrp.Position.Y - duKienY) > maxRoiMoiFrame then
+                            duKienY = hrp.Position.Y - maxRoiMoiFrame
+                        end
+                        
                         if duKienY < targetY then duKienY = targetY end
-                        local doLechY = hrp.Position.Y - duKienY
-                        if doLechY > 1.0 then duKienY = hrp.Position.Y - 1.0 end
                         finalY = duKienY
-                        if finalY <= targetY then finalY = targetY end 
                     elseif targetY > hrp.Position.Y + 2 then 
                         local tocDoClimb = ganMucTieu and 35 or (CLIMB_LIMIT + 20)
                         local duKienLenY = hrp.Position.Y + (tocDoClimb * dt)
