@@ -879,14 +879,14 @@ local function AutoTriggerPrompt(target)
             prompt.RequiresLineOfSight = false
             prompt.MaxActivationDistance = 30
             
-            task.wait(0.05) 
-            
+            -- TỐI ƯU: Không chờ đợi, bấm ngay lập tức khi vừa chạm vùng
             if fireproximityprompt then
                 fireproximityprompt(prompt)
-                task.wait(0.1)
+                fireproximityprompt(prompt) -- Gửi liên tiếp 2 phát đảm bảo server nhận ngay
+                task.wait(0.01) -- Reset hàng chờ cực nhanh
             else
                 prompt:InputHoldBegin()
-                task.wait(prompt.HoldDuration + 0.05)
+                task.wait(prompt.HoldDuration + 0.02)
                 prompt:InputHoldEnd()
             end
             isInteracting = false
@@ -1131,13 +1131,15 @@ local function StartBot()
                 local targetY, groundY, trenBien = hrp.Position.Y, nil, false 
                 local ganMucTieu = dist < 30
                 
+                -- TỐI ƯU GIAO ĐOẠN GẦN MỤC TIÊU: Chỉ định vị X Z của mục tiêu trước, cao độ Y xử lý mượt mà ở dưới
                 if ganMucTieu then 
                     if _G.IsEscapingStuck then
                         targetY = tPos.Y + (hrp.Size.Y / 2) + 1.2
                     else
                         targetY = (toSeller or ghostDoor) and sellerY_Chuan or (tPos.Y + (hrp.Size.Y / 2) + 0.5) 
                     end
-                    nextPos = Vector3.new(nextPos.X, targetY, nextPos.Z)
+                    -- XÓA BỎ gán cứng trực tiếp trục Y để chặn đứng cú giật "bụp"
+                    nextPos = Vector3.new(nextPos.X, hrp.Position.Y, nextPos.Z)
                 elseif not inCave then
                     local params = RaycastParams.new() params.FilterType = Enum.RaycastFilterType.Exclude local ignore = {char}
                     if Workspace:FindFirstChild("IslandsModel") and Workspace["IslandsModel"]:FindFirstChild("NPCs") then table.insert(ignore, Workspace["IslandsModel"]["NPCs"]) end
@@ -1147,10 +1149,9 @@ local function StartBot()
                     if ray and ray.Instance then groundY = ray.Position.Y targetY = groundY + (hrp.Size.Y / 2) + 0.01 if tPos.Y < hrp.Position.Y - 5 and targetY > tPos.Y + 10 then targetY = tPos.Y + (hrp.Size.Y / 2) + 0.01 end else targetY, trenBien = SEA_LEVEL, true end
                 else targetY = math.max(tPos.Y + (hrp.Size.Y / 2) + 0.01, -30) end
                 
+                -- BỘ LỌC CHIỀU CAO TOÀN DIỆN (CHỐNG PHÓNG LÊN TRỜI KHI LÊN GẦN ĐÍCH)
                 local finalY = hrp.Position.Y
-                if ganMucTieu then 
-                    finalY = targetY
-                elseif trenBien then 
+                if trenBien and not ganMucTieu then 
                     if hrp.Position.Y > SEA_LEVEL then 
                         _G.FakeFallSpeed = _G.FakeFallSpeed + (workspace.Gravity * dt) 
                         if _G.FakeFallSpeed > 110 then _G.FakeFallSpeed = 110 end 
@@ -1164,6 +1165,7 @@ local function StartBot()
                 else 
                     _G.FakeFallSpeed = 0 
                     if targetY < hrp.Position.Y - 2 then 
+                        -- HẠ XUỐNG TỪ TỪ
                         local duKienY = hrp.Position.Y - (FALL_LIMIT * dt)
                         if duKienY < targetY then duKienY = targetY end
                         local doLechY = hrp.Position.Y - duKienY
@@ -1171,7 +1173,11 @@ local function StartBot()
                         finalY = duKienY
                         if finalY <= targetY then finalY = targetY end 
                     elseif targetY > hrp.Position.Y + 2 then 
-                        finalY = hrp.Position.Y + (CLIMB_LIMIT * dt) 
+                        -- TRỒI LÊN TỪ TỪ (Giới hạn tốc độ trồi lên mượt mà khi ở gần rương để không bị giật lên cái bụp)
+                        local tocDoClimb = ganMucTieu and 25 or CLIMB_LIMIT
+                        local duKienLenY = hrp.Position.Y + (tocDoClimb * dt)
+                        if (duKienLenY - hrp.Position.Y) > 1.2 then duKienLenY = hrp.Position.Y + 1.2 end -- Khống chế stud mỗi frame
+                        finalY = duKienLenY
                         if finalY > targetY then finalY = targetY end 
                     else 
                         finalY = hrp.Position.Y + (targetY - hrp.Position.Y) * LERP_SMOOTH 
@@ -1202,14 +1208,10 @@ local function StopBot()
             end 
             local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart") 
             if hrp then 
-                -- PHANH KHẨN CẤP: Đóng băng toàn bộ vận tốc tích tụ để triệt tiêu lực đẩy của game trước khi nhả Neo
                 hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
                 hrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
-                
-                task.wait(0.05) -- Chờ 1 chút cho hệ thống vật lý giải nén xong an toàn
-                hrp.Anchored = false -- Nhả Neo tự do sau khi đã xả sạch lực dồn nén
-                
-                -- Khóa thêm một phát cuối đề phòng game cố đẩy
+                task.wait(0.05)
+                hrp.Anchored = false 
                 hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
             end 
         end
@@ -1226,7 +1228,7 @@ local function StopBot()
 end
 
 -- =======================================================
--- ĐOẠN ĐƯỢC BÙ LẠI: KẾT NỐI UI VÀ KHỞI ĐỘNG CÔNG TẮC FARM
+-- KẾT NỐI UI VÀ KHỞI ĐỘNG CÔNG TẮC FARM
 -- =======================================================
 if BtnDig then
     BtnDig.MouseButton1Click:Connect(function()
