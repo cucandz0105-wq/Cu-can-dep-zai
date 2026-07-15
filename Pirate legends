@@ -1129,6 +1129,8 @@ local function StartBot()
                 local targetY, groundY, trenBien = hrp.Position.Y, nil, false 
                 local ganMucTieu = dist < 30
                 
+                -- CHỈ QUÉT RAYCAST ĐỊA HÌNH KHI Ở GẦN MỤC TIÊU (DƯỚI 50 STUDS)
+                -- Khi ở xa (> 50 studs), phớt lờ địa hình các đảo đi ngang qua để bay thẳng cánh cò bay!
                 if ganMucTieu then 
                     if _G.IsEscapingStuck then
                         targetY = tPos.Y + (hrp.Size.Y / 2) + 2.5
@@ -1136,14 +1138,26 @@ local function StartBot()
                         targetY = (toSeller or ghostDoor) and sellerY_Chuan or (tPos.Y + (hrp.Size.Y / 2) + 1.8) 
                     end
                     nextPos = Vector3.new(nextPos.X, hrp.Position.Y, nextPos.Z)
-                elseif not inCave then
+                elseif dist < 50 and not inCave then
+                    -- Chỉ quét địa hình khi bắt đầu đi vào vùng đảo mục tiêu
                     local params = RaycastParams.new() params.FilterType = Enum.RaycastFilterType.Exclude local ignore = {char}
                     if Workspace:FindFirstChild("IslandsModel") and Workspace["IslandsModel"]:FindFirstChild("NPCs") then table.insert(ignore, Workspace["IslandsModel"]["NPCs"]) end
                     if Workspace:FindFirstChild("Trees") then table.insert(ignore, Workspace["Trees"]) end if Workspace:FindFirstChild("TreeFolder") then table.insert(ignore, Workspace["TreeFolder"]) end
                     params.FilterDescendantsInstances = ignore 
                     local ray = Workspace:Raycast(Vector3.new(nextPos.X, nextPos.Y + 100, nextPos.Z), Vector3.new(0, -200, 0), params)
-                    if ray and ray.Instance then groundY = ray.Position.Y targetY = groundY + (hrp.Size.Y / 2) + 0.01 if tPos.Y < hrp.Position.Y - 5 and targetY > tPos.Y + 10 then targetY = tPos.Y + (hrp.Size.Y / 2) + 0.01 end else targetY, trenBien = SEA_LEVEL, true end
-                else targetY = math.max(tPos.Y + (hrp.Size.Y / 2) + 0.01, -30) end
+                    if ray and ray.Instance then 
+                        groundY = ray.Position.Y 
+                        targetY = groundY + (hrp.Size.Y / 2) + 0.01 
+                        if tPos.Y < hrp.Position.Y - 5 and targetY > tPos.Y + 10 then 
+                            targetY = tPos.Y + (hrp.Size.Y / 2) + 0.01 
+                        end 
+                    else 
+                        targetY, trenBien = SEA_LEVEL, true 
+                    end
+                else 
+                    -- KHI BAY ĐƯỜNG TRƯỜNG GIỮA CÁC ĐẢO: Bay thẳng theo độ cao của đích tPos.Y
+                    targetY = math.max(tPos.Y + (hrp.Size.Y / 2) + 0.01, SEA_LEVEL) 
+                end
                 
                 local finalY = hrp.Position.Y
                 if trenBien and not ganMucTieu then 
@@ -1230,7 +1244,7 @@ local function StopBot()
 end
 
 -- =======================================================
--- KẾT NỐI UI VÀ KHỞI ĐỘNG CÔNG TẮC FARM
+-- KẾT NỐI UI VÀ KHỞI ĐỘNG CÔNG TÁC FARM
 -- =======================================================
 if BtnDig then
     BtnDig.MouseButton1Click:Connect(function()
