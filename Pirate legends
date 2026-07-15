@@ -970,7 +970,7 @@ local function StartBot()
                 _G.TimeAtTarget = nil 
                 isInteracting = false
             end
-            -- =======================================================
+              -- =======================================================
             -- ANTI-RUBBERBAND SYSTEM (Giữ nguyên)
             -- =======================================================
             if not _G.LastHrpPosition then 
@@ -1129,8 +1129,7 @@ local function StartBot()
                 local targetY, groundY, trenBien = hrp.Position.Y, nil, false 
                 local ganMucTieu = dist < 30
                 
-                -- CHỈ QUÉT RAYCAST ĐỊA HÌNH KHI Ở GẦN MỤC TIÊU (DƯỚI 50 STUDS)
-                -- Khi ở xa (> 50 studs), phớt lờ địa hình các đảo đi ngang qua để bay thẳng cánh cò bay!
+                -- BẬT LẠI RAYCAST 100% ĐỂ BÁM ĐỊA HÌNH CHO AN TOÀN
                 if ganMucTieu then 
                     if _G.IsEscapingStuck then
                         targetY = tPos.Y + (hrp.Size.Y / 2) + 2.5
@@ -1138,13 +1137,13 @@ local function StartBot()
                         targetY = (toSeller or ghostDoor) and sellerY_Chuan or (tPos.Y + (hrp.Size.Y / 2) + 1.8) 
                     end
                     nextPos = Vector3.new(nextPos.X, hrp.Position.Y, nextPos.Z)
-                elseif dist < 50 and not inCave then
-                    -- Chỉ quét địa hình khi bắt đầu đi vào vùng đảo mục tiêu
+                elseif not inCave then
                     local params = RaycastParams.new() params.FilterType = Enum.RaycastFilterType.Exclude local ignore = {char}
                     if Workspace:FindFirstChild("IslandsModel") and Workspace["IslandsModel"]:FindFirstChild("NPCs") then table.insert(ignore, Workspace["IslandsModel"]["NPCs"]) end
                     if Workspace:FindFirstChild("Trees") then table.insert(ignore, Workspace["Trees"]) end if Workspace:FindFirstChild("TreeFolder") then table.insert(ignore, Workspace["TreeFolder"]) end
                     params.FilterDescendantsInstances = ignore 
-                    local ray = Workspace:Raycast(Vector3.new(nextPos.X, nextPos.Y + 100, nextPos.Z), Vector3.new(0, -200, 0), params)
+                    
+                    local ray = Workspace:Raycast(Vector3.new(nextPos.X, nextPos.Y + 100, nextPos.Z), Vector3.new(0, -250, 0), params)
                     if ray and ray.Instance then 
                         groundY = ray.Position.Y 
                         targetY = groundY + (hrp.Size.Y / 2) + 0.01 
@@ -1152,11 +1151,11 @@ local function StartBot()
                             targetY = tPos.Y + (hrp.Size.Y / 2) + 0.01 
                         end 
                     else 
+                        -- Nếu ở giữa biển, hạ sát xuống mặt nước lướt đi chứ không lơ lửng trên trời
                         targetY, trenBien = SEA_LEVEL, true 
                     end
                 else 
-                    -- KHI BAY ĐƯỜNG TRƯỜNG GIỮA CÁC ĐẢO: Bay thẳng theo độ cao của đích tPos.Y
-                    targetY = math.max(tPos.Y + (hrp.Size.Y / 2) + 0.01, SEA_LEVEL) 
+                    targetY = math.max(tPos.Y + (hrp.Size.Y / 2) + 0.01, -30) 
                 end
                 
                 local finalY = hrp.Position.Y
