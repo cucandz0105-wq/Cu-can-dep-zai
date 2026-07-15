@@ -1074,7 +1074,7 @@ local function StartBot()
                 local elapsedAtTarget = os.clock() - _G.TimeAtTarget
 
                 if notNpcOrDoor and not isQuestMenuOpen and not _G.IsEscapingStuck then
-                    if elapsedAtTarget < 0.01 then 
+                    if elapsedAtTarget < 0.01 then -- Giữ mốc siêu tốc của bro
                         hrp.Anchored = true
                     else
                         hrp.Anchored = false 
@@ -1162,10 +1162,7 @@ local function StartBot()
                         _G.FakeFallSpeed = _G.FakeFallSpeed + (workspace.Gravity * dt) 
                         if _G.FakeFallSpeed > 110 then _G.FakeFallSpeed = 110 end 
                         local deltaY = _G.FakeFallSpeed * dt
-                        
-                        -- FIX VỰC BIỂN: Khống chế mỗi frame rơi tối đa 1.2 studs trên biển
-                        if deltaY > 1.2 then deltaY = 1.2 end
-                        
+                        if deltaY > 1.0 then deltaY = 1.0 end
                         finalY = hrp.Position.Y - deltaY
                         if finalY < SEA_LEVEL then finalY, _G.FakeFallSpeed = SEA_LEVEL, 0 end 
                     else 
@@ -1174,10 +1171,11 @@ local function StartBot()
                 else 
                     _G.FakeFallSpeed = 0 
                     if targetY < hrp.Position.Y - 2 then 
+                        -- ÁP DỤNG PHANH HÃM FRAME KHI XUỐNG DỐC / LAO VỰC ĐỘT NGỘT
                         local duKienY = hrp.Position.Y - (FALL_LIMIT * dt)
                         
-                        -- FIX VỰC ĐẤT: Khống chế mỗi frame hạ tối đa 1.2 studs khi đi xuống dốc đất
-                        local maxRoiMoiFrame = 1.2 
+                        -- Phanh khống chế: Mỗi khung hình chỉ cho phép tụt tối đa 1.5 studs
+                        local maxRoiMoiFrame = 1.5 
                         if (hrp.Position.Y - duKienY) > maxRoiMoiFrame then
                             duKienY = hrp.Position.Y - maxRoiMoiFrame
                         end
