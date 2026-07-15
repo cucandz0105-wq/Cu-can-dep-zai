@@ -1073,7 +1073,6 @@ local function StartBot()
                 if not _G.TimeAtTarget then _G.TimeAtTarget = os.clock() end
                 local elapsedAtTarget = os.clock() - _G.TimeAtTarget
 
-                -- TỐI ƯU CỰC HẠN: Chỉ khựng đúng 0.1 giây rồi nhả tự do ngay lập tức
                 if notNpcOrDoor and not isQuestMenuOpen and not _G.IsEscapingStuck then
                     if elapsedAtTarget < 0.1 then 
                         hrp.Anchored = true
@@ -1084,7 +1083,8 @@ local function StartBot()
 
                 AutoTriggerPrompt(tPart)
 
-                local safeY = tPos.Y + (hrp.Size.Y / 2) + 1.2
+                -- TỐI ƯU: Nâng safeY cao hơn một chút tương ứng với độ cao đích mới
+                local safeY = tPos.Y + (hrp.Size.Y / 2) + 2.5
 
                 if notNpcOrDoor and not isQuestMenuOpen then
                     if elapsedAtTarget >= 2.0 and not _G.IsEscapingStuck and hrp.Position.Y < safeY - 0.1 then 
@@ -1103,7 +1103,9 @@ local function StartBot()
                     end
                 else
                     if elapsedAtTarget < 2.0 or toSeller or ghostDoor then
-                        hrp.CFrame = CFrame.new(stopPos, Vector3.new(tPos.X, stopPos.Y, tPos.Z)) 
+                        -- Khi đứng yên nhặt, cũng ép độ cao stopPos ngang tầm targetY mới (+1.8 studs)
+                        local finalStopPos = Vector3.new(stopPos.X, (toSeller or ghostDoor) and stopPos.Y or (tPos.Y + (hrp.Size.Y / 2) + 1.8), stopPos.Z)
+                        hrp.CFrame = CFrame.new(finalStopPos, Vector3.new(tPos.X, finalStopPos.Y, tPos.Z)) 
                     end
                 end
             else
@@ -1131,9 +1133,10 @@ local function StartBot()
                 
                 if ganMucTieu then 
                     if _G.IsEscapingStuck then
-                        targetY = tPos.Y + (hrp.Size.Y / 2) + 1.2
+                        targetY = tPos.Y + (hrp.Size.Y / 2) + 2.5
                     else
-                        targetY = (toSeller or ghostDoor) and sellerY_Chuan or (tPos.Y + (hrp.Size.Y / 2) + 0.5) 
+                        -- ĐÃ FIX TẠI ĐÂY: Nếu là rương/hố thì cộng thêm hẳn 1.8 studs để kéo bot trồi hẳn lên trên model
+                        targetY = (toSeller or ghostDoor) and sellerY_Chuan or (tPos.Y + (hrp.Size.Y / 2) + 1.8) 
                     end
                     nextPos = Vector3.new(nextPos.X, hrp.Position.Y, nextPos.Z)
                 elseif not inCave then
@@ -1221,7 +1224,7 @@ local function StopBot()
 end
 
 -- =======================================================
--- KẾT NỐI UI VÀ KHỞI ĐỘNG CÔNG TẮC FARM
+-- KẾT NỐI UI VÀ KHỞI ĐỘNG CÔNG TẠC FARM
 -- =======================================================
 if BtnDig then
     BtnDig.MouseButton1Click:Connect(function()
