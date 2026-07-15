@@ -970,7 +970,7 @@ local function StartBot()
                 _G.TimeAtTarget = nil 
                 isInteracting = false
             end
-             -- =======================================================
+            -- =======================================================
             -- ANTI-RUBBERBAND SYSTEM (Giữ nguyên)
             -- =======================================================
             if not _G.LastHrpPosition then 
@@ -1074,7 +1074,7 @@ local function StartBot()
                 local elapsedAtTarget = os.clock() - _G.TimeAtTarget
 
                 if notNpcOrDoor and not isQuestMenuOpen and not _G.IsEscapingStuck then
-                    if elapsedAtTarget < 0.01 then -- Giữ mốc siêu tốc của bro
+                    if elapsedAtTarget < 0.01 then 
                         hrp.Anchored = true
                     else
                         hrp.Anchored = false 
@@ -1157,22 +1157,16 @@ local function StartBot()
                 end
                 
                 -- =======================================================
-                -- HẠ ĐỘ CAO VÀ PHANH TRÊN BIỂN/ĐẤT LIỀN
+                -- HỆ THỐNG ĐỒNG BỘ Y CHỐNG GIẬT CẤP (GIA CỐ KHÓA BẢO MẬT)
                 -- =======================================================
                 local finalY = hrp.Position.Y
                 if trenBien and not ganMucTieu then 
                     if hrp.Position.Y > SEA_LEVEL then 
                         _G.FakeFallSpeed = _G.FakeFallSpeed + (workspace.Gravity * dt) 
                         if _G.FakeFallSpeed > 110 then _G.FakeFallSpeed = 110 end 
-                        
                         local deltaY = _G.FakeFallSpeed * dt
                         
-                        -- Phanh khống chế trên biển (Max 1.2 studs/frame để lướt chéo từ từ)
-                        local maxRoiTrenBien = 1.2 
-                        if deltaY > maxRoiTrenBien then 
-                            deltaY = maxRoiTrenBien 
-                        end
-                        
+                        if deltaY > 1.2 then deltaY = 1.2 end
                         finalY = hrp.Position.Y - deltaY
                         if finalY < SEA_LEVEL then finalY, _G.FakeFallSpeed = SEA_LEVEL, 0 end 
                     else 
@@ -1181,15 +1175,7 @@ local function StartBot()
                 else 
                     _G.FakeFallSpeed = 0 
                     if targetY < hrp.Position.Y - 2 then 
-                        -- ÁP DỤNG PHANH HÃM FRAME KHI XUỐNG DỐC / LAO VỰC ĐỘT NGỘT
                         local duKienY = hrp.Position.Y - (FALL_LIMIT * dt)
-                        
-                        -- Phanh khống chế: Mỗi khung hình chỉ cho phép tụt tối đa 1.5 studs
-                        local maxRoiMoiFrame = 1.5 
-                        if (hrp.Position.Y - duKienY) > maxRoiMoiFrame then
-                            duKienY = hrp.Position.Y - maxRoiMoiFrame
-                        end
-                        
                         if duKienY < targetY then duKienY = targetY end
                         finalY = duKienY
                     elseif targetY > hrp.Position.Y + 2 then 
@@ -1197,13 +1183,8 @@ local function StartBot()
                         local duKienLenY = hrp.Position.Y + (tocDoClimb * dt)
                         
                         local limitFrameY = 1.0
-                        if ganMucTieu or (targetY - hrp.Position.Y) > 15 then
-                            limitFrameY = 2.5
-                        end
-                        
-                        if (duKienLenY - hrp.Position.Y) > limitFrameY then 
-                            duKienLenY = hrp.Position.Y + limitFrameY 
-                        end 
+                        if ganMucTieu or (targetY - hrp.Position.Y) > 15 then limitFrameY = 2.5 end
+                        if (duKienLenY - hrp.Position.Y) > limitFrameY then duKienLenY = hrp.Position.Y + limitFrameY end 
                         
                         finalY = duKienLenY
                         if finalY > targetY then finalY = targetY end 
@@ -1212,8 +1193,14 @@ local function StartBot()
                     end 
                 end
                 
+                -- KHÓA CHẾT TỐC ĐỘ RƠI THỰC TẾ TRÊN MỖI FRAME (LƯỚI LỌC CUỐI CÙNG)
+                if (hrp.Position.Y - finalY) > 1.2 then
+                    finalY = hrp.Position.Y - 1.2
+                end
+                
                 if groundY and (finalY - groundY > MAX_HEIGHT) and not ganMucTieu then finalY = groundY + MAX_HEIGHT end
                 finalY = math.max(finalY, -30)
+                
                 if (Vector3.new(tPos.X, finalY, tPos.Z) - Vector3.new(nextPos.X, finalY, nextPos.Z)).Magnitude > 0.1 then 
                     hrp.CFrame = CFrame.new(Vector3.new(nextPos.X, finalY, nextPos.Z), Vector3.new(tPos.X, finalY, tPos.Z))
                 else 
@@ -1224,9 +1211,6 @@ local function StartBot()
     end)
 end
 
--- =======================================================
--- HÀM DỪNG BOT & KHÔI PHỤC TRẠNG THÁI (Giữ nguyên)
--- =======================================================
 local function StopBot()
     if not _G.AutoDigAndPick and not _G.AutoChestOnly then
         if _G.BotConnection then _G.BotConnection:Disconnect() _G.BotConnection = nil end 
@@ -1259,7 +1243,7 @@ local function StopBot()
 end
 
 -- =======================================================
--- KẾT NỐI UI VÀ KHỞI ĐỘNG CÔNG TÁC FARM (Giữ nguyên)
+-- KẾT NỐI UI VÀ KHỞI ĐỘNG CÔNG TÁC FARM
 -- =======================================================
 if BtnDig then
     BtnDig.MouseButton1Click:Connect(function()
