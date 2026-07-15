@@ -1114,6 +1114,25 @@ local function StartBot()
                     _G.IsEscapingStuck = false
                     _G.TimeAfterTP = nil
                 end
+
+                -- =======================================================
+                -- BỘ LỌC CHỐNG "BỤP" THEO THỜI GIAN (SOFT START 0.05S)
+                -- =======================================================
+                if not _G.BotKhoiDongXong then
+                    if not _G.BotStartTime then
+                        _G.BotStartTime = os.clock()
+                    end
+                    
+                    if os.clock() - _G.BotStartTime < 0.05 then
+                        -- Khóa cứng và đồng bộ liên tục trong 0.05s đầu để ổn định physics
+                        _G.LastHrpPosition = hrp.Position
+                        hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                        hrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+                        return 
+                    end
+                    _G.BotKhoiDongXong = true
+                end
+                -- =======================================================
                 
                 local moveDir = (toSeller or ghostDoor) and (stopPos - hrp.Position).Unit or dir 
                 local clampledSpeed = math.min(FLY_SPEED * dt, 2.3) 
@@ -1142,7 +1161,11 @@ local function StartBot()
                     if Workspace:FindFirstChild("Trees") then table.insert(ignore, Workspace["Trees"]) end if Workspace:FindFirstChild("TreeFolder") then table.insert(ignore, Workspace["TreeFolder"]) end
                     params.FilterDescendantsInstances = ignore 
                     
-                    local ray = Workspace:Raycast(Vector3.new(nextPos.X, nextPos.Y + 100, nextPos.Z), Vector3.new(0, -250, 0), params)
+                    -- SỬA LỖI RAYCAST 30%: Dùng tọa độ thực tế tại frame đầu tiên thay vì nextPos để tránh tính sai lệch mặt đất
+                    local rayX = (_G.LastHrpPosition and not _G.BotKhoiDongXong) and _G.LastHrpPosition.X or nextPos.X
+                    local rayZ = (_G.LastHrpPosition and not _G.BotKhoiDongXong) and _G.LastHrpPosition.Z or nextPos.Z
+                    
+                    local ray = Workspace:Raycast(Vector3.new(rayX, hrp.Position.Y + 100, rayZ), Vector3.new(0, -250, 0), params)
                     if ray and ray.Instance then 
                         groundY = ray.Position.Y 
                         targetY = groundY + (hrp.Size.Y / 2) + 0.01 
@@ -1201,18 +1224,6 @@ local function StartBot()
                 if groundY and (finalY - groundY > MAX_HEIGHT) and not ganMucTieu then finalY = groundY + MAX_HEIGHT end
                 finalY = math.max(finalY, -30)
                 
-                -- =======================================================
-                -- BỘ LỌC CHỐNG "BỤP" FRAME KHỞI ĐỘNG (SOFT START)
-                -- =======================================================
-                if not _G.BotKhoiDongXong then
-                    -- Frame đầu tiên: Chỉ ghi nhận tọa độ và dừng luồng xử lý nhẹ để Roblox kịp đồng bộ
-                    _G.BotKhoiDongXong = true
-                    _G.LastHrpPosition = hrp.Position
-                    task.wait() -- Bỏ qua đúng 1 Heartbeat đầu tiên để tránh giật vị trí đột ngột
-                    return
-                end
-                -- =======================================================
-                
                 if (Vector3.new(tPos.X, finalY, tPos.Z) - Vector3.new(nextPos.X, finalY, nextPos.Z)).Magnitude > 0.1 then 
                     hrp.CFrame = CFrame.new(Vector3.new(nextPos.X, finalY, nextPos.Z), Vector3.new(tPos.X, finalY, tPos.Z))
                 else 
@@ -1250,7 +1261,8 @@ local function StopBot()
         _G.IsEscapingStuck = false
         _G.TimeAfterTP = nil
         _G.TimeAtTarget = nil
-        _G.BotKhoiDongXong = false -- Reset bộ lọc Soft Start
+        _G.BotKhoiDongXong = false 
+        _G.BotStartTime = nil -- Reset bộ đếm thời gian thực
         isInteracting = false
     end
 end
@@ -1273,7 +1285,8 @@ if BtnDig then
                 _G.RubberbandCount = 0
                 _G.LastRubberbandTime = os.clock()
                 _G.FakeFallSpeed = 0
-                _G.BotKhoiDongXong = false -- Cho phép Soft Start chạy lại khi kích hoạt nút mới
+                _G.BotKhoiDongXong = false 
+                _G.BotStartTime = nil
             end
             
             StartBot()
@@ -1300,7 +1313,8 @@ if BtnPick then
                 _G.RubberbandCount = 0
                 _G.LastRubberbandTime = os.clock()
                 _G.FakeFallSpeed = 0
-                _G.BotKhoiDongXong = false -- Cho phép Soft Start chạy lại khi kích hoạt nút mới
+                _G.BotKhoiDongXong = false 
+                _G.BotStartTime = nil
             end
             
             StartBot()
