@@ -883,7 +883,7 @@ local function AutoTriggerPrompt(target)
             
             if fireproximityprompt then
                 fireproximityprompt(prompt)
-                task.wait(0.2)
+                task.wait(0.1)
             else
                 prompt:InputHoldBegin()
                 task.wait(prompt.HoldDuration + 0.05)
