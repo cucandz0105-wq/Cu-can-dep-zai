@@ -970,7 +970,7 @@ local function StartBot()
                 _G.TimeAtTarget = nil 
                 isInteracting = false
             end
-            -- =======================================================
+             -- =======================================================
             -- ANTI-RUBBERBAND SYSTEM (Giữ nguyên)
             -- =======================================================
             if not _G.LastHrpPosition then 
@@ -1156,13 +1156,23 @@ local function StartBot()
                     targetY = math.max(tPos.Y + (hrp.Size.Y / 2) + 0.01, -30) 
                 end
                 
+                -- =======================================================
+                -- HẠ ĐỘ CAO VÀ PHANH TRÊN BIỂN/ĐẤT LIỀN
+                -- =======================================================
                 local finalY = hrp.Position.Y
                 if trenBien and not ganMucTieu then 
                     if hrp.Position.Y > SEA_LEVEL then 
                         _G.FakeFallSpeed = _G.FakeFallSpeed + (workspace.Gravity * dt) 
                         if _G.FakeFallSpeed > 110 then _G.FakeFallSpeed = 110 end 
+                        
                         local deltaY = _G.FakeFallSpeed * dt
-                        if deltaY > 1.0 then deltaY = 1.0 end
+                        
+                        -- Phanh khống chế trên biển (Max 1.2 studs/frame để lướt chéo từ từ)
+                        local maxRoiTrenBien = 1.2 
+                        if deltaY > maxRoiTrenBien then 
+                            deltaY = maxRoiTrenBien 
+                        end
+                        
                         finalY = hrp.Position.Y - deltaY
                         if finalY < SEA_LEVEL then finalY, _G.FakeFallSpeed = SEA_LEVEL, 0 end 
                     else 
@@ -1214,6 +1224,9 @@ local function StartBot()
     end)
 end
 
+-- =======================================================
+-- HÀM DỪNG BOT & KHÔI PHỤC TRẠNG THÁI (Giữ nguyên)
+-- =======================================================
 local function StopBot()
     if not _G.AutoDigAndPick and not _G.AutoChestOnly then
         if _G.BotConnection then _G.BotConnection:Disconnect() _G.BotConnection = nil end 
@@ -1246,7 +1259,7 @@ local function StopBot()
 end
 
 -- =======================================================
--- KẾT NỐI UI VÀ KHỞI ĐỘNG CÔNG TÁC FARM
+-- KẾT NỐI UI VÀ KHỞI ĐỘNG CÔNG TÁC FARM (Giữ nguyên)
 -- =======================================================
 if BtnDig then
     BtnDig.MouseButton1Click:Connect(function()
