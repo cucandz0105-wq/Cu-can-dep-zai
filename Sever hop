@@ -37,13 +37,39 @@ FrameCorner.Parent = MainFrame
 
 -- TIÊU ĐỀ
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, 0, 0, 40)
+Title.Size = UDim2.new(1, -40, 0, 40) -- Thu hẹp chiều rộng một chút để không đè lên nút X
+Title.Position = UDim2.new(0, 10, 0, 0)
 Title.Text = "BỐ MÀY CHẤP 🗿"
 Title.TextColor3 = Color3.fromRGB(255, 255, 0)
+Title.TextXAlignment = Enum.TextXAlignment.Left -- Canh trái tiêu đề cho đẹp
 Title.TextSize = 18
 Title.Font = Enum.Font.SourceSansBold
 Title.BackgroundTransparency = 1
 Title.Parent = MainFrame
+
+-- =========================================================
+-- NÚT X ĐÓNG GIAO DIỆN (ĐÃ THÊM Ở ĐÂY)
+-- =========================================================
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Name = "CloseBtn"
+CloseBtn.Size = UDim2.new(0, 30, 0, 30)
+CloseBtn.Position = UDim2.new(1, -35, 0, 5) -- Góc trên bên phải
+CloseBtn.BackgroundColor3 = Color3.fromRGB(180, 40, 40) -- Màu đỏ sẫm
+CloseBtn.Text = "X"
+CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseBtn.TextSize = 16
+CloseBtn.Font = Enum.Font.SourceSansBold
+CloseBtn.Parent = MainFrame
+
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(0, 6)
+CloseCorner.Parent = CloseBtn
+
+-- Logic đóng bảng khi nhấn nút X
+CloseBtn.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+end)
+-- =========================================================
 
 -- NÚT ĐỔI SERVER
 local BtnRandom = Instance.new("TextButton")
@@ -68,7 +94,7 @@ BtnRandom.MouseButton1Click:Connect(function()
     if isHopping then return end
     isHopping = true
 
-    BtnRandom.Text = "Đang quét map... Đợi tí làm gì căng 🤫"
+    BtnRandom.Text = "Đang quét map... Đợi tí làm gì căng 🤐"
     BtnRandom.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
 
     task.wait(0.5)
