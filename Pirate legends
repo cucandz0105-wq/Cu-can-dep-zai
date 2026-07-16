@@ -1251,11 +1251,11 @@ if BtnDig then
         if _G.AutoDigAndPick then
             _G.AutoChestOnly = false 
             if BtnPick then BtnPick.Text = "CHEST ONLY [OFF]" BtnPick.BackgroundColor3 = Color3.fromRGB(45, 45, 45) end 
-            BtnDig.Text = "DIG HOLE [RUNNING]"
+            BtnDig.Text = "AUTO FARM [RUNNING]"
             TweenService:Create(BtnDig, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255, 0, 128)}):Play() 
             StartBot()
         else 
-            BtnDig.Text = "DIG HOLE [OFF]" 
+            BtnDig.Text = "AUTO FARM [OFF]" 
             TweenService:Create(BtnDig, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(45, 45, 45)}):Play() 
             StopBot() 
         end
