@@ -1245,6 +1245,7 @@ end
 -- =======================================================
 -- KẾT NỐI UI VÀ KHỞI ĐỘNG CÔNG TÁC FARM
 -- =======================================================
+if BtnDig then BtnDig.Text = "AUTO FARM [OFF]" end
 if BtnDig then
     BtnDig.MouseButton1Click:Connect(function()
         _G.AutoDigAndPick = not _G.AutoDigAndPick
