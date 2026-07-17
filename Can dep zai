@@ -202,17 +202,6 @@ btns[1].BackgroundColor3 = Color3.fromRGB(70, 70, 70)
 btns[1].TextColor3 = Color3.fromRGB(255, 255, 0)
 repeat task.wait(0.1) until _G.PremiumMenuTabs
 
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local Workspace = game:GetService("Workspace")
-local LocalPlayer = Players.LocalPlayer
-local CurrentCamera = Workspace.CurrentCamera
-
-local tabs = _G.PremiumMenuTabs
-local styleLabel = _G.PremiumMenuStyleLabel
-local styleTextBox = _G.PremiumMenuStyleTextBox
-local resetCharacterAnimation = _G.PremiumMenuResetAnim
-
 local t1 = tabs[1]
 
 local SpeedTitle = Instance.new("TextLabel", t1)
@@ -334,8 +323,6 @@ RunService.RenderStepped:Connect(function()
         end
     end
 end)
-repeat task.wait(0.1) until _G.PremiumMenuTabs and _G.PremiumFloatToggle and _G.PremiumMenuStyleLabel
-
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
@@ -410,7 +397,11 @@ LocalPlayer.CharacterAdded:Connect(function()
     FloatToggle.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
 end)
 
+-- =======================================================
+-- TAB 2: NOCLIP + TÍCH HỢP TP TOOL & F3X CLIENT
+-- =======================================================
 local t2 = tabs[2]
+
 local NoclipToggle = Instance.new("TextButton", t2)
 NoclipToggle.Size = UDim2.new(1, -10, 0, 45)
 NoclipToggle.Position = UDim2.new(0, 5, 0, 10)
@@ -418,9 +409,21 @@ NoclipToggle.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
 NoclipToggle.Text = "Noclip: OFF"
 styleLabel(NoclipToggle, 15)
 
+local TpToolBtn = Instance.new("TextButton", t2)
+TpToolBtn.Size = UDim2.new(0.5, -7, 0, 45)
+TpToolBtn.Position = UDim2.new(0, 5, 0, 65)
+TpToolBtn.BackgroundColor3 = Color3.fromRGB(35, 120, 240)
+TpToolBtn.Text = "⚡ Get TP Tool"
+styleLabel(TpToolBtn, 13)
+
+local F3XBtn = Instance.new("TextButton", t2)
+F3XBtn.Size = UDim2.new(0.5, -7, 0, 45)
+F3XBtn.Position = UDim2.new(0.5, 2, 0, 65)
+F3XBtn.BackgroundColor3 = Color3.fromRGB(240, 120, 35)
+F3XBtn.Text = "🛠️ Get F3X Tool"
+styleLabel(F3XBtn, 13)
+
 local nActive = false
--- Thay đổi cơ chế Noclip: Ép trạng thái Humanoid liên tục để không bị gắt vật lý
-local noclipConnection = nil
 RunService.Stepped:Connect(function()
     if nActive and LocalPlayer.Character then
         for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
@@ -442,12 +445,10 @@ NoclipToggle.MouseButton1Click:Connect(function()
     
     if hum then
         if nActive then
-            -- Tắt các trạng thái va chạm gốc để đi xuyên mượt mà
             hum:SetStateEnabled(Enum.HumanoidStateType.Climbing, false)
             hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
             hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
         else
-            -- Khi tắt Noclip, khôi phục lại trạng thái chuẩn, để Roblox tự tính toán HipHeight (Hết hẳn vấp ổ gà)
             hum:SetStateEnabled(Enum.HumanoidStateType.Climbing, true)
             hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, true)
             hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, true)
@@ -456,6 +457,69 @@ NoclipToggle.MouseButton1Click:Connect(function()
     end
 end)
 
+TpToolBtn.MouseButton1Click:Connect(function()
+    if LocalPlayer.Backpack:FindFirstChild("TPTOOL ⚡") then
+        LocalPlayer.Backpack["TPTOOL ⚡"]:Destroy()
+    end
+    local TpTool = Instance.new("Tool")
+    TpTool.Name = "TPTOOL ⚡"
+    TpTool.RequiresHandle = false
+    TpTool.Parent = LocalPlayer.Backpack
+    
+    TpTool.Activated:Connect(function()
+        local mouse = LocalPlayer:GetMouse()
+        if mouse and mouse.Hit then
+            local targetPos = mouse.Hit.Position
+            local char = LocalPlayer.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                local currentRotation = hrp.CFrame - hrp.CFrame.Position
+                hrp.CFrame = CFrame.new(targetPos + Vector3.new(0, 2.5, 0)) * currentRotation
+            end
+        end
+    end)
+    pcall(function()
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "TP TOOL",
+            Text = "Đã nạp TP Tool vào hòm đồ!",
+            Duration = 3,
+        })
+    end)
+end)
+
+F3XBtn.MouseButton1Click:Connect(function()
+    for _, item in ipairs(LocalPlayer.Backpack:GetChildren()) do
+        if item.Name == "F3X" or item.Name == "🛠️ F3X Tools (Client)" or item.Name == "Building Tools by F3X" then
+            item:Destroy()
+        end
+    end
+    local success, f3xSource = pcall(function()
+        return game:GetObjects("rbxassetid://6695644299")[1].Source
+    end)
+    if success and f3xSource then
+        loadstring(f3xSource)()
+        pcall(function()
+            game:GetService("StarterGui"):SetCore("SendNotification", {
+                Title = "F3X TOOL",
+                Text = "Đã nạp F3X đầy đủ giao diện vào Backpack!",
+                Duration = 3,
+            })
+        end)
+    else
+        pcall(function()
+            game:GetService("StarterGui"):SetCore("SendNotification", {
+                Title = "F3X TOOL WARNING",
+                Text = "Đang tải bản bypass qua IY...",
+                Duration = 3,
+            })
+        end)
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIy/infiniteyield/master/source"))()
+    end
+end)
+
+-- =======================================================
+-- TAB 3 & 4 (GIỮ NGUYÊN)
+-- =======================================================
 local t3 = tabs[3]
 local EspToggle = Instance.new("TextButton", t3)
 EspToggle.Size = UDim2.new(1, -10, 0, 35)
@@ -514,20 +578,16 @@ end
 
 local function createEsp(plr)
     if plr == LocalPlayer or not espActive then return end
-    
     local pName = plr.Name
     if espStorage:FindFirstChild(pName) then espStorage[pName]:Destroy() end
-    
     local char = plr.Character
     if not char then return end
-    
     local hrp = char:WaitForChild("HumanoidRootPart", 5)
     local hum = char:WaitForChild("Humanoid", 5)
     if not hrp or not hum or hum.Health <= 0 then return end
     
     local container = Instance.new("Folder", espStorage)
     container.Name = pName
-    
     local hl = Instance.new("Highlight", container)
     hl.Adornee = char
     hl.FillColor = getTeamColor(plr)
@@ -557,23 +617,19 @@ task.spawn(function()
         if espActive then
             local myChar = LocalPlayer.Character
             local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
-            
             for _, plr in pairs(Players:GetPlayers()) do
                 if plr ~= LocalPlayer then
                     local container = espStorage:FindFirstChild(plr.Name)
                     local char = plr.Character
-                    
                     if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChild("Humanoid") and char.Humanoid.Health > 0 then
                         if container then
                             local bb = container:FindFirstChild("EspNameTag")
                             local tl = bb and bb:FindFirstChildWhichIsA("TextLabel")
                             local hl = container:FindFirstChildWhichIsA("Highlight")
                             local hrp = char.HumanoidRootPart
-                            
                             if tl and hrp and hl and myHrp then
                                 local dist = math.floor((hrp.Position - myHrp.Position).Magnitude)
                                 tl.Text = string.format("%s [%sm]", plr.DisplayName, dist)
-                                
                                 local correctColor = getTeamColor(plr)
                                 if hl.FillColor ~= correctColor then
                                     hl.FillColor = correctColor
@@ -601,7 +657,6 @@ local function trackPlayer(plr)
     end)
 end
 
-print("[HỆ THỐNG ESP] Đã tối ưu hóa bộ tải tên của Gemini")
 Players.PlayerAdded:Connect(trackPlayer)
 for _, p in pairs(Players:GetPlayers()) do trackPlayer(p) end
 
@@ -691,3 +746,4 @@ UnviewBtn.MouseButton1Click:Connect(function()
     local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildWhichIsA("Humanoid")
     if hum then CurrentCamera.CameraSubject = hum end
 end)
+
