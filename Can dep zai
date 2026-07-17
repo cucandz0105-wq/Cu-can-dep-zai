@@ -63,7 +63,7 @@ _G.PremiumMenuResetAnim = resetCharacterAnimation
 
 local MenuBtn = Instance.new("TextButton")
 MenuBtn.Size = UDim2.new(0, 60, 0, 60)
-MenuBtn.Position = UDim2.new(0.02, 0, 0.45, 0)
+MenuBtn.Position = UDim2.new(0.02, 0, 0.28, 0)
 MenuBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 MenuBtn.BorderSizePixel = 2
 MenuBtn.BorderColor3 = Color3.fromRGB(255, 255, 255)
