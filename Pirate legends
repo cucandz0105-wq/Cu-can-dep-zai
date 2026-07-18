@@ -866,7 +866,7 @@ _G.AntiKickConnection = GuiService.ErrorMessageChanged:Connect(function()
 end)
 -- =======================================================
 
-local FLY_SPEED, FALL_LIMIT, CLIMB_LIMIT, OFFSET_DIST, LERP_SMOOTH, MAX_HEIGHT, SEA_LEVEL = 60, 80, 80, 3.5, 0.25, 8.0, 12.5
+local FLY_SPEED, FALL_LIMIT, CLIMB_LIMIT, OFFSET_DIST, LERP_SMOOTH, MAX_HEIGHT, SEA_LEVEL = 68.9, 80, 80, 3.5, 0.25, 8.0, 12.5
 
 local isInteracting = false 
 local function AutoTriggerPrompt(target)
