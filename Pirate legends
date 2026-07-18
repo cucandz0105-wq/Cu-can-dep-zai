@@ -1127,7 +1127,7 @@ local function StartBot()
                 
                 local inCave = (not toSeller) and (not ghostDoor) and (tPos.Y < 20) 
                 local targetY, groundY, trenBien = hrp.Position.Y, nil, false 
-                local ganMucTieu = dist < 30
+                local ganMucTieu = dist < 1
                 
                 -- BẬT LẠI RAYCAST 100% ĐỂ BÁM ĐỊA HÌNH CHO AN TOÀN
                 if ganMucTieu then 
