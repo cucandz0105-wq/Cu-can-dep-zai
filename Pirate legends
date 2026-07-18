@@ -1116,7 +1116,7 @@ local function StartBot()
                 end
                 
                 local moveDir = (toSeller or ghostDoor) and (stopPos - hrp.Position).Unit or dir 
-                local clampledSpeed = math.min(FLY_SPEED * dt, 5.0) 
+                local clampledSpeed = math.min(FLY_SPEED * dt, 3.3) 
                 
                 local nextPos
                 if _G.IsEscapingStuck then
