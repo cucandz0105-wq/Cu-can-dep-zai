@@ -1074,7 +1074,7 @@ local function StartBot()
                 local elapsedAtTarget = os.clock() - _G.TimeAtTarget
 
                 if notNpcOrDoor and not isQuestMenuOpen and not _G.IsEscapingStuck then
-                    if elapsedAtTarget < 0.1 then 
+                    if elapsedAtTarget < 0.01 then 
                         hrp.Anchored = true
                     else
                         hrp.Anchored = false 
