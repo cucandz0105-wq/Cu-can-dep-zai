@@ -1141,8 +1141,16 @@ local function StartBot()
                     local params = RaycastParams.new() params.FilterType = Enum.RaycastFilterType.Exclude local ignore = {char}
                     if Workspace:FindFirstChild("IslandsModel") and Workspace["IslandsModel"]:FindFirstChild("NPCs") then table.insert(ignore, Workspace["IslandsModel"]["NPCs"]) end
                     if Workspace:FindFirstChild("Trees") then table.insert(ignore, Workspace["Trees"]) end if Workspace:FindFirstChild("TreeFolder") then table.insert(ignore, Workspace["TreeFolder"]) end
+
+                    for _, v in pairs(Workspace:GetDescendants()) do
+    if v:IsA("BasePart") and (v.Name:lower():match("tree") or v.Name:lower():match("trunk") or v.Name:lower():match("wood")) then
+        table.insert(ignore, v)
+    end
+end
+
                     params.FilterDescendantsInstances = ignore 
-                    
+                    params.RespectCanCollide = true
+
                     local lookAheadDistance = 10
                     local scanOrigin = Vector3.new(nextPos.X, nextPos.Y + 300, nextPos.Z) + (moveDir * lookAheadDistance)
                     local ray = Workspace:Raycast(scanOrigin, Vector3.new(0, -700, 0), params)
