@@ -1144,7 +1144,7 @@ local function StartBot()
                     params.FilterDescendantsInstances = ignore 
                     
                     local lookAheadDistance = 6
-                    local scanOrigin = Vector3.new(nextPos.X, nextPos.Y + 300, nextPos.Z) + (hrp.CFrame.LookVector * lookAheadDistance)
+                    local scanOrigin = Vector3.new(nextPos.X, nextPos.Y + 300, nextPos.Z) + (moveDir * lookAheadDistance)
                     local ray = Workspace:Raycast(scanOrigin, Vector3.new(0, -700, 0), params)
 
                     if ray and ray.Instance then 
