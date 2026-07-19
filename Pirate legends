@@ -1203,6 +1203,11 @@ local function StartBot()
                         finalY = hrp.Position.Y + (targetY - hrp.Position.Y) * LERP_SMOOTH
                     end 
                 end
+
+                if not inCave and finalY < SEA_LEVEL then
+                    finalY = SEA_LEVEL
+                end
+
                 
                 if groundY and (finalY - groundY > MAX_HEIGHT) and not ganMucTieu then finalY = groundY + MAX_HEIGHT end
                 finalY = math.max(finalY, -30)
