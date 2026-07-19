@@ -1206,7 +1206,7 @@ end
                         finalY = duKienLenY
                         if finalY > targetY then finalY = targetY end 
                     else 
-                        finalY = hrp.Position.Y + (targetY - hrp.Position.Y) * LERP_SMOOTH 
+                        finalY = targetY
                     end 
                 end
                 
