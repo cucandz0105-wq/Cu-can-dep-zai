@@ -1242,6 +1242,18 @@ local function StartBot()
 end
 
 local function StopBot()
+    -- RESET SẠCH CỜ TRẠNG THÁI (Đã chuyển lên đầu để luôn luôn chạy dọn dẹp Y khi đổi nút)
+    _G.IsDigging, _G.FakeFallSpeed, _G.CurrentTarget, _G.StuckTime, _G.IsTeleportingHome = false, 0, nil, 0, false
+    _G.DaDenDich = false
+    _G.SellerStuckTime = nil
+    _G.LastHrpPosition = nil
+    _G.RubberbandCount = 0
+    _G.IsEscapingStuck = false
+    _G.TimeAfterTP = nil
+    _G.TimeAtTarget = nil
+    isInteracting = false
+
+    -- Chỉ gỡ Connection và nhún Character khi TẮT HẲN cả 2 nút
     if not _G.AutoDigAndPick and not _G.AutoChestOnly then
         if _G.BotConnection then _G.BotConnection:Disconnect() _G.BotConnection = nil end 
         if _G.NoclipConnection then _G.NoclipConnection:Disconnect() _G.NoclipConnection = nil end
@@ -1260,15 +1272,6 @@ local function StopBot()
                 hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
             end 
         end
-        _G.IsDigging, _G.FakeFallSpeed, _G.CurrentTarget, _G.StuckTime, _G.IsTeleportingHome = false, 0, nil, 0, false
-        _G.DaDenDich = false
-        _G.SellerStuckTime = nil
-        _G.LastHrpPosition = nil
-        _G.RubberbandCount = 0
-        _G.IsEscapingStuck = false
-        _G.TimeAfterTP = nil
-        _G.TimeAtTarget = nil
-        isInteracting = false
     end
 end
 
