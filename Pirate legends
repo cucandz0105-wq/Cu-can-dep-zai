@@ -989,11 +989,6 @@ local function StartBot()
            if hrp then
         fakeSeaFloor.CFrame = CFrame.new(hrp.Position.X, 6.2, hrp.Position.Z)
      end
-
-            if _G.AutoChestOnly then
-                toSeller = IsHoldingChest()
-            end
-
             -- =======================================================
             -- ANTI-RUBBERBAND SYSTEM (Giữ nguyên)
             -- =======================================================
@@ -1286,6 +1281,7 @@ if BtnDig then
         _G.AutoDigAndPick = not _G.AutoDigAndPick
         if _G.AutoDigAndPick then
             _G.AutoChestOnly = false 
+            _G.CurrentTarget = nil
             if BtnPick then BtnPick.Text = "CHEST ONLY [OFF]" BtnPick.BackgroundColor3 = Color3.fromRGB(45, 45, 45) end 
             BtnDig.Text = "AUTO FARM [RUNNING]"
             TweenService:Create(BtnDig, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255, 0, 128)}):Play() 
@@ -1303,6 +1299,7 @@ if BtnPick then
         _G.AutoChestOnly = not _G.AutoChestOnly
         if _G.AutoChestOnly then
             _G.AutoDigAndPick = false 
+            _G.CurrentTarget = nil
             if BtnDig then BtnDig.Text = "AUTO FARM [OFF]" BtnDig.BackgroundColor3 = Color3.fromRGB(45, 45, 45) end 
             BtnPick.Text = "CHEST ONLY [RUNNING]"
             TweenService:Create(BtnPick, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(0, 170, 255)}):Play() 
