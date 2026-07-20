@@ -1143,6 +1143,7 @@ local function StartBot()
                     if Workspace:FindFirstChild("Trees") then table.insert(ignore, Workspace["Trees"]) end if Workspace:FindFirstChild("TreeFolder") then table.insert(ignore, Workspace["TreeFolder"]) end
 
                     params.FilterDescendantsInstances = ignore 
+                    params.RespectCanCollide = true
 
                     local lookAheadDistance = 10
                     local scanOrigin = Vector3.new(nextPos.X, nextPos.Y + 300, nextPos.Z) + (moveDir * lookAheadDistance)
