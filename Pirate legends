@@ -1011,6 +1011,16 @@ local function StartBot()
                 
                 if _G.RubberbandCount >= 8 then 
                     if char and hum and hum.Health > 0 then 
+                    -- DỌN SẠCH KÝ ỨC NGAY TRƯỚC KHI TỰ SÁT
+                    _G.CurrentTarget = nil
+                    _G.IsEscapingStuck = false
+                    _G.TimeAfterTP = nil
+                    _G.TimeAtTarget = nil
+                    _G.DaDenDich = false
+                    _G.SellerStuckTime = nil
+                    _G.RubberbandCount = 0
+                    _G.LastHrpPosition = nil
+
                         hrp.Anchored = false
                         hum.Health = 0 
                     end
