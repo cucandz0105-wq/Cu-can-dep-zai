@@ -1164,7 +1164,6 @@ local function StartBot()
                 end
                 
                 local finalY = hrp.Position.Y
-                if not _G.FakeFallSpeed then _G.FakeFallSpeed = 0 end
                 if trenBien and not ganMucTieu then 
                     if hrp.Position.Y > SEA_LEVEL then 
                         _G.FakeFallSpeed = _G.FakeFallSpeed + (workspace.Gravity * dt) 
