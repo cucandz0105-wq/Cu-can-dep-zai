@@ -1314,3 +1314,15 @@ if BtnPick then
         end
     end)
 end
+-- RESET SẠCH CỜ TRẠNG THÁI MỖI KHI HỒI SINH (CHARACTER RE-SPAWN)
+LocalPlayer.CharacterAdded:Connect(function(newChar)
+    _G.IsDigging, _G.FakeFallSpeed, _G.CurrentTarget, _G.StuckTime, _G.IsTeleportingHome = false, 0, nil, 0, false
+    _G.DaDenDich = false
+    _G.SellerStuckTime = nil
+    _G.LastHrpPosition = nil
+    _G.RubberbandCount = 0
+    _G.IsEscapingStuck = false
+    _G.TimeAfterTP = nil
+    _G.TimeAtTarget = nil
+    isInteracting = false
+end)
