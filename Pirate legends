@@ -990,6 +990,9 @@ local function StartBot()
         fakeSeaFloor.CFrame = CFrame.new(hrp.Position.X, 6.2, hrp.Position.Z)
      end
 
+            if _G.AutoChestOnly then
+                toSeller = IsHoldingChest()
+            end
 
             -- =======================================================
             -- ANTI-RUBBERBAND SYSTEM (Giữ nguyên)
