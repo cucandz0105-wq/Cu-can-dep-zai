@@ -971,23 +971,25 @@ local function StartBot()
                 isInteracting = false
             end
 
-                            -- KIỂM TRA NẾU KHÔNG NẰM TRONG HANG ĐỘNG TỰ ĐỘNG KÍCH HOẠT THẢM TÀNG HÌNH LƯỚT NGẦM
-                elseif not inCave then
-                    -- KHỞI TẠO VÀ CẬP NHẬT THẢM TÀNG HÌNH (Y = 6.2)
-                    local fakeSeaFloor = workspace:FindFirstChild("FakeSeaFloor")
-                    if not fakeSeaFloor then
-                        fakeSeaFloor = Instance.new("Part")
-                        fakeSeaFloor.Name = "FakeSeaFloor"
-                        fakeSeaFloor.Size = Vector3.new(300, 1, 300)
-                        fakeSeaFloor.Transparency = 1
-                        fakeSeaFloor.Anchored = true
-                        fakeSeaFloor.CanCollide = true
-                        fakeSeaFloor.Material = Enum.Material.SmoothPlastic
-                        fakeSeaFloor.Parent = workspace
-                    end
-                    if hrp then
-                        fakeSeaFloor.CFrame = CFrame.new(hrp.Position.X, 6.2, hrp.Position.Z)
-                    end
+            -- =======================================================
+            -- THẢM TÀNG HÌNH BẢO HỘ (BỆ ĐỠ RAYCAST Y = 6.2)
+            -- =======================================================
+            local fakeSeaFloor = workspace:FindFirstChild("FakeSeaFloor")
+         if not fakeSeaFloor then
+            fakeSeaFloor = Instance.new("Part")
+            fakeSeaFloor.Name = "FakeSeaFloor"
+            fakeSeaFloor.Size = Vector3.new(300, 1, 300)
+            fakeSeaFloor.Transparency = 1
+            fakeSeaFloor.Anchored = true
+            fakeSeaFloor.CanCollide = true
+            fakeSeaFloor.Material = Enum.Material.SmoothPlastic
+            fakeSeaFloor.Parent = workspace
+         end
+
+           if hrp then
+        fakeSeaFloor.CFrame = CFrame.new(hrp.Position.X, 6.2, hrp.Position.Z)
+     end
+
 
             -- =======================================================
             -- ANTI-RUBBERBAND SYSTEM (Giữ nguyên)
