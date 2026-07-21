@@ -971,19 +971,6 @@ local function StartBot()
                 isInteracting = false
             end
 
--- 🎯 RESET CỜ KHI ĐỔI MỤC TIÊU XA (> 20 STUDS) - CHỐNG NHẤC Y
-if not _G.LastTargetPos then
-    _G.LastTargetPos = tPos
-elseif (tPos - _G.LastTargetPos).Magnitude > 20 then
-    _G.LastTargetPos = tPos
-    _G.IsEscapingStuck = false
-    _G.TimeAtTarget = nil
-    _G.TimeAfterTP = nil
-    _G.SellerStuckTime = nil
-    _G.DaDenDich = false
-end
-
-
             -- =======================================================
             -- THẢM TÀNG HÌNH BẢO HỘ (BỆ ĐỠ RAYCAST Y = 6.2)
             -- =======================================================
@@ -1152,7 +1139,7 @@ end
                 hrp.Anchored = false
                 _G.TimeAtTarget = nil 
                 
-                if _G.IsEscapingStuck then
+                if _G.IsEscapingStuck and dist > 15 then
                     _G.IsEscapingStuck = false
                     _G.TimeAfterTP = nil
                 end
