@@ -1182,9 +1182,6 @@ local function StartBot()
                     if ray and ray.Instance then 
                         groundY = ray.Position.Y 
                         targetY = tPos.Y -1
-                        if tPos.Y < hrp.Position.Y - 5 and targetY > tPos.Y + 10 then 
-                            targetY = tPos.Y + (hrp.Size.Y / 2) + 0.01 
-                        end 
                     else 
                         -- Nếu ở giữa biển, hạ sát xuống mặt nước lướt đi chứ không lơ lửng trên trời
                         targetY, trenBien = SEA_LEVEL, true 
