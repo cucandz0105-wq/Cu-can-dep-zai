@@ -1152,7 +1152,7 @@ end
                 hrp.Anchored = false
                 _G.TimeAtTarget = nil 
                 
-                if _G.IsEscapingStuck and dist > 15 then
+                if _G.IsEscapingStuck then
                     _G.IsEscapingStuck = false
                     _G.TimeAfterTP = nil
                 end
