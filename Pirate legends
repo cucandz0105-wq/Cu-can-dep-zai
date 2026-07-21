@@ -971,7 +971,7 @@ local function StartBot()
                 isInteracting = false
             end
 
-            -- =======================================================
+               -- =======================================================
             -- THẢM TÀNG HÌNH BẢO HỘ (BỆ ĐỠ RAYCAST Y = 6.2)
             -- =======================================================
             local fakeSeaFloor = workspace:FindFirstChild("FakeSeaFloor")
@@ -1131,7 +1131,7 @@ local function StartBot()
                     end
                 else
                     if elapsedAtTarget < 2.0 or toSeller or ghostDoor then
-                        local finalStopPos = Vector3.new(stopPos.X, (toSeller or ghostDoor) and stopPos.Y or (tPos.Y -1), stopPos.Z)
+                        local finalStopPos = Vector3.new(stopPos.X, (toSeller or ghostDoor) and stopPos.Y or (tPos.Y + (hrp.Size.Y / 2) + 1.8), stopPos.Z)
                         hrp.CFrame = CFrame.new(finalStopPos, Vector3.new(tPos.X, finalStopPos.Y, tPos.Z)) 
                     end
                 end
@@ -1162,7 +1162,7 @@ local function StartBot()
                     if _G.IsEscapingStuck then
                         targetY = tPos.Y + (hrp.Size.Y / 2) + 2.5
                     else
-                        targetY = (toSeller or ghostDoor) and sellerY_Chuan or (tPos.Y -1)
+                        targetY = (toSeller or ghostDoor) and sellerY_Chuan or (tPos.Y + (hrp.Size.Y / 2) + 1.8) 
                     end
                     nextPos = Vector3.new(nextPos.X, hrp.Position.Y, nextPos.Z)
                 elseif not inCave then
@@ -1181,7 +1181,10 @@ local function StartBot()
 
                     if ray and ray.Instance then 
                         groundY = ray.Position.Y 
-                        targetY = tPos.Y -1
+                        targetY = groundY + (hrp.Size.Y / 2) + 0.01 
+                        if tPos.Y < hrp.Position.Y - 5 and targetY > tPos.Y + 10 then 
+                            targetY = tPos.Y + (hrp.Size.Y / 2) + 0.01 
+                        end 
                     else 
                         -- Nếu ở giữa biển, hạ sát xuống mặt nước lướt đi chứ không lơ lửng trên trời
                         targetY, trenBien = SEA_LEVEL, true 
