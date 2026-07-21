@@ -1131,7 +1131,14 @@ local function StartBot()
                     end
                 else
                     if elapsedAtTarget < 2.0 or toSeller or ghostDoor then
-                        local finalStopPos = Vector3.new(stopPos.X, (toSeller or ghostDoor) and stopPos.Y or (tPos.Y + (hrp.Size.Y / 2) + 1.8), stopPos.Z)
+                        local calculatedY
+if _G.AutoChestOnly then
+    calculatedY = SEA_LEVEL
+else
+    calculatedY = (toSeller or ghostDoor) and stopPos.Y or (tPos.Y + (hrp.Size.Y / 2) + 1.8)
+end
+local finalStopPos = Vector3.new(stopPos.X, calculatedY, stopPos.Z)
+
                         hrp.CFrame = CFrame.new(finalStopPos, Vector3.new(tPos.X, finalStopPos.Y, tPos.Z)) 
                     end
                 end
@@ -1160,11 +1167,12 @@ local function StartBot()
                 
                 -- BẬT LẠI RAYCAST 100% ĐỂ BÁM ĐỊA HÌNH CHO AN TOÀN
                 if ganMucTieu then 
-                    if _G.IsEscapingStuck then
-                        targetY = tPos.Y + (hrp.Size.Y / 2) + 2.5
-                    else
-                        targetY = (toSeller or ghostDoor) and sellerY_Chuan or (tPos.Y + (hrp.Size.Y / 2) + 1.8) 
-                    end
+                    if _G.AutoChestOnly then
+    targetY = SEA_LEVEL
+else
+    targetY = (toSeller or ghostDoor) and sellerY_Chuan or (tPos.Y + (hrp.Size.Y / 2) + 1.8)
+end
+
                     nextPos = Vector3.new(nextPos.X, hrp.Position.Y, nextPos.Z)
                 elseif not inCave then
                     local params = RaycastParams.new() params.FilterType = Enum.RaycastFilterType.Exclude local ignore = {char}for _, item in pairs(char:GetChildren()) do if item:IsA("Tool") or item:IsA("Model") then table.insert(ignore, item) end end
