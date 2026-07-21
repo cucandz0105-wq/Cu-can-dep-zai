@@ -1182,7 +1182,7 @@ local function StartBot()
                     if ray and ray.Instance then 
                         groundY = ray.Position.Y 
                         targetY = groundY + (hrp.Size.Y / 2) + 0.01 
-                        if not _G.AutoChestOnly and (tPos.Y < hrp.Position.Y - 5 and targetY > tPos.Y + 10) then 
+                        if tPos.Y < hrp.Position.Y - 5 and targetY > tPos.Y + 10 then
                             targetY = tPos.Y + (hrp.Size.Y / 2) + 0.01 
                         end 
                     else 
