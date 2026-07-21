@@ -1153,8 +1153,7 @@ local function StartBot()
                 else
                     nextPos = hrp.Position + (moveDir * clampledSpeed)
                 end
-                
-                local inCave = (not toSeller) and (not ghostDoor) and (tPos.Y < 20) 
+                 
                 local targetY, groundY, trenBien = hrp.Position.Y, nil, false 
                 local ganMucTieu = dist < 1
                 
