@@ -516,18 +516,27 @@ F3XBtn.MouseButton1Click:Connect(function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIy/infiniteyield/master/source"))()
     end
 end)
-
 -- =======================================================
--- TAB 3 & 4 (GIỮ NGUYÊN)
+-- TAB 3,4: ESP & TELEPORT (ĐÃ NÂNG CẤP CHIA ĐÔI NÚT ESP ME)
 -- =======================================================
 local t3 = tabs[3]
+
+-- 1. HÀNG 1: CHIA ĐÔI (ESP PLAYERS & ESP ME)
 local EspToggle = Instance.new("TextButton", t3)
-EspToggle.Size = UDim2.new(1, -10, 0, 35)
+EspToggle.Size = UDim2.new(0.5, -7, 0, 35)
 EspToggle.Position = UDim2.new(0, 5, 0, 5)
 EspToggle.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
-EspToggle.Text = "ESP: OFF"
-styleLabel(EspToggle, 14)
+EspToggle.Text = "ESP Players: OFF"
+styleLabel(EspToggle, 13)
 
+local SelfEspToggle = Instance.new("TextButton", t3)
+SelfEspToggle.Size = UDim2.new(0.5, -7, 0, 35)
+SelfEspToggle.Position = UDim2.new(0.5, 2, 0, 5)
+SelfEspToggle.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+SelfEspToggle.Text = "ESP Me: OFF"
+styleLabel(SelfEspToggle, 13)
+
+-- 2. KHUNG DỊCH CHUYỂN (GIỮ NGUYÊN VỊ TRÍ)
 local TPInput = Instance.new("TextBox", t3)
 TPInput.Size = UDim2.new(1, -10, 0, 35)
 TPInput.Position = UDim2.new(0, 5, 0, 45)
@@ -562,7 +571,11 @@ TPBtn.MouseButton1Click:Connect(function()
     end
 end)
 
+-- 3. LOGIC XỬ LÝ ESP PLAYERS & ESP ME
 local espActive = false
+local selfEspActive = false
+local selfEspColor = Color3.fromRGB(100, 0, 150) -- Màu Tím Đậm
+
 local espStorage = Workspace:FindFirstChild("PremiumESP_Storage") or Instance.new("Folder", Workspace)
 espStorage.Name = "PremiumESP_Storage"
 
@@ -576,6 +589,7 @@ local function getTeamColor(plr)
     end
 end
 
+-- Hàm tạo ESP cho Player khác
 local function createEsp(plr)
     if plr == LocalPlayer or not espActive then return end
     local pName = plr.Name
@@ -611,6 +625,44 @@ local function createEsp(plr)
     tl.Text = string.format("%s [Tính toán...]", plr.DisplayName)
 end
 
+-- Hàm tạo ESP Bản Thân (Màu tím đậm)
+local function createSelfEsp()
+    if not selfEspActive or not LocalPlayer.Character then return end
+    local pName = LocalPlayer.Name .. "_Self"
+    if espStorage:FindFirstChild(pName) then espStorage[pName]:Destroy() end
+    
+    local char = LocalPlayer.Character
+    local hrp = char:WaitForChild("HumanoidRootPart", 5)
+    local hum = char:WaitForChild("Humanoid", 5)
+    if not hrp or not hum or hum.Health <= 0 then return end
+    
+    local container = Instance.new("Folder", espStorage)
+    container.Name = pName
+    
+    local hl = Instance.new("Highlight", container)
+    hl.Adornee = char
+    hl.FillColor = selfEspColor
+    hl.FillTransparency = 0.4
+    hl.OutlineColor = Color3.fromRGB(200, 100, 255)
+    hl.OutlineTransparency = 0.1
+    
+    local bb = Instance.new("BillboardGui", container)
+    bb.Name = "EspNameTag"
+    bb.AlwaysOnTop = true
+    bb.Size = UDim2.new(0, 200, 0, 50)
+    bb.StudsOffset = Vector3.new(0, 4.5, 0)
+    bb.Adornee = hrp
+    
+    local tl = Instance.new("TextLabel", bb)
+    tl.Size = UDim2.new(1, 0, 1, 0)
+    tl.BackgroundTransparency = 1
+    tl.TextColor3 = selfEspColor
+    tl.TextSize = 18
+    tl.Font = Enum.Font.SourceSansBold
+    tl.Text = string.format("YOU (%s)", LocalPlayer.DisplayName)
+end
+
+-- Loop cập nhật khoảng cách ESP Players
 task.spawn(function()
     while true do
         task.wait(0.25)
@@ -665,16 +717,39 @@ Players.PlayerRemoving:Connect(function(plr)
     if espStorage:FindFirstChild(plr.Name) then espStorage[plr.Name]:Destroy() end
 end)
 
+-- Sự kiện bấm nút ESP Players
 EspToggle.MouseButton1Click:Connect(function()
     espActive = not espActive
-    EspToggle.Text = espActive and "ESP: ON" or "ESP: OFF"
+    EspToggle.Text = espActive and "ESP Players: ON" or "ESP Players: OFF"
     EspToggle.BackgroundColor3 = espActive and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(55, 55, 55)
-    espStorage:ClearAllChildren()
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and espStorage:FindFirstChild(p.Name) then
+            espStorage[p.Name]:Destroy()
+        end
+    end
     if espActive then 
         for _, p in pairs(Players:GetPlayers()) do createEsp(p) end 
     end
 end)
 
+-- Sự kiện bấm nút ESP Me
+SelfEspToggle.MouseButton1Click:Connect(function()
+    selfEspActive = not selfEspActive
+    SelfEspToggle.Text = selfEspActive and "ESP Me: ON" or "ESP Me: OFF"
+    SelfEspToggle.BackgroundColor3 = selfEspActive and Color3.fromRGB(100, 0, 150) or Color3.fromRGB(55, 55, 55)
+    
+    local selfContainer = espStorage:FindFirstChild(LocalPlayer.Name .. "_Self")
+    if selfContainer then selfContainer:Destroy() end
+    
+    if selfEspActive then createSelfEsp() end
+end)
+
+-- Tự động bật lại Self ESP khi hồi sinh
+LocalPlayer.CharacterAdded:Connect(function()
+    task.wait(0.5)
+    if selfEspActive then createSelfEsp() end
+end)
+=============================================
 local t4 = tabs[4]
 local FlingToggle = Instance.new("TextButton", t4)
 FlingToggle.Size = UDim2.new(1, -10, 0, 30)
