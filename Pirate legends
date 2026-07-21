@@ -1308,6 +1308,15 @@ if BtnDig then
         if _G.AutoDigAndPick then
             _G.AutoChestOnly = false 
             _G.CurrentTarget = nil
+            
+            -- 🎯 3. THÊM DỌN CỜ KHI BẬT NÚT NÀY
+            _G.IsEscapingStuck = false
+            _G.TimeAtTarget = nil
+            _G.TimeAfterTP = nil
+            _G.SellerStuckTime = nil
+            _G.DaDenDich = false
+            _G.LastTargetPos = nil
+            
             if BtnPick then BtnPick.Text = "CHEST ONLY [OFF]" BtnPick.BackgroundColor3 = Color3.fromRGB(45, 45, 45) end 
             BtnDig.Text = "AUTO FARM [RUNNING]"
             TweenService:Create(BtnDig, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255, 0, 128)}):Play() 
@@ -1326,6 +1335,15 @@ if BtnPick then
         if _G.AutoChestOnly then
             _G.AutoDigAndPick = false 
             _G.CurrentTarget = nil
+            
+            -- 🎯 3. THÊM DỌN CỜ KHI BẬT NÚT NÀY
+            _G.IsEscapingStuck = false
+            _G.TimeAtTarget = nil
+            _G.TimeAfterTP = nil
+            _G.SellerStuckTime = nil
+            _G.DaDenDich = false
+            _G.LastTargetPos = nil
+            
             if BtnDig then BtnDig.Text = "AUTO FARM [OFF]" BtnDig.BackgroundColor3 = Color3.fromRGB(45, 45, 45) end 
             BtnPick.Text = "CHEST ONLY [RUNNING]"
             TweenService:Create(BtnPick, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(0, 170, 255)}):Play() 
@@ -1337,6 +1355,7 @@ if BtnPick then
         end
     end)
 end
+
 -- RESET SẠCH CỜ TRẠNG THÁI MỖI KHI HỒI SINH (CHARACTER RE-SPAWN)
 LocalPlayer.CharacterAdded:Connect(function(newChar)
     _G.IsDigging, _G.FakeFallSpeed, _G.CurrentTarget, _G.StuckTime, _G.IsTeleportingHome = false, 0, nil, 0, false
