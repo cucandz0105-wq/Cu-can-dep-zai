@@ -1180,15 +1180,19 @@ local function StartBot()
                     local ray = Workspace:Raycast(scanOrigin, Vector3.new(0, -700, 0), params)
 
                     if ray and ray.Instance then 
-                        groundY = ray.Position.Y 
-                        targetY = groundY + (hrp.Size.Y / 2) + 0.01 
-                        if tPos.Y < hrp.Position.Y - 5 and targetY > tPos.Y + 10 then
-                            targetY = tPos.Y + (hrp.Size.Y / 2) + 0.01 
-                        end 
-                    else 
-                        -- Nếu ở giữa biển, hạ sát xuống mặt nước lướt đi chứ không lơ lửng trên trời
-                        targetY, trenBien = SEA_LEVEL, true 
-                    end
+    groundY = ray.Position.Y 
+    targetY = groundY + (hrp.Size.Y / 2) + 0.01 
+    
+    -- 🎯 CHỈ CHO PHÉP ĐỔI TARGET_Y THEO RƯƠNG THẤP KHI KHÔNG PHẢI CHEST ONLY
+    if not _G.AutoChestOnly then
+        if tPos.Y < hrp.Position.Y - 5 and targetY > tPos.Y + 10 then 
+            targetY = tPos.Y + (hrp.Size.Y / 2) + 0.01 
+        end 
+    end
+else 
+    targetY, trenBien = SEA_LEVEL, true 
+end
+
                 else 
                     targetY = math.max(tPos.Y + (hrp.Size.Y / 2) + 0.01, -30) 
                 end
