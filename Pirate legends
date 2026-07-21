@@ -1238,11 +1238,6 @@ local function StartBot()
                     finalY = SEA_LEVEL
                 end
 
-           if _G.AutoChestOnly and not ganMucTieu then
-                    finalY = SEA_LEVEL
-                end
-
-                
                 if groundY and (finalY - groundY > MAX_HEIGHT) and not ganMucTieu then finalY = groundY + MAX_HEIGHT end
                 finalY = math.max(finalY, -30)
                 if (Vector3.new(tPos.X, finalY, tPos.Z) - Vector3.new(nextPos.X, finalY, nextPos.Z)).Magnitude > 0.1 then 
