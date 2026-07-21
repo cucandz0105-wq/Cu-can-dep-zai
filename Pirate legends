@@ -971,6 +971,16 @@ local function StartBot()
                 isInteracting = false
             end
 
+-- BẮT MỌI KHOẢNH KHẮC ĐỔI MỤC TIÊU (DÙ GẦN HAY XA)
+if _G.LastTargetPos ~= tPos then
+    _G.LastTargetPos = tPos
+    _G.TimeAtTarget = nil
+    _G.IsEscapingStuck = false
+    _G.TimeAfterTP = nil
+    _G.DaDenDich = false
+    _G.SellerStuckTime = nil
+end
+
             -- =======================================================
             -- THẢM TÀNG HÌNH BẢO HỘ (BỆ ĐỠ RAYCAST Y = 6.2)
             -- =======================================================
