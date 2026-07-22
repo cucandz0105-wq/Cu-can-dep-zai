@@ -971,7 +971,7 @@ local function StartBot()
                 isInteracting = false
             end
 
-               -- =======================================================
+            -- =======================================================
             -- THẢM TÀNG HÌNH BẢO HỘ (BỆ ĐỠ RAYCAST Y = 6.2)
             -- =======================================================
             local fakeSeaFloor = workspace:FindFirstChild("FakeSeaFloor")
