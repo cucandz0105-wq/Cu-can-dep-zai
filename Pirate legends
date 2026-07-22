@@ -990,16 +990,30 @@ local function StartBot()
         fakeSeaFloor.CFrame = CFrame.new(hrp.Position.X, 6.2, hrp.Position.Z)
      end
             -- =======================================================
-            -- ANTI-RUBBERBAND SYSTEM (Giữ nguyên)
+            -- ANTI-RUBBERBAND SYSTEM (CỬA SỔ THỜI GIAN 10 GIÂY THÔNG MINH)
             -- =======================================================
             if not _G.LastHrpPosition then 
                 _G.LastHrpPosition = hrp.Position
                 _G.RubberbandCount = 0
                 _G.LastRubberbandTime = os.clock()
+                _G.PauseStartTime = nil
+                _G.IsPausedForAntiCheat = false
             end
 
+            -- Nếu đang trong 1 giây ngắt bay thì tạm dừng tính toán di chuyển
+            if _G.IsPausedForAntiCheat then
+                _G.LastHrpPosition = hrp.Position
+                return
+            end
+
+            -- Tự động reset bộ đếm giật nếu quá 3s không bị giật nữa
             if os.clock() - _G.LastRubberbandTime > 3.0 then
                 _G.RubberbandCount = 0
+            end
+
+            -- Tự động hủy "Chế độ chờ 10s" nếu sau 10s không bị dính giật lại
+            if _G.PauseStartTime and (os.clock() - _G.PauseStartTime > 10.0) then
+                _G.PauseStartTime = nil
             end
 
             local currentDistToTarget = (hrp.Position - tPos).Magnitude
@@ -1009,24 +1023,41 @@ local function StartBot()
                 _G.RubberbandCount = _G.RubberbandCount + 1
                 _G.LastRubberbandTime = os.clock()
                 
+                -- BỊ GIẬT ĐỦ 8 LẦN
                 if _G.RubberbandCount >= 8 then 
-                    if char and hum and hum.Health > 0 then 
-                    -- DỌN SẠCH KÝ ỨC NGAY TRƯỚC KHI TỰ SÁT
-                    _G.CurrentTarget = nil
-                    _G.IsEscapingStuck = false
-                    _G.TimeAfterTP = nil
-                    _G.TimeAtTarget = nil
-                    _G.DaDenDich = false
-                    _G.SellerStuckTime = nil
-                    _G.RubberbandCount = 0
-                    _G.LastHrpPosition = nil
+                    -- TRƯỜNG HỢP 1: Vẫn bị giật tiếp TRONG CỬA SỔ 10 GIÂY -> ĐỘT TỬ
+                    if _G.PauseStartTime and (os.clock() - _G.PauseStartTime <= 10.0) then
+                        if char and hum and hum.Health > 0 then 
+                            _G.CurrentTarget = nil
+                            _G.IsEscapingStuck = false
+                            _G.TimeAfterTP = nil
+                            _G.TimeAtTarget = nil
+                            _G.DaDenDich = false
+                            _G.SellerStuckTime = nil
+                            _G.RubberbandCount = 0
+                            _G.LastHrpPosition = nil
+                            _G.PauseStartTime = nil
+                            _G.IsPausedForAntiCheat = false
 
+                            hrp.Anchored = false
+                            hum.Health = 0 
+                        end
+                        return
+                    else
+                        -- TRƯỜNG HỢP 2: Lần đầu chạm mốc 8 lần -> Ngắt bay 1s + Bấm giờ 10s
+                        _G.PauseStartTime = os.clock() -- Bắt đầu tính cửa sổ 10s
+                        _G.RubberbandCount = 0 -- Reset đếm giật để chờ lần giật tiếp theo
+                        _G.IsPausedForAntiCheat = true
+                        
                         hrp.Anchored = false
-                        hum.Health = 0 
+                        hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0) -- Hãm gia tốc giật
+                        
+                        task.delay(1.0, function()
+                            _G.IsPausedForAntiCheat = false
+                            if hrp then _G.LastHrpPosition = hrp.Position end
+                        end)
+                        return
                     end
-                    _G.RubberbandCount = 0
-                    _G.LastHrpPosition = hrp.Position
-                    return
                 end
             end
             _G.LastHrpPosition = hrp.Position
