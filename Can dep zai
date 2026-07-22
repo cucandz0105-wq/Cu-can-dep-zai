@@ -62,34 +62,27 @@ end
 _G.PremiumMenuResetAnim = resetCharacterAnimation
 
 local MenuBtn = Instance.new("TextButton")
-MenuBtn.Size = UDim2.new(0, 60, 0, 60)
-MenuBtn.Position = UDim2.new(0.02, 0, 0.28, 0)
+MenuBtn.AnchorPoint = Vector2.new(0.5, 0.5)
+MenuBtn.Position = UDim2.new(0.05, 0, 0.30, 0)
+MenuBtn.Size = UDim2.new(0.06, 0, 0.06, 0)
+
+local aspectConstraint = Instance.new("UIAspectRatioConstraint")
+aspectConstraint.AspectRatio = 1
+aspectConstraint.DominantAxis = Enum.DominantAxis.Height
+aspectConstraint.Parent = MenuBtn
+
 MenuBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 MenuBtn.BorderSizePixel = 2
 MenuBtn.BorderColor3 = Color3.fromRGB(255, 255, 255)
 MenuBtn.Text = "CC"
 MenuBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 MenuBtn.Font = Enum.Font.SourceSansBold
-MenuBtn.TextSize = 30
+MenuBtn.TextSize = 22
 MenuBtn.Draggable = true
 MenuBtn.Active = true
 MenuBtn.ZIndex = 10
 MenuBtn.Parent = ScreenGui
-Instance.new("UICorner", MenuBtn).CornerRadius = UDim.new(0, 30)
-
-local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 380, 0, 320)
-MainFrame.Position = UDim2.new(0.35, 0, 0.30, 0)
-MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-MainFrame.BackgroundTransparency = 0.05
-MainFrame.BorderSizePixel = 2
-MainFrame.BorderColor3 = Color3.fromRGB(255, 255, 255)
-MainFrame.Draggable = true
-MainFrame.Active = true
-MainFrame.Visible = false
-MainFrame.ZIndex = 12
-MainFrame.Parent = ScreenGui
-Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
+Instance.new("UICorner", MenuBtn).CornerRadius = UDim.new(1, 0)
 
 local TopBar = Instance.new("Frame")
 TopBar.Size = UDim2.new(1, 0, 0, 35)
