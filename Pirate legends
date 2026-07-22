@@ -1291,6 +1291,9 @@ local function StopBot()
     _G.IsEscapingStuck = false
     _G.TimeAfterTP = nil
     _G.TimeAtTarget = nil
+    _G.PauseStartTime = nil
+    _G.IsPausedForAntiCheat = false
+
     isInteracting = false
 
     -- Chỉ gỡ Connection và nhún Character khi TẮT HẲN cả 2 nút
@@ -1382,5 +1385,8 @@ LocalPlayer.CharacterAdded:Connect(function(newChar)
     _G.IsEscapingStuck = false
     _G.TimeAfterTP = nil
     _G.TimeAtTarget = nil
+    _G.PauseStartTime = nil
+    _G.IsPausedForAntiCheat = false
+
     isInteracting = false
 end)
