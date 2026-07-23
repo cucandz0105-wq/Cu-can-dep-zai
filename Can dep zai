@@ -176,6 +176,7 @@ createTab("Movement", 1)
 createTab("Noclip", 2)
 createTab("ESP & TP", 3)
 createTab("View/Fling", 4)
+createTab("Actions", 5)
 
 _G.PremiumMenuTabs = tabs
 
@@ -822,3 +823,85 @@ UnviewBtn.MouseButton1Click:Connect(function()
     if hum then CurrentCamera.CameraSubject = hum end
 end)
 
+-- =======================================================
+-- TAB 5: DÁNG ĐỨNG / HÀNH ĐỘNG (SIT & LIE)
+-- =======================================================
+local t5 = tabs[5]
+local UserInputService = game:GetService("UserInputService")
+local isLying = false
+
+-- 1. NÚT SIT (NGỒI)
+local SitBtn = Instance.new("TextButton", t5)
+SitBtn.Size = UDim2.new(1, -10, 0, 40)
+SitBtn.Position = UDim2.new(0, 5, 0, 10)
+SitBtn.BackgroundColor3 = Color3.fromRGB(35, 120, 240)
+SitBtn.Text = "🪑 Ngồi Down (Sit)"
+styleLabel(SitBtn, 14)
+
+-- 2. NÚT LIE (NẰM)
+local LieBtn = Instance.new("TextButton", t5)
+LieBtn.Size = UDim2.new(1, -10, 0, 40)
+LieBtn.Position = UDim2.new(0, 5, 0, 60)
+LieBtn.BackgroundColor3 = Color3.fromRGB(150, 50, 200)
+LieBtn.Text = "🛌 Nằm Ngửa (Lie)"
+styleLabel(LieBtn, 14)
+
+-- Hàm Trả Về Tư Thế Đứng Normal
+local function StandUp()
+    local char = LocalPlayer.Character
+    if char then
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        local hum = char:FindFirstChildWhichIsA("Humanoid")
+        
+        if hrp and hrp:FindFirstChild("RootJoint") then
+            hrp.RootJoint.C0 = CFrame.new(0, 0, 0) * CFrame.Angles(-math.rad(90), 0, math.rad(180))
+        end
+        if hum then
+            hum.PlatformStand = false
+        end
+    end
+    isLying = false
+    LieBtn.Text = "🛌 Nằm Ngửa (Lie)"
+    LieBtn.BackgroundColor3 = Color3.fromRGB(150, 50, 200)
+end
+
+-- Logic Nút Sit
+SitBtn.MouseButton1Click:Connect(function()
+    local char = LocalPlayer.Character
+    local hum = char and char:FindFirstChildWhichIsA("Humanoid")
+    if hum then
+        if isLying then StandUp() end
+        hum.Sit = true
+    end
+end)
+
+-- Logic Nút Lie
+LieBtn.MouseButton1Click:Connect(function()
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    local hum = char and char:FindFirstChildWhichIsA("Humanoid")
+    
+    if not hrp or not hum then return end
+    
+    if isLying then
+        StandUp()
+    else
+        isLying = true
+        hum.PlatformStand = true
+        hrp.RootJoint.C0 = CFrame.new(0, 0, 0) * CFrame.Angles(0, 0, math.rad(180))
+        LieBtn.Text = "🛌 Nằm Ngửa: ON"
+        LieBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+    end
+end)
+
+-- Tự Động Đứng Dậy Khi Nhấn Phím Jump
+UserInputService.JumpRequest:Connect(function()
+    if isLying then
+        StandUp()
+    end
+end)
+
+-- Reset Khi Hồi Sinh
+LocalPlayer.CharacterAdded:Connect(function()
+    isLying = false
+end)
