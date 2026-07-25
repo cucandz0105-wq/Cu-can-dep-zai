@@ -1202,6 +1202,7 @@ local function StartBot()
                     if Workspace:FindFirstChild("IslandsModel") and Workspace["IslandsModel"]:FindFirstChild("NPCs") then table.insert(ignore, Workspace["IslandsModel"]["NPCs"]) end
                     if Workspace:FindFirstChild("Trees") then table.insert(ignore, Workspace["Trees"]) end if Workspace:FindFirstChild("TreeFolder") then table.insert(ignore, Workspace["TreeFolder"]) end
                     if Workspace:FindFirstChild("Ships") then table.insert(ignore, Workspace["Ships"]) end
+                    if Workspace:FindFirstChild("islands") then table.insert(ignore, Workspace["islands"]) end
 
                     params.FilterDescendantsInstances = ignore 
                     params.RespectCanCollide = true
