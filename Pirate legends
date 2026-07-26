@@ -89,7 +89,7 @@ end
 
 local MenuButton = Instance.new("TextButton")
 MenuButton.Size = UDim2.new(0, 50, 0, 50)
-MenuButton.Position = UDim2.new(0.02, 0, 0.4, 0)
+MenuButton.Position = UDim2.new(0.02, 0, 0.28, 0)
 MenuButton.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 MenuButton.Text = "🏴‍☠️"
 MenuButton.TextSize = 25
