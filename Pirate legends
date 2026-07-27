@@ -970,67 +970,27 @@ local function StartBot()
                 _G.TimeAtTarget = nil 
                 isInteracting = false
             end
--- =======================================================
--- KHỞI TẠO BIẾN & TỐI ƯU RAYCAST
--- =======================================================
-local pGui = LocalPlayer:WaitForChild("PlayerGui")
-
-local cachedRayParams = RaycastParams.new()
-cachedRayParams.FilterType = Enum.RaycastFilterType.Exclude
-cachedRayParams.RespectCanCollide = true
-
-local function UpdateRaycastFilter(char)
-    if not char then return end
-    local ignore = {char}
-    for _, item in ipairs(char:GetChildren()) do 
-        if item:IsA("Tool") or item:IsA("Model") then 
-            table.insert(ignore, item) 
-        end 
-    end
-
-    if Workspace:FindFirstChild("IslandsModel") and Workspace["IslandsModel"]:FindFirstChild("NPCs") then 
-        table.insert(ignore, Workspace["IslandsModel"]["NPCs"]) 
-    end
-    if Workspace:FindFirstChild("Trees") then table.insert(ignore, Workspace["Trees"]) end 
-    if Workspace:FindFirstChild("TreeFolder") then table.insert(ignore, Workspace["TreeFolder"]) end
-    if Workspace:FindFirstChild("Ships") then table.insert(ignore, Workspace["Ships"]) end
-
-    cachedRayParams.FilterDescendantsInstances = ignore
-end
-
--- =======================================================
--- VÒNG LẮP CHÍNH (STARTBOT & STOPBOT)
--- =======================================================
-local function StartBot()
-    if LocalPlayer.Character then
-        UpdateRaycastFilter(LocalPlayer.Character)
-    end
-
-    _G.BotConnection = RunService.Heartbeat:Connect(function(dt)
-        local char = LocalPlayer.Character
-        local hum = char and char:FindFirstChildOfClass("Humanoid")
-        local hrp = char and char:FindFirstChild("HumanoidRootPart")
-
-        if hrp and hum and hum.Health > 0 then
-            
-            -- THẢM TÀNG HÌNH BẢO HỘ
+            -- =======================================================
+            -- THẢM TÀNG HÌNH BẢO HỘ (BỆ ĐỠ RAYCAST Y = 6.2)
+            -- =======================================================
             local fakeSeaFloor = workspace:FindFirstChild("FakeSeaFloor")
-            if not fakeSeaFloor then
-                fakeSeaFloor = Instance.new("Part")
-                fakeSeaFloor.Name = "FakeSeaFloor"
-                fakeSeaFloor.Size = Vector3.new(300, 1, 300)
-                fakeSeaFloor.Transparency = 1
-                fakeSeaFloor.Anchored = true
-                fakeSeaFloor.CanCollide = true
-                fakeSeaFloor.Material = Enum.Material.SmoothPlastic
-                fakeSeaFloor.Parent = workspace
-            end
+         if not fakeSeaFloor then
+            fakeSeaFloor = Instance.new("Part")
+            fakeSeaFloor.Name = "FakeSeaFloor"
+            fakeSeaFloor.Size = Vector3.new(300, 1, 300)
+            fakeSeaFloor.Transparency = 1
+            fakeSeaFloor.Anchored = true
+            fakeSeaFloor.CanCollide = true
+            fakeSeaFloor.Material = Enum.Material.SmoothPlastic
+            fakeSeaFloor.Parent = workspace
+         end
 
-            if (Vector3.new(hrp.Position.X, 0, hrp.Position.Z) - Vector3.new(fakeSeaFloor.Position.X, 0, fakeSeaFloor.Position.Z)).Magnitude > 30 then
-                fakeSeaFloor.CFrame = CFrame.new(hrp.Position.X, 6.2, hrp.Position.Z)
-            end
-
-            -- ANTI-RUBBERBAND SYSTEM (CỬA SỔ 10S)
+           if hrp then
+        fakeSeaFloor.CFrame = CFrame.new(hrp.Position.X, 6.2, hrp.Position.Z)
+     end
+            -- =======================================================
+            -- ANTI-RUBBERBAND SYSTEM (CỬA SỔ THỜI GIAN 10 GIÂY THÔNG MINH)
+            -- =======================================================
             if not _G.LastHrpPosition then 
                 _G.LastHrpPosition = hrp.Position
                 _G.RubberbandCount = 0
@@ -1039,15 +999,18 @@ local function StartBot()
                 _G.IsPausedForAntiCheat = false
             end
 
+            -- Nếu đang trong 1 giây ngắt bay thì tạm dừng tính toán di chuyển
             if _G.IsPausedForAntiCheat then
                 _G.LastHrpPosition = hrp.Position
                 return
             end
 
+            -- Tự động reset bộ đếm giật nếu quá 3s không bị giật nữa
             if os.clock() - _G.LastRubberbandTime > 3.0 then
                 _G.RubberbandCount = 0
             end
 
+            -- Tự động hủy "Chế độ chờ 10s" nếu sau 10s không bị dính giật lại
             if _G.PauseStartTime and (os.clock() - _G.PauseStartTime > 6.0) then
                 _G.PauseStartTime = nil
             end
@@ -1059,7 +1022,9 @@ local function StartBot()
                 _G.RubberbandCount = _G.RubberbandCount + 1
                 _G.LastRubberbandTime = os.clock()
                 
+                -- BỊ GIẬT ĐỦ 8 LẦN
                 if _G.RubberbandCount >= 8 then 
+                    -- TRƯỜNG HỢP 1: Vẫn bị giật tiếp TRONG CỬA SỔ 10 GIÂY -> ĐỘT TỬ
                     if _G.PauseStartTime and (os.clock() - _G.PauseStartTime <= 6.0) then
                         if char and hum and hum.Health > 0 then 
                             _G.CurrentTarget = nil
@@ -1078,12 +1043,13 @@ local function StartBot()
                         end
                         return
                     else
-                        _G.PauseStartTime = os.clock()
-                        _G.RubberbandCount = 0
+                        -- TRƯỜNG HỢP 2: Lần đầu chạm mốc 8 lần -> Ngắt bay 1s + Bấm giờ 10s
+                        _G.PauseStartTime = os.clock() -- Bắt đầu tính cửa sổ 10s
+                        _G.RubberbandCount = 0 -- Reset đếm giật để chờ lần giật tiếp theo
                         _G.IsPausedForAntiCheat = true
                         
                         hrp.Anchored = false
-                        hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                        hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0) -- Hãm gia tốc giật
                         
                         task.delay(1.0, function()
                             _G.IsPausedForAntiCheat = false
@@ -1094,6 +1060,7 @@ local function StartBot()
                 end
             end
             _G.LastHrpPosition = hrp.Position
+            -- =======================================================
             
             local dist = (hrp.Position - tPos).Magnitude if toSeller and dist < 18 then Camera.CFrame = CFrame.new(Camera.CFrame.Position, tPos) end
             local dir = (tPos - hrp.Position).Unit local stopPos, sellerY_Chuan = tPos - (dir * OFFSET_DIST), tPos.Y
@@ -1101,8 +1068,11 @@ local function StartBot()
             elseif ghostDoor then sellerY_Chuan = tPos.Y stopPos = tPos - (dir * OFFSET_DIST) end
             local stopLimit = (toSeller or ghostDoor) and (OFFSET_DIST + 1.2) or (OFFSET_DIST + 0.5)
             
-            -- CHU KỲ ĐỘT TỬ
+            -- =======================================================================
+            -- CHU KỲ ĐỘT TỬ ĐỘC LẬP TỰ DO (Giữ nguyên)
+            -- =======================================================================
             local notNpcOrDoor = (not toSeller) and (not ghostDoor)
+            local pGui = LocalPlayer:FindFirstChildWhichIsA("PlayerGui")
             local isQuestMenuOpen = false
 
             if pGui then
@@ -1155,6 +1125,7 @@ local function StartBot()
             else
                 _G.SellerStuckTime = nil
             end
+            -- =======================================================================
 
             if dist <= stopLimit then
                 _G.DaDenDich = true
@@ -1216,6 +1187,7 @@ local function StartBot()
                 local targetY, groundY, trenBien = hrp.Position.Y, nil, false 
                 local ganMucTieu = dist < 1
                 
+                -- BẬT LẠI RAYCAST 100% ĐỂ BÁM ĐỊA HÌNH CHO AN TOÀN
                 if ganMucTieu then 
                     if _G.IsEscapingStuck then
                         targetY = tPos.Y + (hrp.Size.Y / 2) + 2.5
@@ -1224,9 +1196,18 @@ local function StartBot()
                     end
                     nextPos = Vector3.new(nextPos.X, hrp.Position.Y, nextPos.Z)
                 elseif not inCave then
+                    local params = RaycastParams.new() params.FilterType = Enum.RaycastFilterType.Exclude local ignore = {char}for _, item in pairs(char:GetChildren()) do if item:IsA("Tool") or item:IsA("Model") then table.insert(ignore, item) end end
+
+                    if Workspace:FindFirstChild("IslandsModel") and Workspace["IslandsModel"]:FindFirstChild("NPCs") then table.insert(ignore, Workspace["IslandsModel"]["NPCs"]) end
+                    if Workspace:FindFirstChild("Trees") then table.insert(ignore, Workspace["Trees"]) end if Workspace:FindFirstChild("TreeFolder") then table.insert(ignore, Workspace["TreeFolder"]) end
+                    if Workspace:FindFirstChild("Ships") then table.insert(ignore, Workspace["Ships"]) end
+
+                    params.FilterDescendantsInstances = ignore 
+                    params.RespectCanCollide = true
+
                     local lookAheadDistance = 10
                     local scanOrigin = Vector3.new(nextPos.X, nextPos.Y + 300, nextPos.Z) + (moveDir * lookAheadDistance)
-                    local ray = Workspace:Raycast(scanOrigin, Vector3.new(0, -700, 0), cachedRayParams)
+                    local ray = Workspace:Raycast(scanOrigin, Vector3.new(0, -700, 0), params)
 
                     if ray and ray.Instance then 
                         groundY = ray.Position.Y 
@@ -1235,6 +1216,7 @@ local function StartBot()
                             targetY = tPos.Y + (hrp.Size.Y / 2) + 0.01 
                         end 
                     else 
+                        -- Nếu ở giữa biển, hạ sát xuống mặt nước lướt đi chứ không lơ lửng trên trời
                         targetY, trenBien = SEA_LEVEL, true 
                     end
                 else 
@@ -1297,7 +1279,9 @@ local function StartBot()
         end
     end)
 end
+
 local function StopBot()
+    -- RESET SẠCH CỜ TRẠNG THÁI (Đã chuyển lên đầu để luôn luôn chạy dọn dẹp Y khi đổi nút)
     _G.IsDigging, _G.FakeFallSpeed, _G.CurrentTarget, _G.StuckTime, _G.IsTeleportingHome = false, 0, nil, 0, false
     _G.DaDenDich = false
     _G.SellerStuckTime = nil
@@ -1311,6 +1295,7 @@ local function StopBot()
 
     isInteracting = false
 
+    -- Chỉ gỡ Connection và nhún Character khi TẮT HẲN cả 2 nút
     if not _G.AutoDigAndPick and not _G.AutoChestOnly then
         if _G.BotConnection then _G.BotConnection:Disconnect() _G.BotConnection = nil end 
         if _G.NoclipConnection then _G.NoclipConnection:Disconnect() _G.NoclipConnection = nil end
@@ -1333,7 +1318,7 @@ local function StopBot()
 end
 
 -- =======================================================
--- KẾT NỐI SỰ KIỆN NÚT UI (AUTO FARM & CHEST ONLY)
+-- KẾT NỐI UI VÀ KHỞI ĐỘNG CÔNG TÁC FARM
 -- =======================================================
 if BtnDig then BtnDig.Text = "AUTO FARM [OFF]" end
 if BtnDig then
@@ -1343,6 +1328,7 @@ if BtnDig then
             _G.AutoChestOnly = false 
             _G.CurrentTarget = nil
             
+            -- 🎯 3. THÊM DỌN CỜ KHI BẬT NÚT NÀY
             _G.IsEscapingStuck = false
             _G.TimeAtTarget = nil
             _G.TimeAfterTP = nil
@@ -1369,6 +1355,7 @@ if BtnPick then
             _G.AutoDigAndPick = false 
             _G.CurrentTarget = nil
             
+            -- 🎯 3. THÊM DỌN CỜ KHI BẬT NÚT NÀY
             _G.IsEscapingStuck = false
             _G.TimeAtTarget = nil
             _G.TimeAfterTP = nil
@@ -1387,10 +1374,7 @@ if BtnPick then
         end
     end)
 end
-
--- =======================================================
--- KHI RE-SPAWN KHỞI TẠO LẠI TRẠNG THÁI
--- =======================================================
+-- RESET SẠCH CỜ TRẠNG THÁI MỖI KHI HỒI SINH (CHARACTER RE-SPAWN)
 LocalPlayer.CharacterAdded:Connect(function(newChar)
     _G.IsDigging, _G.FakeFallSpeed, _G.CurrentTarget, _G.StuckTime, _G.IsTeleportingHome = false, 0, nil, 0, false
     _G.DaDenDich = false
@@ -1404,5 +1388,4 @@ LocalPlayer.CharacterAdded:Connect(function(newChar)
     _G.IsPausedForAntiCheat = false
 
     isInteracting = false
-    UpdateRaycastFilter(newChar)
 end)
