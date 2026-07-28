@@ -866,7 +866,7 @@ _G.AntiKickConnection = GuiService.ErrorMessageChanged:Connect(function()
 end)
 -- =======================================================
 
-local FLY_SPEED, FALL_LIMIT, CLIMB_LIMIT, OFFSET_DIST, LERP_SMOOTH, MAX_HEIGHT, SEA_LEVEL = 64.6, 64.6, 44.6, 3.5, 0.25, 8.0, 9.0
+local FLY_SPEED, FALL_LIMIT, CLIMB_LIMIT, OFFSET_DIST, LERP_SMOOTH, MAX_HEIGHT, SEA_LEVEL = 64.6, 64.6, 64.6, 3.5, 0.25, 8.0, 9.0
 
 local isInteracting = false 
 local function AutoTriggerPrompt(target)
@@ -1195,13 +1195,14 @@ local function StartBot()
                         targetY = (toSeller or ghostDoor) and sellerY_Chuan or (tPos.Y + (hrp.Size.Y / 2) + 1.8) 
                     end
                     nextPos = Vector3.new(nextPos.X, hrp.Position.Y, nextPos.Z)
-                                elseif not inCave then
-                    local params = RaycastParams.new()
-                    params.FilterType = Enum.RaycastFilterType.Include
-                    
-                    -- Chỉ nhận diện Thảm tàng hình FakeSeaFloor, lờ sạch toàn bộ đảo
-                    local seaFloor = workspace:FindFirstChild("FakeSeaFloor")
-                    params.FilterDescendantsInstances = seaFloor and {seaFloor} or {}
+                elseif not inCave then
+                    local params = RaycastParams.new() params.FilterType = Enum.RaycastFilterType.Exclude local ignore = {char}for _, item in pairs(char:GetChildren()) do if item:IsA("Tool") or item:IsA("Model") then table.insert(ignore, item) end end
+
+                    if Workspace:FindFirstChild("IslandsModel") and Workspace["IslandsModel"]:FindFirstChild("NPCs") then table.insert(ignore, Workspace["IslandsModel"]["NPCs"]) end
+                    if Workspace:FindFirstChild("Trees") then table.insert(ignore, Workspace["Trees"]) end if Workspace:FindFirstChild("TreeFolder") then table.insert(ignore, Workspace["TreeFolder"]) end
+                    if Workspace:FindFirstChild("Ships") then table.insert(ignore, Workspace["Ships"]) end
+
+                    params.FilterDescendantsInstances = ignore 
                     params.RespectCanCollide = true
 
                     local lookAheadDistance = 10
