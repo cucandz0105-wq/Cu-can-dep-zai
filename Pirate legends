@@ -989,7 +989,7 @@ local function StartBot()
         fakeSeaFloor.CFrame = CFrame.new(hrp.Position.X, 6.2, hrp.Position.Z)
      end
             -- =======================================================
-            -- ANTI-RUBBERBAND SYSTEM (CỬA SỔ THỜI GIAN 10 GIÂY THÔNG MINH)
+            -- ANTI-RUBBERBAND SYSTEM (CỬA SỔ THỜI GIAN THÔNG MINH)
             -- =======================================================
             if not _G.LastHrpPosition then 
                 _G.LastHrpPosition = hrp.Position
