@@ -1005,12 +1005,12 @@ local function StartBot()
                 return
             end
 
-            -- Tự động reset bộ đếm giật nếu quá 3s không bị giật nữa
-            if os.clock() - _G.LastRubberbandTime > 3.0 then
+            -- Tự động reset bộ đếm giật nếu quá 6s không bị giật nữa
+            if os.clock() - _G.LastRubberbandTime > 6.0 then
                 _G.RubberbandCount = 0
             end
 
-            -- Tự động hủy "Chế độ chờ 10s" nếu sau 10s không bị dính giật lại
+            -- Tự động hủy "Chế độ chờ 6s" nếu sau 6s không bị dính giật lại
             if _G.PauseStartTime and (os.clock() - _G.PauseStartTime > 6.0) then
                 _G.PauseStartTime = nil
             end
@@ -1024,7 +1024,7 @@ local function StartBot()
                 
                 -- BỊ GIẬT ĐỦ 8 LẦN
                 if _G.RubberbandCount >= 8 then 
-                    -- TRƯỜNG HỢP 1: Vẫn bị giật tiếp TRONG CỬA SỔ 10 GIÂY -> ĐỘT TỬ
+                    -- TRƯỜNG HỢP 1: Vẫn bị giật tiếp TRONG CỬA SỔ 6 GIÂY -> ĐỘT TỬ
                     if _G.PauseStartTime and (os.clock() - _G.PauseStartTime <= 6.0) then
                         if char and hum and hum.Health > 0 then 
                             _G.CurrentTarget = nil
