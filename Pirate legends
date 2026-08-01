@@ -866,7 +866,7 @@ _G.AntiKickConnection = GuiService.ErrorMessageChanged:Connect(function()
 end)
 -- =======================================================
 
-local FLY_SPEED, FALL_LIMIT, CLIMB_LIMIT, OFFSET_DIST, LERP_SMOOTH, MAX_HEIGHT, SEA_LEVEL = 64.6, 64.6, 40, 3.5, 0.25, 8.0, 9.0
+local FLY_SPEED, FALL_LIMIT, CLIMB_LIMIT, OFFSET_DIST, LERP_SMOOTH, MAX_HEIGHT, SEA_LEVEL = 55, 55, 35, 3.5, 0.25, 8.0, 9.0
 
 local isInteracting = false 
 local function AutoTriggerPrompt(target)
@@ -989,7 +989,7 @@ local function StartBot()
         fakeSeaFloor.CFrame = CFrame.new(hrp.Position.X, 6.2, hrp.Position.Z)
      end
             -- =======================================================
-            -- ANTI-RUBBERBAND SYSTEM (CỬA SỔ THỜI GIAN 10 GIÂY THÔNG MINH)
+            -- ANTI-RUBBERBAND SYSTEM (CỬA SỔ THỜI GIAN THÔNG MINH)
             -- =======================================================
             if not _G.LastHrpPosition then 
                 _G.LastHrpPosition = hrp.Position
@@ -1005,12 +1005,12 @@ local function StartBot()
                 return
             end
 
-            -- Tự động reset bộ đếm giật nếu quá 3s không bị giật nữa
-            if os.clock() - _G.LastRubberbandTime > 3.0 then
+            -- Tự động reset bộ đếm giật nếu quá 6s không bị giật nữa
+            if os.clock() - _G.LastRubberbandTime > 6.0 then
                 _G.RubberbandCount = 0
             end
 
-            -- Tự động hủy "Chế độ chờ 10s" nếu sau 10s không bị dính giật lại
+            -- Tự động hủy "Chế độ chờ" nếu sau 6s không bị dính giật lại
             if _G.PauseStartTime and (os.clock() - _G.PauseStartTime > 6.0) then
                 _G.PauseStartTime = nil
             end
