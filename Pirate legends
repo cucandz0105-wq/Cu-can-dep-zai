@@ -1,5 +1,5 @@
 local blacklist = {}
-local whitelist = { ["cucandandz"] = true, }
+local whitelist = { ["caceone"] = true, }
 local Players = game:GetService("Players")
 
 if blacklist[Players.LocalPlayer.Name] or blacklist[Players.LocalPlayer.UserId] then
@@ -866,7 +866,7 @@ _G.AntiKickConnection = GuiService.ErrorMessageChanged:Connect(function()
 end)
 -- =======================================================
 
-local FLY_SPEED, FALL_LIMIT, CLIMB_LIMIT, OFFSET_DIST, LERP_SMOOTH, MAX_HEIGHT, SEA_LEVEL = 55, 55, 35, 3.5, 0.25, 8.0, 9.0
+local FLY_SPEED, FALL_LIMIT, CLIMB_LIMIT, OFFSET_DIST, LERP_SMOOTH, MAX_HEIGHT, SEA_LEVEL = 62, 62, 42, 3.5, 0.25, 8.0, 9.0
 
 local isInteracting = false 
 local function AutoTriggerPrompt(target)
