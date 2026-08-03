@@ -563,7 +563,7 @@ TabAimBtn.MouseButton1Click:Connect(function()
     TabSwordBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
     TabSwordBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
     
-    -- Đổi nút ngoài màn hình về Hyper Aim (dùng biến AimBtn gốc của phần Aim)
+    -- Đổi nút ngoài màn hình về Hyper Aim
     if AimBtn then
         AimBtn.Text = "🎯\nHYPER AIM\nv12.1"
         AimBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -580,21 +580,22 @@ TabSwordBtn.MouseButton1Click:Connect(function()
     TabAimBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
     TabAimBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
     
-    -- Đổi nút ngoài màn hình sang Lãnh Địa Sword (dùng biến Btn của phần Lãnh Địa)
+    -- Dùng đúng biến `state_S` của hệ thống Lãnh Địa và nút `Btn`
     if Btn then
-        if state == "OFF" then
+        if state_S == "OFF" then
             Btn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
             Btn.Text = "MÚA\nOFF"
-        elseif state == "ON" then
+        elseif state_S == "ON" then
             Btn.BackgroundColor3 = Color3.fromRGB(255, 50, 120)
             Btn.Text = "CLICK\nMỞ LÃNH ĐỊA"
-        elseif state == "READY" then
+        elseif state_S == "READY" then
             Btn.BackgroundColor3 = Color3.fromRGB(0, 210, 100)
             Btn.Text = "TEST\nLÃNH ĐỊA!"
-        elseif state == "LOCKED" then
+        elseif state_S == "LOCKED" then
             Btn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
             Btn.Text = "ĐANG\nCHỜ..."
         end
+        
         local stroke = Btn:FindFirstChildOfClass("UIStroke")
         if stroke then stroke.Color = Color3.fromRGB(255, 100, 255) end
         Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
