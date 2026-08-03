@@ -251,6 +251,34 @@ _G.BoatFlyBtn.ZIndex = 17
 _G.BoatFlyBtn.Parent = FlyGroup
 Instance.new("UICorner", _G.BoatFlyBtn).CornerRadius = UDim.new(0, 8)
 
+_G.HeightLabel = Instance.new("TextLabel")
+_G.HeightLabel.Size = UDim2.new(1, -20, 0, 30)
+_G.HeightLabel.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+_G.HeightLabel.Text = "Độ Cao Thảm: Tắt"
+_G.HeightLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
+_G.HeightLabel.Font = Enum.Font.SourceSansBold
+_G.HeightLabel.TextSize = 14
+_G.HeightLabel.ZIndex = 17
+_G.HeightLabel.Parent = Container
+Instance.new("UICorner", _G.HeightLabel).CornerRadius = UDim.new(0, 6)
+
+local FlyGroup = Instance.new("Frame")
+FlyGroup.Size = UDim2.new(1, -20, 0, 45)
+FlyGroup.BackgroundTransparency = 1
+FlyGroup.ZIndex = 17
+FlyGroup.Parent = Container
+
+_G.BoatFlyBtn = Instance.new("TextButton")
+_G.BoatFlyBtn.Size = UDim2.new(0, 115, 0, 45)
+_G.BoatFlyBtn.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+_G.BoatFlyBtn.Text = "Thảm Nước: OFF"
+_G.BoatFlyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+_G.BoatFlyBtn.Font = Enum.Font.SourceSansBold
+_G.BoatFlyBtn.TextSize = 13
+_G.BoatFlyBtn.ZIndex = 17
+_G.BoatFlyBtn.Parent = FlyGroup
+Instance.new("UICorner", _G.BoatFlyBtn).CornerRadius = UDim.new(0, 8)
+
 _G.UpBtn = Instance.new("TextButton")
 _G.UpBtn.Size = UDim2.new(0, 35, 0, 45)
 _G.UpBtn.Position = UDim2.new(0, 122, 0, 0)
@@ -303,6 +331,7 @@ BtnPick.TextSize = 14
 BtnPick.ZIndex = 17
 BtnPick.Parent = FarmContainer
 Instance.new("UICorner", BtnPick).CornerRadius = UDim.new(0, 8)
+
 local CreditsLabel = Instance.new("TextLabel")
 CreditsLabel.Size = UDim2.new(1, 0, 0, 20)
 CreditsLabel.Position = UDim2.new(0, 0, 1, -20)
@@ -457,7 +486,6 @@ if _G.ToggleAimVisibleBtn then
         end
     end)
 end
-
 local TargetKeywords = {}
 local NpcScanningEnabled = false
 local lastPositions = {}
@@ -534,6 +562,23 @@ local function getClosestTargetModel()
                 end
             end
         end
+        return closestModel
+    end
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if obj:IsA("Model") and obj ~= character and obj:FindFirstChild("Humanoid") and obj.Humanoid.Health > 0 then
+            local p = Players:GetPlayerFromCharacter(obj)
+            if (p and p ~= LocalPlayer) or (not p and NpcScanningEnabled) then
+                local root = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Torso")
+                if root then
+                    local screenPos, onScreen = Camera:WorldToViewportPoint(root.Position)
+                    if onScreen then
+                        local dist = (Vector2.new(screenPos.X, screenPos.Y) - (Camera.ViewportSize / 2)).Magnitude
+                        if dist < minMouseDist then minMouseDist = dist closestModel = obj end
+                    end
+                end
+            end
+        end
+    end
     return closestModel
 end
 
@@ -666,6 +711,7 @@ local function assignBoatToGroup(seat)
         end
     end
 end
+
 RunService.PreSimulation:Connect(function()
     local seat = getDrivenSeat and getDrivenSeat()
     if seat then
@@ -847,7 +893,7 @@ _G.AntiKickConnection = GuiService.ErrorMessageChanged:Connect(function()
 end)
 -- =======================================================
 
-local FLY_SPEED, FALL_LIMIT, CLIMB_LIMIT, OFFSET_DIST, LERP_SMOOTH, MAX_HEIGHT, SEA_LEVEL = 64.6, 64.6, 64.6, 3.5, 0.25, 8.0, 9.0
+local FLY_SPEED, FALL_LIMIT, CLIMB_LIMIT, OFFSET_DIST, LERP_SMOOTH, MAX_HEIGHT, SEA_LEVEL = 61, 61, 41, 3.5, 0.25, 8.0, 9.0
 
 local isInteracting = false 
 local function AutoTriggerPrompt(target)
