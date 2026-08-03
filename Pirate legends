@@ -117,162 +117,6 @@ Title.TextSize = 14
 Title.ZIndex = 16
 Title.Parent = MainPanel
 
--- =======================================================
--- TÍCH HỢP 2 TAB (AIM & LÃNH ĐỊA SWORD) CHUẨN XÁC
--- =======================================================
-
-local TabBar = Instance.new("Frame")
-TabBar.Size = UDim2.new(1, -20, 0, 25)
-TabBar.Position = UDim2.new(0, 10, 0, 25)
-TabBar.BackgroundTransparency = 1
-TabBar.ZIndex = 16
-TabBar.Parent = MainPanel
-
-local Tab1Btn = Instance.new("TextButton")
-Tab1Btn.Size = UDim2.new(0.5, -4, 1, 0)
-Tab1Btn.Position = UDim2.new(0, 0, 0, 0)
-Tab1Btn.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
-Tab1Btn.Text = "Aim & Cài Đặt"
-Tab1Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-Tab1Btn.Font = Enum.Font.SourceSansBold
-Tab1Btn.TextSize = 11
-Tab1Btn.ZIndex = 17
-Tab1Btn.Parent = TabBar
-Instance.new("UICorner", Tab1Btn).CornerRadius = UDim.new(0, 4)
-
-local Tab2Btn = Instance.new("TextButton")
-Tab2Btn.Size = UDim2.new(0.5, -4, 1, 0)
-Tab2Btn.Position = UDim2.new(0.5, 4, 0, 0)
-Tab2Btn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-Tab2Btn.Text = "⚔️ Lãnh Địa"
-Tab2Btn.TextColor3 = Color3.fromRGB(150, 150, 150)
-Tab2Btn.Font = Enum.Font.SourceSansBold
-Tab2Btn.TextSize = 11
-Tab2Btn.ZIndex = 17
-Tab2Btn.Parent = TabBar
-Instance.new("UICorner", Tab2Btn).CornerRadius = UDim.new(0, 4)
-
--- Đổi Container cũ thành AimContent (Tab 1)
-local AimContent = Instance.new("ScrollingFrame")
-AimContent.Size = UDim2.new(1, 0, 1, -75)
-AimContent.Position = UDim2.new(0, 0, 0, 55)
-AimContent.BackgroundTransparency = 1
-AimContent.BorderSizePixel = 0
-AimContent.CanvasSize = UDim2.new(0, 0, 0, 285) 
-AimContent.ScrollBarThickness = 4
-AimContent.ZIndex = 16
-AimContent.Visible = true
-AimContent.Parent = MainPanel
-
-local UIListLayout = Instance.new("UIListLayout")
-UIListLayout.Parent = AimContent
-UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-UIListLayout.Padding = UDim.new(0, 8)
-UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-
--- Tạo nội dung riêng cho Tab 2 (SwordContent - Lãnh Địa Florentino)
-local SwordContent = Instance.new("ScrollingFrame")
-SwordContent.Size = UDim2.new(1, 0, 1, -75)
-SwordContent.Position = UDim2.new(0, 0, 0, 55)
-SwordContent.BackgroundTransparency = 1
-SwordContent.BorderSizePixel = 0
-SwordContent.CanvasSize = UDim2.new(0, 0, 0, 200) 
-SwordContent.ScrollBarThickness = 4
-SwordContent.ZIndex = 16
-SwordContent.Visible = false
-SwordContent.Parent = MainPanel
-
-local SwordListLayout = Instance.new("UIListLayout")
-SwordListLayout.Parent = SwordContent
-SwordListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-SwordListLayout.Padding = UDim.new(0, 8)
-SwordListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-
--- Nút Tắt Lãnh Địa trong Tab 2
-local CloseDomainBtn = Instance.new("TextButton")
-CloseDomainBtn.Size = UDim2.new(1, -20, 0, 40)
-CloseDomainBtn.BackgroundColor3 = Color3.fromRGB(150, 40, 40)
-CloseDomainBtn.Text = "❌ TẮT/HỦY LÃNH ĐỊA"
-CloseDomainBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-CloseDomainBtn.Font = Enum.Font.SourceSansBold
-CloseDomainBtn.TextSize = 13
-CloseDomainBtn.ZIndex = 17
-CloseDomainBtn.Parent = SwordContent
-Instance.new("UICorner", CloseDomainBtn).CornerRadius = UDim.new(0, 8)
-
--- Ô nhập Radius Lãnh Địa
-local RadiusInput = Instance.new("TextBox")
-RadiusInput.Size = UDim2.new(1, -20, 0, 40)
-RadiusInput.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-RadiusInput.Text = "100"
-RadiusInput.PlaceholderText = "Nhập bán kính Lãnh Địa..."
-RadiusInput.TextColor3 = Color3.fromRGB(255, 100, 255)
-RadiusInput.Font = Enum.Font.SourceSansBold
-RadiusInput.TextSize = 13
-RadiusInput.ZIndex = 17
-RadiusInput.Parent = SwordContent
-Instance.new("UICorner", RadiusInput).CornerRadius = UDim.new(0, 8)
-
--- Định nghĩa nút bấm ngoài màn hình cho Lãnh Địa (`Btn`)
-local Btn = Instance.new("TextButton")
-Btn.Size = UDim2.new(0, 85, 0, 85)
-Btn.Position = UDim2.new(0.82, 0, 0.45, 0)
-Btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-Btn.BorderSizePixel = 3
-Btn.BorderColor3 = Color3.fromRGB(255, 100, 255)
-Btn.Text = "MÚA\nOFF"
-Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-Btn.Font = Enum.Font.SourceSansBold
-local BtnStr = Instance.new("UIStroke", Btn)
-BtnStr.Color = Color3.fromRGB(255, 100, 255)
-Btn.TextSize = 11
-Btn.ZIndex = 10 
-Btn.Active = true
-Btn.Parent = _G.MainGui
-Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 42)
-makeDraggable(Btn)
-
--- LOGIC CHUYỂN TAB HOÀN CHỈNH (AIM <-> SWORD)
-Tab1Btn.MouseButton1Click:Connect(function()
-    AimContent.Visible = true
-    SwordContent.Visible = false
-    if AimBtn then AimBtn.Visible = true end
-    if Btn then Btn.Visible = false end
-
-    Tab1Btn.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
-    Tab1Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Tab2Btn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-    Tab2Btn.TextColor3 = Color3.fromRGB(150, 150, 150)
-end)
-
-Tab2Btn.MouseButton1Click:Connect(function()
-    AimContent.Visible = false
-    SwordContent.Visible = true
-    if AimBtn then AimBtn.Visible = false end
-    if Btn then Btn.Visible = true end
-
-    Tab2Btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    Tab2Btn.TextColor3 = Color3.fromRGB(255, 100, 255)
-    Tab1Btn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-    Tab1Btn.TextColor3 = Color3.fromRGB(150, 150, 150)
-    
-    if Btn then
-        if state_S == "OFF" then
-            Btn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-            Btn.Text = "MÚA\nOFF"
-        elseif state_S == "ON" then
-            Btn.BackgroundColor3 = Color3.fromRGB(255, 50, 120)
-            Btn.Text = "CLICK\nMỞ LÃNH ĐỊA"
-        elseif state_S == "READY" then
-            Btn.BackgroundColor3 = Color3.fromRGB(0, 210, 100)
-            Btn.Text = "TEST\nLÃNH ĐỊA!"
-        elseif state_S == "LOCKED" then
-            Btn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-            Btn.Text = "ĐANG\nCHỜ..."
-        end
-    end
-end)
-
 local TabBar = Instance.new("Frame")
 TabBar.Size = UDim2.new(1, -20, 0, 25)
 TabBar.Position = UDim2.new(0, 10, 0, 25)
@@ -459,7 +303,6 @@ BtnPick.TextSize = 14
 BtnPick.ZIndex = 17
 BtnPick.Parent = FarmContainer
 Instance.new("UICorner", BtnPick).CornerRadius = UDim.new(0, 8)
-
 local CreditsLabel = Instance.new("TextLabel")
 CreditsLabel.Size = UDim2.new(1, 0, 0, 20)
 CreditsLabel.Position = UDim2.new(0, 0, 1, -20)
@@ -477,11 +320,6 @@ makeDraggable(MainPanel)
 MenuButton.MouseButton1Click:Connect(function()
     MainPanel.Visible = not MainPanel.Visible
 end)
-
--- =======================================================
--- TÍCH HỢP MENU CHUNG: AIM (TAB 1) & LÃNH ĐỊA SWORD (TAB 2)
--- =======================================================
-
 local AimBtn = Instance.new("TextButton")
 AimBtn.Size = UDim2.new(0, 85, 0, 85)
 AimBtn.Position = UDim2.new(0.82, 0, 0.45, 0)
@@ -519,10 +357,9 @@ pcall(function()
     end)
 end)
 
--- KHUNG MENU CHUNG (CHỨA 2 TAB)
 local MenuFrame = Instance.new("Frame")
-MenuFrame.Size = UDim2.new(0, 210, 0, 185)
-MenuFrame.Position = UDim2.new(0.82, -260, 0.45, -35)
+MenuFrame.Size = UDim2.new(0, 200, 0, 155)
+MenuFrame.Position = UDim2.new(0.82, -250, 0.45, -35)
 MenuFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 MenuFrame.BackgroundTransparency = 0.05
 MenuFrame.BorderSizePixel = 2
@@ -533,52 +370,19 @@ MenuFrame.Active = true
 MenuFrame.Parent = _G.MainGui
 Instance.new("UICorner", MenuFrame).CornerRadius = UDim.new(0, 8)
 
--- THANH TAB CHUYỂN ĐỔI (NẰM TRÊN CÙNG TRONG NÚT ⚙️)
-local TabBarFrame = Instance.new("Frame", MenuFrame)
-TabBarFrame.Size = UDim2.new(1, 0, 0, 25)
-TabBarFrame.BackgroundTransparency = 1
-TabBarFrame.ZIndex = 101
-
-local TabAimBtn = Instance.new("TextButton", TabBarFrame)
-TabAimBtn.Size = UDim2.new(0.5, 0, 1, 0)
-TabAimBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-TabAimBtn.Text = "🎯 AIM TAB"
-TabAimBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-TabAimBtn.Font = Enum.Font.SourceSansBold
-TabAimBtn.TextSize = 10
-TabAimBtn.ZIndex = 102
-
-local TabSwordBtn = Instance.new("TextButton", TabBarFrame)
-TabSwordBtn.Size = UDim2.new(0.5, 0, 1, 0)
-TabSwordBtn.Position = UDim2.new(0.5, 0, 0, 0)
-TabSwordBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-TabSwordBtn.Text = "⚔️ SWORD"
-TabSwordBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
-TabSwordBtn.Font = Enum.Font.SourceSansBold
-TabSwordBtn.TextSize = 10
-TabSwordBtn.ZIndex = 102
-
--- NỘI DUNG TAB 1: AIM SETTING
-local AimContent = Instance.new("Frame", MenuFrame)
-AimContent.Size = UDim2.new(1, 0, 1, -25)
-AimContent.Position = UDim2.new(0, 0, 0, 25)
-AimContent.BackgroundTransparency = 1
-AimContent.Visible = true
-AimContent.ZIndex = 101
-
 local MenuTitle = Instance.new("TextLabel")
-MenuTitle.Size = UDim2.new(1, 0, 0, 20)
-MenuTitle.Text = "SMART HYPER AIM v12.1"
+MenuTitle.Size = UDim2.new(1, 0, 0, 25)
+MenuTitle.Text = "🎯 SMART HYPER AIM v12.1"
 MenuTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 MenuTitle.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 MenuTitle.Font = Enum.Font.SourceSansBold
-MenuTitle.TextSize = 9
-MenuTitle.ZIndex = 102
-MenuTitle.Parent = AimContent
+MenuTitle.TextSize = 10
+MenuTitle.ZIndex = 101
+MenuTitle.Parent = MenuFrame
 
 local TextBox = Instance.new("TextBox")
-TextBox.Size = UDim2.new(0.9, 0, 0, 35)
-TextBox.Position = UDim2.new(0.05, 0, 0.2, 0)
+TextBox.Size = UDim2.new(0.9, 0, 0, 40)
+TextBox.Position = UDim2.new(0.05, 0, 0.22, 0)
 TextBox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 TextBox.Text = "" 
 TextBox.PlaceholderText = "Nhập ID để khóa cứng mục tiêu..."
@@ -588,175 +392,47 @@ TextBox.Font = Enum.Font.SourceSans
 TextBox.TextSize = 11
 TextBox.ZIndex = 102
 TextBox.Active = true
-TextBox.Parent = AimContent
+TextBox.Parent = MenuFrame
 Instance.new("UICorner", TextBox).CornerRadius = UDim.new(0, 5)
 
 local NpcToggleBtn = Instance.new("TextButton")
 NpcToggleBtn.Size = UDim2.new(0, 90, 0, 25)
-NpcToggleBtn.Position = UDim2.new(0.05, 0, 0.52, 0)
+NpcToggleBtn.Position = UDim2.new(0.05, 0, 0.54, 0)
 NpcToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 10, 10)
 NpcToggleBtn.BorderSizePixel = 1
 NpcToggleBtn.BorderColor3 = Color3.fromRGB(255, 50, 50)
 NpcToggleBtn.Text = "👾 NPC QUÉT: TẮT"
 NpcToggleBtn.TextColor3 = Color3.fromRGB(255, 80, 80)
 NpcToggleBtn.Font = Enum.Font.SourceSansBold
-NpcToggleBtn.TextSize = 9
+NpcToggleBtn.TextSize = 10
 NpcToggleBtn.ZIndex = 102
 NpcToggleBtn.Active = true
-NpcToggleBtn.Parent = AimContent
+NpcToggleBtn.Parent = MenuFrame
 Instance.new("UICorner", NpcToggleBtn).CornerRadius = UDim.new(0, 4)
 
 local ClearBtn = Instance.new("TextButton")
 ClearBtn.Size = UDim2.new(0, 90, 0, 25)
-ClearBtn.Position = UDim2.new(0.52, 0, 0.52, 0)
+ClearBtn.Position = UDim2.new(0.52, 0, 0.54, 0)
 ClearBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
 ClearBtn.Text = "🧹 XÓA TRỐNG BOX"
 ClearBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 ClearBtn.Font = Enum.Font.SourceSansBold
-ClearBtn.TextSize = 9
+ClearBtn.TextSize = 10
 ClearBtn.ZIndex = 102
 ClearBtn.Active = true
-ClearBtn.Parent = AimContent
+ClearBtn.Parent = MenuFrame
 Instance.new("UICorner", ClearBtn).CornerRadius = UDim.new(0, 4)
 
 local StatusLabel = Instance.new("TextLabel")
-StatusLabel.Size = UDim2.new(0.9, 0, 0, 25)
-StatusLabel.Position = UDim2.new(0.05, 0, 0.75, 0)
+StatusLabel.Size = UDim2.new(0.9, 0, 0, 20)
+StatusLabel.Position = UDim2.new(0.05, 0, 0.78, 0)
 StatusLabel.Text = "Trạng thái: Đã kích hoạt bộ chống kẹt nút Aim"
 StatusLabel.TextColor3 = Color3.fromRGB(0, 255, 255)
 StatusLabel.BackgroundTransparency = 1
 StatusLabel.Font = Enum.Font.SourceSansItalic
-StatusLabel.TextSize = 8
+StatusLabel.TextSize = 9
 StatusLabel.ZIndex = 101
-StatusLabel.Parent = AimContent
-
-
--- NỘI DUNG TAB 2: SWORD / LÃNH ĐỊA FLORENTINO
-local SwordContent = Instance.new("Frame", MenuFrame)
-SwordContent.Size = UDim2.new(1, 0, 1, -25)
-SwordContent.Position = UDim2.new(0, 0, 0, 25)
-SwordContent.BackgroundTransparency = 1
-SwordContent.Visible = false
-SwordContent.ZIndex = 101
-
-local SwordTitle = Instance.new("TextLabel", SwordContent)
-SwordTitle.Size = UDim2.new(1, 0, 0, 20)
-SwordTitle.Text = "🌸 LÃNH ĐỊA FLORENTINO"
-SwordTitle.TextColor3 = Color3.fromRGB(255, 100, 255)
-SwordTitle.BackgroundColor3 = Color3.fromRGB(40, 20, 40)
-SwordTitle.Font = Enum.Font.SourceSansBold
-SwordTitle.TextSize = 9
-SwordTitle.ZIndex = 102
-
-local RadiusLabel = Instance.new("TextLabel", SwordContent)
-RadiusLabel.Size = UDim2.new(0.9, 0, 0, 18)
-RadiusLabel.Position = UDim2.new(0.05, 0, 0.2, 0)
-RadiusLabel.BackgroundTransparency = 1
-RadiusLabel.Text = "Bán kính Radius Lãnh Địa:"
-RadiusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-RadiusLabel.Font = Enum.Font.SourceSansBold
-RadiusLabel.TextSize = 10
-RadiusLabel.ZIndex = 102
-
-local RadiusInput = Instance.new("TextBox", SwordContent)
-RadiusInput.Size = UDim2.new(0.9, 0, 0, 35)
-RadiusInput.Position = UDim2.new(0.05, 0, 0.35, 0)
-RadiusInput.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-RadiusInput.Text = "100"
-RadiusInput.TextColor3 = Color3.fromRGB(0, 255, 150)
-RadiusInput.Font = Enum.Font.SourceSansBold
-RadiusInput.TextSize = 13
-RadiusInput.ZIndex = 102
-Instance.new("UICorner", RadiusInput).CornerRadius = UDim.new(0, 5)
-
--- Nút Tắt Lãnh Địa (❌) đặt trực tiếp trong Tab 2
-local CloseDomainBtn = Instance.new("TextButton", SwordContent)
-CloseDomainBtn.Size = UDim2.new(0.9, 0, 0, 35)
-CloseDomainBtn.Position = UDim2.new(0.05, 0, 0.72, 0)
-CloseDomainBtn.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
-CloseDomainBtn.Text = "❌ TẮT LÃNH ĐỊA"
-CloseDomainBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-CloseDomainBtn.Font = Enum.Font.SourceSansBold
-CloseDomainBtn.TextSize = 12
-CloseDomainBtn.ZIndex = 102
-Instance.new("UICorner", CloseDomainBtn).CornerRadius = UDim.new(0, 6)
-
--- LOGIC CHUYỂN TAB QUA LẠI
-TabAimBtn.MouseButton1Click:Connect(function()
-    AimContent.Visible = true
-    SwordContent.Visible = false
-    TabAimBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    TabAimBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    TabSwordBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-    TabSwordBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
-end)
-
--- LOGIC CHUYỂN TAB QUA LẠI
-TabAimBtn.MouseButton1Click:Connect(function()
-    AimContent.Visible = true
-    SwordContent.Visible = false
-    TabAimBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    TabAimBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    TabSwordBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-    TabSwordBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
-    
-    -- Thêm đoạn này để khi bấm lại Tab Aim, nút ngoài màn hình đổi về Hyper Aim:
-    AimBtn.Text = "🎯\nHYPER AIM\nv12.1"
-    AimBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    AimBtn.BorderColor3 = Color3.fromRGB(255, 255, 255)
-    AimBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-end)
-
--- =======================================================
--- LOGIC CHUYỂN TAB HOÀN CHỈNH (AIM <-> SWORD)
--- =======================================================
-
-TabAimBtn.MouseButton1Click:Connect(function()
-    AimContent.Visible = true
-    SwordContent.Visible = false
-    TabAimBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    TabAimBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    TabSwordBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-    TabSwordBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
-    
-    -- Đổi nút ngoài màn hình về Hyper Aim
-    if AimBtn then
-        AimBtn.Text = "🎯\nHYPER AIM\nv12.1"
-        AimBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-        AimBtn.BorderColor3 = Color3.fromRGB(255, 255, 255)
-        AimBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    end
-end)
-
-TabSwordBtn.MouseButton1Click:Connect(function()
-    AimContent.Visible = false
-    SwordContent.Visible = true
-    TabSwordBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    TabSwordBtn.TextColor3 = Color3.fromRGB(255, 100, 255)
-    TabAimBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-    TabAimBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
-    
-    -- Dùng đúng biến `state_S` của hệ thống Lãnh Địa và nút `Btn`
-    if Btn then
-        if state_S == "OFF" then
-            Btn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-            Btn.Text = "MÚA\nOFF"
-        elseif state_S == "ON" then
-            Btn.BackgroundColor3 = Color3.fromRGB(255, 50, 120)
-            Btn.Text = "CLICK\nMỞ LÃNH ĐỊA"
-        elseif state_S == "READY" then
-            Btn.BackgroundColor3 = Color3.fromRGB(0, 210, 100)
-            Btn.Text = "TEST\nLÃNH ĐỊA!"
-        elseif state_S == "LOCKED" then
-            Btn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-            Btn.Text = "ĐANG\nCHỜ..."
-        end
-        
-        local stroke = Btn:FindFirstChildOfClass("UIStroke")
-        if stroke then stroke.Color = Color3.fromRGB(255, 100, 255) end
-        Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    end
-end)
+StatusLabel.Parent = MenuFrame
 
 local menuOpen = false
 ToggleMenuBtn.MouseButton1Click:Connect(function()
@@ -858,23 +534,6 @@ local function getClosestTargetModel()
                 end
             end
         end
-        return closestModel
-    end
-    for _, obj in pairs(Workspace:GetDescendants()) do
-        if obj:IsA("Model") and obj ~= character and obj:FindFirstChild("Humanoid") and obj.Humanoid.Health > 0 then
-            local p = Players:GetPlayerFromCharacter(obj)
-            if (p and p ~= LocalPlayer) or (not p and NpcScanningEnabled) then
-                local root = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Torso")
-                if root then
-                    local screenPos, onScreen = Camera:WorldToViewportPoint(root.Position)
-                    if onScreen then
-                        local dist = (Vector2.new(screenPos.X, screenPos.Y) - (Camera.ViewportSize / 2)).Magnitude
-                        if dist < minMouseDist then minMouseDist = dist closestModel = obj end
-                    end
-                end
-            end
-        end
-    end
     return closestModel
 end
 
@@ -1007,7 +666,6 @@ local function assignBoatToGroup(seat)
         end
     end
 end
-
 RunService.PreSimulation:Connect(function()
     local seat = getDrivenSeat and getDrivenSeat()
     if seat then
@@ -1189,7 +847,7 @@ _G.AntiKickConnection = GuiService.ErrorMessageChanged:Connect(function()
 end)
 -- =======================================================
 
-local FLY_SPEED, FALL_LIMIT, CLIMB_LIMIT, OFFSET_DIST, LERP_SMOOTH, MAX_HEIGHT, SEA_LEVEL = 62, 62, 42, 3.5, 0.25, 8.0, 9.0
+local FLY_SPEED, FALL_LIMIT, CLIMB_LIMIT, OFFSET_DIST, LERP_SMOOTH, MAX_HEIGHT, SEA_LEVEL = 64.6, 64.6, 64.6, 3.5, 0.25, 8.0, 9.0
 
 local isInteracting = false 
 local function AutoTriggerPrompt(target)
@@ -1333,7 +991,7 @@ local function StartBot()
                 _G.RubberbandCount = 0
             end
 
-            -- Tự động hủy "Chế độ chờ" nếu sau 6s không bị dính giật lại
+            -- Tự động hủy "Chế độ chờ " nếu sau 6s không bị dính giật lại
             if _G.PauseStartTime and (os.clock() - _G.PauseStartTime > 6.0) then
                 _G.PauseStartTime = nil
             end
@@ -1711,318 +1369,4 @@ LocalPlayer.CharacterAdded:Connect(function(newChar)
     _G.IsPausedForAntiCheat = false
 
     isInteracting = false
-end)
-
--- =======================================================
--- LOGIC HỆ THỐNG LÃNH ĐỊA FLORENTINO (Dán ở cuối file)
--- =======================================================
-local P, UIS_S, RS_S = game:GetService("Players"), game:GetService("UserInputService"), game:GetService("RunService")
-local LP_S = P.LocalPlayer
-local Mouse_S = LP_S:GetMouse()
-local R_Val, FH_Val, PS_Val = 100, 1.0, 300
-local state_S, centerPos_S, folder_S, conn_S, flying_S, combo_S = "OFF", nil, nil, nil, false, false
-
--- Liên kết ô nhập Radius với biến R_Val
-if RadiusInput then
-    RadiusInput.FocusLost:Connect(function()
-        local n = tonumber(RadiusInput.Text)
-        if n and n > 0 then 
-            R_Val = n 
-        else
-            RadiusInput.Text = tostring(R_Val)
-        end
-    end)
-end
-
-local function SetDomainState(s)
-    state_S = s
-end
-
-local DoCombo_Func, ThrowFlower_Func
-
-local function GetNearestPInsideDomain_Func(domainCenter, range)
-    local t, dist = nil, range
-    for _, p in ipairs(P:GetPlayers()) do
-        if p ~= LP_S and p.Character then
-            local hrp, hum = p.Character:FindFirstChild("HumanoidRootPart"), p.Character:FindFirstChild("Humanoid")
-            if hrp and hum and hum.Health > 0 then
-                local distToCenter = (hrp.Position - domainCenter).Magnitude
-                if distToCenter <= range then
-                    local d = (LP_S.Character.HumanoidRootPart.Position - hrp.Position).Magnitude
-                    if d <= dist then dist, t = d, hrp end
-                end
-            end
-        end
-    end
-    return t
-end
-
-local function CreateDomain_Func(tPos)
-    folder_S = Instance.new("Folder", workspace)
-    folder_S.Name = "FlorentinoFlowers"
-    centerPos_S = tPos
-    
-    local domainSphere = Instance.new("Part", folder_S)
-    domainSphere.Name = "PurpleFlower"
-    domainSphere.Shape = Enum.PartType.Ball
-    domainSphere.Size = Vector3.new(2, 2, 2)
-    domainSphere.Position = tPos + Vector3.new(0, 2, 0)
-    domainSphere.Material = Enum.Material.Glass
-    domainSphere.Color = Color3.fromRGB(180, 50, 255)
-    domainSphere.Transparency = 0.88
-    domainSphere.Anchored = true
-    domainSphere.CanCollide = false
-
-    local l = Instance.new("PointLight", domainSphere)
-    l.Color, l.Range, l.Brightness = Color3.fromRGB(220, 100, 255), R_Val, 10
-
-    task.spawn(function()
-        for i = 1, 40 do
-            if not domainSphere or not domainSphere.Parent then break end
-            local alpha = i / 40
-            local smoothAlpha = 1 - math.pow(1 - alpha, 2)
-            local currentSize = smoothAlpha * (R_Val * 2)
-            domainSphere.Size = Vector3.new(currentSize, currentSize, currentSize)
-            task.wait(0.03)
-        end
-        if domainSphere then domainSphere.Size = Vector3.new(R_Val * 2, R_Val * 2, R_Val * 2) end
-    end)
-
-    local orbitingOrbs = {}
-    local ringsConfig = {
-        { count = 12, speed = 0.7,   radiusFactor = 0.98, heightOffset = 2,   dir = 1  },
-        { count = 10, speed = -0.9,  radiusFactor = 0.85, heightOffset = R_Val*0.5, dir = -1 },
-        { count = 10, speed = 1.1,   radiusFactor = 0.85, heightOffset = -R_Val*0.5, dir = 1  }
-    }
-
-    for _, config in ipairs(ringsConfig) do
-        for i = 1, config.count do
-            local orb = Instance.new("Part", folder_S)
-            orb.Shape = Enum.PartType.Ball
-            orb.Material = Enum.Material.Neon
-            orb.Color = (i % 2 == 0) and Color3.fromRGB(240, 150, 255) or Color3.fromRGB(180, 220, 255)
-            orb.Anchored = true
-            orb.CanCollide = false
-            orb.Size = Vector3.new(4.5, 4.5, 4.5)
-            
-            local orbLight = Instance.new("PointLight", orb)
-            orbLight.Color, orbLight.Range, orbLight.Brightness = orb.Color, 18, 4
-            
-            table.insert(orbitingOrbs, {
-                part = orb, angleOffset = i * (6.28 / config.count), speed = config.speed, 
-                radiusFactor = config.radiusFactor, heightOffset = config.heightOffset, dir = config.dir
-            })
-        end
-    end
-
-    local tickC = 0
-    conn_S = RS_S.RenderStepped:Connect(function(dt)
-        if not folder_S or not folder_S.Parent then if conn_S then conn_S:Disconnect() end return end
-        tickC = tickC + dt
-        for _, item in ipairs(orbitingOrbs) do
-            if item.part and item.part.Parent then
-                local currentAngle = (tickC * item.speed * item.dir) + item.angleOffset
-                local orbitRadius = R_Val * item.radiusFactor
-                local posX = tPos.X + math.cos(currentAngle) * orbitRadius
-                local posY = tPos.Y + item.heightOffset + math.sin(tickC * 2 + item.angleOffset) * (R_Val * 0.15)
-                local posZ = tPos.Z + math.sin(currentAngle) * orbitRadius
-                item.part.Position = Vector3.new(posX, posY, posZ)
-            end
-        end
-    end)
-    SetDomainState("READY")
-end
-
-local function MeteorFX_Func(pos)
-    local beam = Instance.new("Part", workspace)
-    beam.Shape, beam.Size, beam.CFrame, beam.Material, beam.Color, beam.Anchored, beam.CanCollide, beam.Transparency = Enum.PartType.Cylinder, Vector3.new(1, 60, 60), CFrame.new(pos) * CFrame.Angles(0, 0, math.rad(90)), Enum.Material.Neon, Color3.fromRGB(240, 80, 255), true, false, 0.0
-    
-    local ringBeam = Instance.new("Part", workspace)
-    ringBeam.Shape, ringBeam.Size, ringBeam.CFrame, ringBeam.Material, ringBeam.Color, ringBeam.Anchored, ringBeam.CanCollide, ringBeam.Transparency = Enum.PartType.Cylinder, Vector3.new(1, 75, 75), CFrame.new(pos) * CFrame.Angles(0, 0, math.rad(90)), Enum.Material.Neon, Color3.fromRGB(255, 200, 255), true, false, 0.2
-    
-    local light = Instance.new("PointLight", beam)
-    light.Color, light.Range, light.Brightness = Color3.fromRGB(255, 100, 255), 150, 50
-
-    local ringSpears = {}
-    local spearCount = 20 
-    local orbitRadius = 35
-
-    task.spawn(function()
-        for s = 1, spearCount do
-            local spear = Instance.new("Part", workspace)
-            spear.Shape = Enum.PartType.Cylinder
-            spear.Material = Enum.Material.Neon
-            spear.Color = (s % 2 == 0) and Color3.fromRGB(255, 120, 255) or Color3.fromRGB(160, 220, 255)
-            spear.Anchored = true
-            spear.CanCollide = false
-            spear.Transparency = 0.1
-            table.insert(ringSpears, {part = spear, angle = s * (6.28 / spearCount)})
-        end
-
-        for i = 1, 25 do
-            if not beam or not beam.Parent then break end
-            local alpha = i / 25
-            local currentHeight = alpha * 500
-            beam.Size = Vector3.new(currentHeight, 60, 60)
-            beam.CFrame = CFrame.new(pos + Vector3.new(0, currentHeight / 2, 0)) * CFrame.Angles(0, 0, math.rad(90))
-            ringBeam.Size = Vector3.new(currentHeight * 0.95, 75, 75)
-            ringBeam.CFrame = CFrame.new(pos + Vector3.new(0, currentHeight / 2, 0)) * CFrame.Angles(0, 0, math.rad(90))
-            task.wait(0.04)
-        end
-
-        local rotTick = 0
-        local syncConn
-        syncConn = RS_S.Heartbeat:Connect(function(dt)
-            if not beam or not beam.Parent then if syncConn then syncConn:Disconnect() end return end
-            rotTick = rotTick + (dt * 0.7)
-            local currentHeight = beam.Size.X
-            for _, sp in ipairs(ringSpears) do
-                if sp.part and sp.part.Parent then
-                    sp.part.Size = Vector3.new(currentHeight, 2.5, 2.5)
-                    local currentAngle = sp.angle + rotTick
-                    sp.part.CFrame = CFrame.new(pos.X + math.cos(currentAngle) * orbitRadius, pos.Y + currentHeight / 2, pos.Z + math.sin(currentAngle) * orbitRadius) * CFrame.Angles(0, currentAngle, math.rad(90))
-                end
-            end
-        end)
-
-        task.wait(3.0)
-        for i = 1, 20 do
-            if not beam or not beam.Parent then break end
-            local alpha = i / 20
-            local currentHeight = 500 - (alpha * 250)
-            beam.Size = Vector3.new(currentHeight, 60, 60)
-            beam.CFrame = CFrame.new(pos + Vector3.new(0, currentHeight / 2, 0)) * CFrame.Angles(0, 0, math.rad(90))
-            ringBeam.Size = Vector3.new(currentHeight * 0.95, 75, 75)
-            ringBeam.CFrame = CFrame.new(pos + Vector3.new(0, currentHeight / 2, 0)) * CFrame.Angles(0, 0, math.rad(90))
-            task.wait(0.04)
-        end
-
-        local sphere = Instance.new("Part", workspace)
-        sphere.Shape, sphere.Size, sphere.Position, sphere.Material, sphere.Color, sphere.Anchored, sphere.CanCollide, sphere.Transparency = Enum.PartType.Ball, Vector3.new(20, 20, 20), pos, Enum.Material.Neon, Color3.fromRGB(220, 0, 255), true, false, 0.05
-
-        CreateDomain_Func(pos)
-
-        task.spawn(function()
-            for i = 1, 200 do
-                if not sphere or not sphere.Parent then break end
-                local alpha = i / 200
-                local sSize = 20 + (1 - math.pow(1 - alpha, 2)) * (R_Val * 8.0)
-                sphere.Size = Vector3.new(sSize, sSize, sSize)
-                sphere.Transparency = 0.05 + (alpha * 0.95)
-                task.wait(0.05)
-            end
-            if sphere then sphere:Destroy() end
-        end)
-
-        for i = 1, 25 do
-            if not beam or not beam.Parent then break end
-            local alpha = i / 25
-            local currentHeight = math.max(0, 250 - (alpha * 250))
-            beam.Size = Vector3.new(currentHeight, 60, 60)
-            beam.CFrame = CFrame.new(pos + Vector3.new(0, currentHeight / 2, 0)) * CFrame.Angles(0, 0, math.rad(90))
-            beam.Transparency = alpha
-            task.wait(0.04)
-        end
-        
-        if syncConn then syncConn:Disconnect() end
-        for _, sp in ipairs(ringSpears) do if sp.part then sp.part:Destroy() end end
-        if beam then beam:Destroy() end 
-        if ringBeam then ringBeam:Destroy() end
-    end)
-end
-
-ThrowFlower_Func = function(tPos)
-    if flying_S or workspace:FindFirstChild("FlorentinoFlowers") then return end
-    local char, hrp = LP_S.Character, LP_S.Character and LP_S.Character:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-    flying_S = true
-    SetDomainState("LOCKED")
-
-    local proj = Instance.new("Part", workspace)
-    proj.Shape, proj.Size, proj.Position, proj.Material, proj.Color, proj.CanCollide = Enum.PartType.Ball, Vector3.new(2.8, 2.8, 2.8), hrp.Position + Vector3.new(0, 1.5, 0), Enum.Material.Neon, Color3.fromRGB(220, 50, 255), false
-    Instance.new("PointLight", proj).Color, proj.PointLight.Range, proj.PointLight.Brightness = Color3.fromRGB(220, 50, 255), 14, 6
-    local bv = Instance.new("BodyVelocity", proj)
-    bv.Velocity, bv.MaxForce = (tPos - proj.Position).Unit * PS_Val, Vector3.new(math.huge, math.huge, math.huge)
-
-    local hitConn
-    hitConn = proj.Touched:Connect(function(hit)
-        if hit:IsDescendantOf(char) then return end
-        if hitConn then hitConn:Disconnect() end
-        flying_S = false
-        local hPos = proj.Position
-        proj:Destroy()
-        MeteorFX_Func(hPos)
-    end)
-
-    task.delay(6, function()
-        if flying_S then
-            flying_S = false
-            if hitConn then hitConn:Disconnect() end
-            if proj and proj.Parent then proj:Destroy() end
-            SetDomainState("OFF")
-        end
-    end)
-end
-
-DoCombo_Func = function()
-    if combo_S then return end
-    local char, hrp = LP_S.Character, LP_S.Character and LP_S.Character:FindFirstChild("HumanoidRootPart")
-    local fObj = workspace:FindFirstChild("FlorentinoFlowers")
-    if not char or not hrp or not fObj or not centerPos_S then combo_S = false; return end
-
-    if (hrp.Position - centerPos_S).Magnitude > R_Val then return end
-    local eHRP = GetNearestPInsideDomain_Func(centerPos_S, R_Val)
-    if not eHRP then return end
-
-    combo_S = true
-    local noclip = RS_S.Stepped:Connect(function()
-        if LP_S.Character then for _, p in ipairs(LP_S.Character:GetDescendants()) do if p:IsA("BasePart") then p.CanCollide = false end end end
-    end)
-
-    local bv = Instance.new("BodyVelocity", hrp)
-    bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-    
-    while eHRP and eHRP.Parent and workspace:FindFirstChild("FlorentinoFlowers") and centerPos_S do
-        if (eHRP.Position - centerPos_S).Magnitude > R_Val or (hrp.Position - eHRP.Position).Magnitude <= 8 then break end
-        hrp.CFrame = CFrame.lookAt(hrp.Position, eHRP.Position)
-        bv.Velocity = (eHRP.Position - hrp.Position).Unit * 50
-        task.wait(0.01)
-    end
-    bv:Destroy()
-    if noclip then noclip:Disconnect() end
-
-    if workspace:FindFirstChild("FlorentinoFlowers") and eHRP and eHRP.Parent then
-        local sw = char:FindFirstChild("Sword")
-        local startTime = os.clock()
-        while os.clock() - startTime < 5 do
-            if not eHRP or not eHRP.Parent or not workspace:FindFirstChild("FlorentinoFlowers") then break end
-            local targetCFrame = eHRP.CFrame
-            hrp.CFrame = CFrame.new(targetCFrame.Position - (targetCFrame.LookVector * 2) + Vector3.new(0, 0.5, 0), targetCFrame.Position + targetCFrame.LookVector * 5)
-            if sw and sw:FindFirstChild("ToolFolder") and sw.ToolFolder.Remotes:FindFirstChild("SlashRem") then
-                sw.ToolFolder.Remotes.SlashRem:FireServer()
-            end
-            RS_S.Heartbeat:Wait()
-        end
-    end
-    
-    if workspace:FindFirstChild("FlorentinoFlowers") then SetDomainState("READY") else SetDomainState("OFF") end
-    combo_S = false
-end
-
--- SỰ KIỆN NÚT ❌ TẮT LÃNH ĐỊA TRONG TAB 2
-if CloseDomainBtn then
-    CloseDomainBtn.MouseButton1Click:Connect(function()
-        if conn_S then conn_S:Disconnect(); conn_S = nil end
-        local f = workspace:FindFirstChild("FlorentinoFlowers")
-        if f then f:Destroy() end
-        flying_S = false
-        combo_S = false
-        centerPos_S = nil
-        SetDomainState("OFF")
-    end)
-end
-
--- Ném skill lãnh địa khi bấm chuột xuống đất (Chỉ hoạt động khi ở chế độ bật lãnh địa)
-Mouse_S.Button1Down:Connect(function()
-    if state_S == "ON" and Mouse_S.Hit then ThrowFlower_Func(Mouse_S.Hit.Position) elseif state_S == "READY" then DoCombo_Func() end
 end)
