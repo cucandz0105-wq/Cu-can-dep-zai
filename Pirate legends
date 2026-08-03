@@ -542,6 +542,20 @@ TabSwordBtn.MouseButton1Click:Connect(function()
     TabSwordBtn.TextColor3 = Color3.fromRGB(255, 100, 255)
     TabAimBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
     TabAimBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
+    
+    -- Thêm đoạn này để nút tròn to ngoài màn hình biến đổi thành Lãnh Địa Sword:
+    if state == "OFF" then
+        AimBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+        AimBtn.Text = "MÚA\nOFF"
+    elseif state == "ON" then
+        AimBtn.BackgroundColor3 = Color3.fromRGB(255, 50, 120)
+        AimBtn.Text = "CLICK\nMỞ LÃNH ĐỊA"
+    elseif state == "READY" then
+        AimBtn.BackgroundColor3 = Color3.fromRGB(0, 210, 100)
+        AimBtn.Text = "TEST\nLÃNH ĐỊA!"
+    end
+    AimBtn.BorderColor3 = Color3.fromRGB(255, 100, 255)
+    AimBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 end)
 
 local menuOpen = false
