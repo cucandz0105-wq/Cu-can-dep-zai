@@ -358,8 +358,11 @@ pcall(function()
     end)
 end)
 
+-- ==========================================
+-- ⚙️ MENU CÀI ĐẶT TÍCH HỢP 2 TAB (AIM & SWORD)
+-- ==========================================
 local MenuFrame = Instance.new("Frame")
-MenuFrame.Size = UDim2.new(0, 200, 0, 155)
+MenuFrame.Size = UDim2.new(0, 200, 0, 165)
 MenuFrame.Position = UDim2.new(0.82, -250, 0.45, -35)
 MenuFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 MenuFrame.BackgroundTransparency = 0.05
@@ -371,23 +374,152 @@ MenuFrame.Active = true
 MenuFrame.Parent = _G.MainGui
 Instance.new("UICorner", MenuFrame).CornerRadius = UDim.new(0, 8)
 
-local MenuTitle = Instance.new("TextLabel")
-MenuTitle.Size = UDim2.new(1, 0, 0, 25)
-MenuTitle.Text = "🎯 SMART HYPER AIM v12.1"
-MenuTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-MenuTitle.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-MenuTitle.Font = Enum.Font.SourceSansBold
-MenuTitle.TextSize = 10
-MenuTitle.ZIndex = 101
-MenuTitle.Parent = MenuFrame
+-- Thanh chuyển đổi Tab (Aim vs Sword)
+local SwitchTabBar = Instance.new("Frame")
+SwitchTabBar.Size = UDim2.new(1, -10, 0, 25)
+SwitchTabBar.Position = UDim2.new(0, 5, 0, 5)
+SwitchTabBar.BackgroundTransparency = 1
+SwitchTabBar.ZIndex = 101
+SwitchTabBar.Parent = MenuFrame
+
+local AimTabBtn = Instance.new("TextButton")
+AimTabBtn.Size = UDim2.new(0.5, -3, 1, 0)
+AimTabBtn.Position = UDim2.new(0, 0, 0, 0)
+AimTabBtn.BackgroundColor3 = Color3.fromRGB(0, 128, 0)
+AimTabBtn.Text = "🎯 AIM"
+AimTabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+AimTabBtn.Font = Enum.Font.SourceSansBold
+AimTabBtn.TextSize = 11
+AimTabBtn.ZIndex = 102
+AimTabBtn.Parent = SwitchTabBar
+Instance.new("UICorner", AimTabBtn).CornerRadius = UDim.new(0, 4)
+
+local SwordTabBtn = Instance.new("TextButton")
+SwordTabBtn.Size = UDim2.new(0.5, -3, 1, 0)
+SwordTabBtn.Position = UDim2.new(0.5, 3, 0, 0)
+SwordTabBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+SwordTabBtn.Text = "⚔️ SWORD"
+SwordTabBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
+SwordTabBtn.Font = Enum.Font.SourceSansBold
+SwordTabBtn.TextSize = 11
+SwordTabBtn.ZIndex = 102
+SwordTabBtn.Parent = SwitchTabBar
+Instance.new("UICorner", SwordTabBtn).CornerRadius = UDim.new(0, 4)
+
+-- Khu vực nội dung Tab Aim (Chứa các nútAim cũ)
+local AimContent = Instance.new("Frame")
+AimContent.Size = UDim2.new(1, 0, 1, -35)
+AimContent.Position = UDim2.new(0, 0, 0, 32)
+AimContent.BackgroundTransparency = 1
+AimContent.ZIndex = 101
+AimContent.Visible = true
+AimContent.Parent = MenuFrame
 
 local TextBox = Instance.new("TextBox")
-TextBox.Size = UDim2.new(0.9, 0, 0, 40)
-TextBox.Position = UDim2.new(0.05, 0, 0.22, 0)
+TextBox.Size = UDim2.new(0.9, 0, 0, 35)
+TextBox.Position = UDim2.new(0.05, 0, 0.05, 0)
 TextBox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 TextBox.Text = "" 
 TextBox.PlaceholderText = "Nhập ID để khóa cứng mục tiêu..."
 TextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+TextBox.TextWrapped = true
+TextBox.Font = Enum.Font.SourceSans
+TextBox.TextSize = 11
+TextBox.ZIndex = 102
+TextBox.Active = true
+TextBox.Parent = AimContent
+Instance.new("UICorner", TextBox).CornerRadius = UDim.new(0, 5)
+
+local NpcToggleBtn = Instance.new("TextButton")
+NpcToggleBtn.Size = UDim2.new(0, 85, 0, 25)
+NpcToggleBtn.Position = UDim2.new(0.05, 0, 0.48, 0)
+NpcToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 10, 10)
+NpcToggleBtn.BorderSizePixel = 1
+NpcToggleBtn.BorderColor3 = Color3.fromRGB(255, 50, 50)
+NpcToggleBtn.Text = "👾 NPC: TẮT"
+NpcToggleBtn.TextColor3 = Color3.fromRGB(255, 80, 80)
+NpcToggleBtn.Font = Enum.Font.SourceSansBold
+NpcToggleBtn.TextSize = 10
+NpcToggleBtn.ZIndex = 102
+NpcToggleBtn.Active = true
+NpcToggleBtn.Parent = AimContent
+Instance.new("UICorner", NpcToggleBtn).CornerRadius = UDim.new(0, 4)
+
+local ClearBtn = Instance.new("TextButton")
+ClearBtn.Size = UDim2.new(0, 85, 0, 25)
+ClearBtn.Position = UDim2.new(0.52, 0, 0.48, 0)
+ClearBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+ClearBtn.Text = "🧹 XÓA TRỐNG"
+ClearBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+ClearBtn.Font = Enum.Font.SourceSansBold
+ClearBtn.TextSize = 10
+ClearBtn.ZIndex = 102
+ClearBtn.Active = true
+ClearBtn.Parent = AimContent
+Instance.new("UICorner", ClearBtn).CornerRadius = UDim.new(0, 4)
+
+local StatusLabel = Instance.new("TextLabel")
+StatusLabel.Size = UDim2.new(0.9, 0, 0, 25)
+StatusLabel.Position = UDim2.new(0.05, 0, 0.76, 0)
+StatusLabel.Text = "Trạng thái: Sẵn sàng"
+StatusLabel.TextColor3 = Color3.fromRGB(0, 255, 255)
+StatusLabel.BackgroundTransparency = 1
+StatusLabel.Font = Enum.Font.SourceSansItalic
+StatusLabel.TextSize = 9
+StatusLabel.ZIndex = 101
+StatusLabel.Parent = AimContent
+
+-- Khu vực nội dung Tab Sword (Thay thế nút aim cũ khi bấm sang tab Sword)
+local SwordContent = Instance.new("Frame")
+SwordContent.Size = UDim2.new(1, 0, 1, -35)
+SwordContent.Position = UDim2.new(0, 0, 0, 32)
+SwordContent.BackgroundTransparency = 1
+SwordContent.ZIndex = 101
+SwordContent.Visible = false
+SwordContent.Parent = MenuFrame
+
+local AutoSwordBtn = Instance.new("TextButton")
+AutoSwordBtn.Size = UDim2.new(0.9, 0, 0, 35)
+AutoSwordBtn.Position = UDim2.new(0.05, 0, 0.15, 0)
+AutoSwordBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+AutoSwordBtn.Text = "⚡ Tự Động Chém Kiếm: OFF"
+AutoSwordBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+AutoSwordBtn.Font = Enum.Font.SourceSansBold
+AutoSwordBtn.TextSize = 11
+AutoSwordBtn.ZIndex = 102
+AutoSwordBtn.Parent = SwordContent
+Instance.new("UICorner", AutoSwordBtn).CornerRadius = UDim.new(0, 5)
+
+local SwordStatusLabel = Instance.new("TextLabel")
+SwordStatusLabel.Size = UDim2.new(0.9, 0, 0, 40)
+SwordStatusLabel.Position = UDim2.new(0.05, 0, 0.55, 0)
+SwordStatusLabel.Text = "⚔️ Đã tích hợp bảng Sword thay thế Aim thành công!"
+SwordStatusLabel.TextColor3 = Color3.fromRGB(255, 200, 0)
+SwordStatusLabel.BackgroundTransparency = 1
+SwordStatusLabel.Font = Enum.Font.SourceSansBold
+SwordStatusLabel.TextSize = 9
+SwordStatusLabel.ZIndex = 101
+SwordStatusLabel.Parent = SwordContent
+
+-- Lệnh xử lý bấm chuyển Tab mượt mà (Bấm Sword là Aim biến mất nhường chỗ)
+AimTabBtn.MouseButton1Click:Connect(function()
+    AimContent.Visible = true
+    SwordContent.Visible = false
+    AimTabBtn.BackgroundColor3 = Color3.fromRGB(0, 128, 0)
+    AimTabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    SwordTabBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    SwordTabBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
+end)
+
+SwordTabBtn.MouseButton1Click:Connect(function()
+    AimContent.Visible = false
+    SwordContent.Visible = true
+    SwordTabBtn.BackgroundColor3 = Color3.fromRGB(180, 100, 0)
+    SwordTabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    AimTabBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    AimTabBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
+end)
+
 TextBox.TextWrapped = true
 TextBox.Font = Enum.Font.SourceSans
 TextBox.TextSize = 11
