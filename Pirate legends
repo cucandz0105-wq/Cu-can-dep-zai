@@ -250,7 +250,6 @@ _G.BoatFlyBtn.TextSize = 13
 _G.BoatFlyBtn.ZIndex = 17
 _G.BoatFlyBtn.Parent = FlyGroup
 Instance.new("UICorner", _G.BoatFlyBtn).CornerRadius = UDim.new(0, 8)
-
 _G.HeightLabel = Instance.new("TextLabel")
 _G.HeightLabel.Size = UDim2.new(1, -20, 0, 30)
 _G.HeightLabel.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
@@ -711,7 +710,6 @@ local function assignBoatToGroup(seat)
         end
     end
 end
-
 RunService.PreSimulation:Connect(function()
     local seat = getDrivenSeat and getDrivenSeat()
     if seat then
