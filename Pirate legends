@@ -117,6 +117,162 @@ Title.TextSize = 14
 Title.ZIndex = 16
 Title.Parent = MainPanel
 
+-- =======================================================
+-- TÍCH HỢP 2 TAB (AIM & LÃNH ĐỊA SWORD) CHUẨN XÁC
+-- =======================================================
+
+local TabBar = Instance.new("Frame")
+TabBar.Size = UDim2.new(1, -20, 0, 25)
+TabBar.Position = UDim2.new(0, 10, 0, 25)
+TabBar.BackgroundTransparency = 1
+TabBar.ZIndex = 16
+TabBar.Parent = MainPanel
+
+local Tab1Btn = Instance.new("TextButton")
+Tab1Btn.Size = UDim2.new(0.5, -4, 1, 0)
+Tab1Btn.Position = UDim2.new(0, 0, 0, 0)
+Tab1Btn.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+Tab1Btn.Text = "Aim & Cài Đặt"
+Tab1Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+Tab1Btn.Font = Enum.Font.SourceSansBold
+Tab1Btn.TextSize = 11
+Tab1Btn.ZIndex = 17
+Tab1Btn.Parent = TabBar
+Instance.new("UICorner", Tab1Btn).CornerRadius = UDim.new(0, 4)
+
+local Tab2Btn = Instance.new("TextButton")
+Tab2Btn.Size = UDim2.new(0.5, -4, 1, 0)
+Tab2Btn.Position = UDim2.new(0.5, 4, 0, 0)
+Tab2Btn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+Tab2Btn.Text = "⚔️ Lãnh Địa"
+Tab2Btn.TextColor3 = Color3.fromRGB(150, 150, 150)
+Tab2Btn.Font = Enum.Font.SourceSansBold
+Tab2Btn.TextSize = 11
+Tab2Btn.ZIndex = 17
+Tab2Btn.Parent = TabBar
+Instance.new("UICorner", Tab2Btn).CornerRadius = UDim.new(0, 4)
+
+-- Đổi Container cũ thành AimContent (Tab 1)
+local AimContent = Instance.new("ScrollingFrame")
+AimContent.Size = UDim2.new(1, 0, 1, -75)
+AimContent.Position = UDim2.new(0, 0, 0, 55)
+AimContent.BackgroundTransparency = 1
+AimContent.BorderSizePixel = 0
+AimContent.CanvasSize = UDim2.new(0, 0, 0, 285) 
+AimContent.ScrollBarThickness = 4
+AimContent.ZIndex = 16
+AimContent.Visible = true
+AimContent.Parent = MainPanel
+
+local UIListLayout = Instance.new("UIListLayout")
+UIListLayout.Parent = AimContent
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+UIListLayout.Padding = UDim.new(0, 8)
+UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+-- Tạo nội dung riêng cho Tab 2 (SwordContent - Lãnh Địa Florentino)
+local SwordContent = Instance.new("ScrollingFrame")
+SwordContent.Size = UDim2.new(1, 0, 1, -75)
+SwordContent.Position = UDim2.new(0, 0, 0, 55)
+SwordContent.BackgroundTransparency = 1
+SwordContent.BorderSizePixel = 0
+SwordContent.CanvasSize = UDim2.new(0, 0, 0, 200) 
+SwordContent.ScrollBarThickness = 4
+SwordContent.ZIndex = 16
+SwordContent.Visible = false
+SwordContent.Parent = MainPanel
+
+local SwordListLayout = Instance.new("UIListLayout")
+SwordListLayout.Parent = SwordContent
+SwordListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+SwordListLayout.Padding = UDim.new(0, 8)
+SwordListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+-- Nút Tắt Lãnh Địa trong Tab 2
+local CloseDomainBtn = Instance.new("TextButton")
+CloseDomainBtn.Size = UDim2.new(1, -20, 0, 40)
+CloseDomainBtn.BackgroundColor3 = Color3.fromRGB(150, 40, 40)
+CloseDomainBtn.Text = "❌ TẮT/HỦY LÃNH ĐỊA"
+CloseDomainBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseDomainBtn.Font = Enum.Font.SourceSansBold
+CloseDomainBtn.TextSize = 13
+CloseDomainBtn.ZIndex = 17
+CloseDomainBtn.Parent = SwordContent
+Instance.new("UICorner", CloseDomainBtn).CornerRadius = UDim.new(0, 8)
+
+-- Ô nhập Radius Lãnh Địa
+local RadiusInput = Instance.new("TextBox")
+RadiusInput.Size = UDim2.new(1, -20, 0, 40)
+RadiusInput.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+RadiusInput.Text = "100"
+RadiusInput.PlaceholderText = "Nhập bán kính Lãnh Địa..."
+RadiusInput.TextColor3 = Color3.fromRGB(255, 100, 255)
+RadiusInput.Font = Enum.Font.SourceSansBold
+RadiusInput.TextSize = 13
+RadiusInput.ZIndex = 17
+RadiusInput.Parent = SwordContent
+Instance.new("UICorner", RadiusInput).CornerRadius = UDim.new(0, 8)
+
+-- Định nghĩa nút bấm ngoài màn hình cho Lãnh Địa (`Btn`)
+local Btn = Instance.new("TextButton")
+Btn.Size = UDim2.new(0, 85, 0, 85)
+Btn.Position = UDim2.new(0.82, 0, 0.45, 0)
+Btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+Btn.BorderSizePixel = 3
+Btn.BorderColor3 = Color3.fromRGB(255, 100, 255)
+Btn.Text = "MÚA\nOFF"
+Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+Btn.Font = Enum.Font.SourceSansBold
+local BtnStr = Instance.new("UIStroke", Btn)
+BtnStr.Color = Color3.fromRGB(255, 100, 255)
+Btn.TextSize = 11
+Btn.ZIndex = 10 
+Btn.Active = true
+Btn.Parent = _G.MainGui
+Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 42)
+makeDraggable(Btn)
+
+-- LOGIC CHUYỂN TAB HOÀN CHỈNH (AIM <-> SWORD)
+Tab1Btn.MouseButton1Click:Connect(function()
+    AimContent.Visible = true
+    SwordContent.Visible = false
+    if AimBtn then AimBtn.Visible = true end
+    if Btn then Btn.Visible = false end
+
+    Tab1Btn.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+    Tab1Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Tab2Btn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    Tab2Btn.TextColor3 = Color3.fromRGB(150, 150, 150)
+end)
+
+Tab2Btn.MouseButton1Click:Connect(function()
+    AimContent.Visible = false
+    SwordContent.Visible = true
+    if AimBtn then AimBtn.Visible = false end
+    if Btn then Btn.Visible = true end
+
+    Tab2Btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    Tab2Btn.TextColor3 = Color3.fromRGB(255, 100, 255)
+    Tab1Btn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    Tab1Btn.TextColor3 = Color3.fromRGB(150, 150, 150)
+    
+    if Btn then
+        if state_S == "OFF" then
+            Btn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+            Btn.Text = "MÚA\nOFF"
+        elseif state_S == "ON" then
+            Btn.BackgroundColor3 = Color3.fromRGB(255, 50, 120)
+            Btn.Text = "CLICK\nMỞ LÃNH ĐỊA"
+        elseif state_S == "READY" then
+            Btn.BackgroundColor3 = Color3.fromRGB(0, 210, 100)
+            Btn.Text = "TEST\nLÃNH ĐỊA!"
+        elseif state_S == "LOCKED" then
+            Btn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+            Btn.Text = "ĐANG\nCHỜ..."
+        end
+    end
+end)
+
 local TabBar = Instance.new("Frame")
 TabBar.Size = UDim2.new(1, -20, 0, 25)
 TabBar.Position = UDim2.new(0, 10, 0, 25)
