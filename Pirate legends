@@ -535,6 +535,22 @@ TabAimBtn.MouseButton1Click:Connect(function()
     TabSwordBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
 end)
 
+-- LOGIC CHUYỂN TAB QUA LẠI
+TabAimBtn.MouseButton1Click:Connect(function()
+    AimContent.Visible = true
+    SwordContent.Visible = false
+    TabAimBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    TabAimBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    TabSwordBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    TabSwordBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
+    
+    -- Thêm đoạn này để khi bấm lại Tab Aim, nút ngoài màn hình đổi về Hyper Aim:
+    AimBtn.Text = "🎯\nHYPER AIM\nv12.1"
+    AimBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    AimBtn.BorderColor3 = Color3.fromRGB(255, 255, 255)
+    AimBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+end)
+
 TabSwordBtn.MouseButton1Click:Connect(function()
     AimContent.Visible = false
     SwordContent.Visible = true
@@ -543,7 +559,7 @@ TabSwordBtn.MouseButton1Click:Connect(function()
     TabAimBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
     TabAimBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
     
-    -- Thêm đoạn này để nút tròn to ngoài màn hình biến đổi thành Lãnh Địa Sword:
+    -- Đoạn này của bro đã chuẩn rồi:
     if state == "OFF" then
         AimBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
         AimBtn.Text = "MÚA\nOFF"
