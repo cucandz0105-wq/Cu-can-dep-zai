@@ -69,7 +69,9 @@ if playerGui then
         end)
         b.InputChanged:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch then dInput = i end end)
     end
-    makeDrag(Btn); makeDrag(SBtn); makeDrag(OffBtn)
+    makeDrag(Btn)
+    makeDrag(SBtn)
+    makeDrag(OffBtn)
 
     UIS.InputChanged:Connect(function(i)
         if i == dInput and drag then MF.Position = UDim2.new(sPos.X.Scale, sPos.X.Offset + (i.Position - dStart).X, sPos.Y.Scale, sPos.Y.Offset + (i.Position - dStart).Y) end
@@ -129,243 +131,14 @@ end
 
 local function GetNearestPInsideDomain(domainCenter, range)
     local t, dist = nil, range
+    local myHRP = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
     for _, p in ipairs(P:GetPlayers()) do
         if p ~= LP and p.Character then
             local hrp, hum = p.Character:FindFirstChild("HumanoidRootPart"), p.Character:FindFirstChild("Humanoid")
             if hrp and hum and hum.Health > 0 then
                 local distToCenter = (hrp.Position - domainCenter).Magnitude
-                if distToCenter <= range then
-                    local d = (LP.Character.HumanoidRootPart.Position - hrp.Position).Magnitude
-                    if d <= dist then dist, t = d, hrp end
-                end
-            end
-        end
-    end
-    return t
-end
-
-local function CreateDomain(tPos)
-    folder = Instance.new("Folder", workspace)
-    folder.Name = "FlorentinoFlowers"
-    centerPos = tPos
-    
-    local domainSphere = Instance.new("Part", folder)
-    domainSphere.Name = "PurpleFlower"
-    domainSphere.Shape = Enum.PartType.Ball
-    domainSphere.Size = Vector3.new(2, 2, 2)
-    domainSphere.Position = tPos + Vector3.new(0, 2, 0)
-    domainSphere.Material = Enum.Material.Glass
-    domainSphere.Color = Color3.fromRGB(180, 50, 255)
-    domainSphere.Transparency = 0.88
-    domainSphere.Anchored = true
-    domainSphere.CanCollide = false
-
-    local l = Instance.new("PointLight", domainSphere)
-    l.Color, l.Range, l.Brightness = Color3.fromRGB(220, 100, 255), R, 10
-
-    task.spawn(function()
-        for i = 1, 40 do
-            if not domainSphere or not domainSphere.Parent then break end
-            local alpha = i / 40
-            local smoothAlpha = 1 - math.pow(1 - alpha, 2)
-            local currentSize = smoothAlpha * (R * 2)
-            domainSphere.Size = Vector3.new(currentSize, currentSize, currentSize)
-            task.wait(0.03)
-        end
-        if domainSphere then
-            domainSphere.Size = Vector3.new(R * 2, R * 2, R * 2)
-        end
-    end)
-
-    local orbitingOrbs = {}
-    local ringsConfig = {
-        { count = 12, speed = 0.7,   radiusFactor = 0.98, heightOffset = 2,   dir = 1  },
-        { count = 10, speed = -0.9,  radiusFactor = 0.85, heightOffset = R*0.5, dir = -1 },
-        { count = 10, speed = 1.1,   radiusFactor = 0.85, heightOffset = -R*0.5, dir = 1  }
-    }
-
-    for _, config in ipairs(ringsConfig) do
-        for i = 1, config.count do
-            local orb = Instance.new("Part", folder)
-            orb.Shape = Enum.PartType.Ball
-            orb.Material = Enum.Material.Neon
-            orb.Color = (i % 2 == 0) and Color3.fromRGB(240, 150, 255) or Color3.fromRGB(180, 220, 255)
-            orb.Anchored = true
-            orb.CanCollide = false
-            orb.Size = Vector3.new(4.5, 4.5, 4.5)
-            
-            local orbLight = Instance.new("PointLight", orb)
-            orbLight.Color, orbLight.Range, orbLight.Brightness = orb.Color, 18, 4
-            
-            table.insert(orbitingOrbs, {
-                part = orb, 
-                angleOffset = i * (6.28 / config.count), 
-                speed = config.speed, 
-                radiusFactor = config.radiusFactor,
-                heightOffset = config.heightOffset,
-                dir = config.dir
-            })
-        end
-    end
-
-    local tickC = 0
-    conn = RS.RenderStepped:Connect(function(dt)
-        if not folder or not folder.Parent then if conn then conn:Disconnect() end return end
-        tickC = tickC + dt
-        
-        for _, item in ipairs(orbitingOrbs) do
-            if item.part and item.part.Parent then
-                local currentAngle = (tickC * item.speed * item.dir) + item.angleOffset
-                local orbitRadius = R * item.radiusFactor
-                
-                local posX = tPos.X + math.cos(currentAngle) * orbitRadius
-                local posY = tPos.Y + item.heightOffset + math.sin(tickC * 2 + item.angleOffset) * (R * 0.15)
-                local posZ = tPos.Z + math.sin(currentAngle) * orbitRadius
-                
-                item.part.Position = Vector3.new(posX, posY, posZ)
-            end
-        end
-    end)
-
-    SetState("READY")
-endlocal P, UIS, RS = game:GetService("Players"), game:GetService("UserInputService"), game:GetService("RunService")
-local LP = P.LocalPlayer
-local Mouse = LP:GetMouse()
-local R, FH, PS, AS, LS, TSR = 100, 1.0, 300, 65, 70, 50
-local state, centerPos, folder, conn, flying, combo, lastSlash = "OFF", nil, nil, nil, false, false, 0
-
-local SG, MF, Btn, SBtn, OffBtn, Panel, TBox
-
-local function SetState(s)
-    state = s
-    if not Btn then return end
-    if s == "OFF" then 
-        Btn.BackgroundColor3, Btn.Text = Color3.fromRGB(80, 80, 80), "MÚA\nOFF"
-    elseif s == "ON" then 
-        Btn.BackgroundColor3, Btn.Text = Color3.fromRGB(255, 50, 120), "CLICK\nMỞ LÃNH ĐỊA"
-    elseif s == "LOCKED" then 
-        Btn.BackgroundColor3, Btn.Text = Color3.fromRGB(100, 100, 100), "ĐANG\nCHỜ..." 
-    elseif s == "READY" then 
-        Btn.BackgroundColor3, Btn.Text = Color3.fromRGB(0, 210, 100), "TEST\nLÃNH ĐỊA!" 
-    end
-end
-
-local function DoCombo() end
-local function ThrowFlower(tPos) end
-
-local playerGui = LP:FindFirstChild("PlayerGui") or LP:WaitForChild("PlayerGui", 10)
-if playerGui then
-    if playerGui:FindFirstChild("FloMenu") then playerGui.FloMenu:Destroy() end
-
-    SG = Instance.new("ScreenGui", playerGui)
-    SG.Name = "FloMenu"
-    SG.ResetOnSpawn = false
-
-    MF = Instance.new("Frame", SG)
-    MF.Size, MF.Position, MF.BackgroundTransparency, MF.Active = UDim2.new(0, 115, 0, 110), UDim2.new(0.8, 0, 0.5, 0), 1, true
-
-    Btn = Instance.new("TextButton", MF)
-    Btn.Size, Btn.Position, Btn.BackgroundColor3, Btn.Text, Btn.TextColor3, Btn.TextSize, Btn.Font = UDim2.new(0, 70, 0, 70), UDim2.new(0, 45, 0, 0), Color3.fromRGB(80, 80, 80), "MÚA\nOFF", Color3.fromRGB(255, 255, 255), 13, Enum.Font.SourceSansBold
-    Instance.new("UICorner", Btn).CornerRadius = UDim.new(1, 0)
-    Instance.new("UIStroke", Btn).Color, Instance.new("UIStroke", Btn).Thickness = Color3.fromRGB(255, 255, 255), 2.5
-
-    SBtn = Instance.new("TextButton", MF)
-    SBtn.Size, SBtn.Position, SBtn.BackgroundColor3, SBtn.Text, SBtn.TextSize = UDim2.new(0, 35, 0, 35), UDim2.new(0, 0, 0, 0), Color3.fromRGB(50, 50, 50), "⚙️", 16
-    Instance.new("UICorner", SBtn).CornerRadius = UDim.new(1, 0)
-    Instance.new("UIStroke", SBtn).Color, Instance.new("UIStroke", SBtn).Thickness = Color3.fromRGB(200, 200, 200), 1.5
-
-    OffBtn = Instance.new("TextButton", MF)
-    OffBtn.Size, OffBtn.Position, OffBtn.BackgroundColor3, OffBtn.Text, OffBtn.TextColor3, OffBtn.TextSize, OffBtn.Font = UDim2.new(0, 35, 0, 35), UDim2.new(0, 0, 0, 40), Color3.fromRGB(200, 40, 40), "❌", Color3.fromRGB(255, 255, 255), 14, Enum.Font.SourceSansBold
-    Instance.new("UICorner", OffBtn).CornerRadius = UDim.new(1, 0)
-    Instance.new("UIStroke", OffBtn).Color, Instance.new("UIStroke", OffBtn).Thickness = Color3.fromRGB(255, 255, 255), 1.5
-
-    Panel = Instance.new("Frame", MF)
-    Panel.Size, Panel.Position, Panel.BackgroundColor3, Panel.BackgroundTransparency, Panel.Visible = UDim2.new(0, 160, 0, 75), UDim2.new(0, -170, 0, 0), Color3.fromRGB(30, 30, 30), 0.2, false
-    Instance.new("UICorner", Panel).CornerRadius = UDim.new(0, 8)
-    Instance.new("UIStroke", Panel).Color, Instance.new("UIStroke", Panel).Thickness = Color3.fromRGB(255, 100, 255), 1.5
-
-    TBox = Instance.new("TextBox", Panel)
-    TBox.Size, TBox.Position, TBox.BackgroundColor3, TBox.Text, TBox.TextColor3, TBox.TextSize, TBox.Font = UDim2.new(0, 140, 0, 28), UDim2.new(0, 10, 0, 25), Color3.fromRGB(50, 50, 50), tostring(R), Color3.fromRGB(0, 255, 150), 14, Enum.Font.SourceSansBold
-    Instance.new("UICorner", TBox).CornerRadius = UDim.new(0, 6)
-    Instance.new("UIStroke", TBox).Color, Instance.new("UIStroke", TBox).Thickness = Color3.fromRGB(0, 255, 150), 1
-
-    local drag, dInput, dStart, sPos = false
-    local function makeDrag(b)
-        b.InputBegan:Connect(function(i)
-            if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
-                drag, dStart, sPos = true, i.Position, MF.Position
-                i.Changed:Connect(function() if i.UserInputState == Enum.UserInputState.End then drag = false end end)
-            end
-        end)
-        b.InputChanged:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch then dInput = i end end)
-    end
-    makeDrag(Btn); makeDrag(SBtn); makeDrag(OffBtn)
-
-    UIS.InputChanged:Connect(function(i)
-        if i == dInput and drag then MF.Position = UDim2.new(sPos.X.Scale, sPos.X.Offset + (i.Position - dStart).X, sPos.Y.Scale, sPos.Y.Offset + (i.Position - dStart).Y) end
-    end)
-
-    SBtn.Activated:Connect(function() Panel.Visible = not Panel.Visible end)
-    
-    TBox.FocusLost:Connect(function()
-        local n = tonumber(TBox.Text)
-        if n and n > 0 then 
-            R = n 
-        else
-            TBox.Text = tostring(R)
-        end
-    end)
-
-    Btn.Activated:Connect(function()
-        if state == "OFF" then
-            if not workspace:FindFirstChild("FlorentinoFlowers") and not flying then SetState("ON") end
-        elseif state == "ON" then 
-            SetState("OFF")
-        elseif state == "READY" then 
-            DoCombo() 
-        end
-    end)
-
-    OffBtn.Activated:Connect(function()
-        if conn then conn:Disconnect(); conn = nil end
-        local f = workspace:FindFirstChild("FlorentinoFlowers")
-        if f then
-            local sphere = f:FindFirstChild("PurpleFlower")
-            if sphere then
-                task.spawn(function()
-                    for i = 25, 1, -1 do
-                        if not sphere or not sphere.Parent then break end
-                        local alpha = i / 25
-                        local currentSize = alpha * (R * 2)
-                        sphere.Size = Vector3.new(currentSize, currentSize, currentSize)
-                        sphere.Transparency = 0.88 + ((1 - alpha) * 0.12)
-                        task.wait(0.015)
-                    end
-                    f:Destroy()
-                end)
-            else
-                f:Destroy()
-            end
-        end
-        flying = false
-        combo = false
-        centerPos = nil
-        SetState("OFF")
-        Panel.Visible = false
-    end)
-
-    SetState("OFF")
-end
-
-local function GetNearestPInsideDomain(domainCenter, range)
-    local t, dist = nil, range
-    for _, p in ipairs(P:GetPlayers()) do
-        if p ~= LP and p.Character then
-            local hrp, hum = p.Character:FindFirstChild("HumanoidRootPart"), p.Character:FindFirstChild("Humanoid")
-            if hrp and hum and hum.Health > 0 then
-                local distToCenter = (hrp.Position - domainCenter).Magnitude
-                if distToCenter <= range then
-                    local d = (LP.Character.HumanoidRootPart.Position - hrp.Position).Magnitude
+                if distToCenter <= range and myHRP then
+                    local d = (myHRP.Position - hrp.Position).Magnitude
                     if d <= dist then dist, t = d, hrp end
                 end
             end
@@ -533,7 +306,7 @@ local function MeteorFX(pos)
             while beam and beam.Parent do
                 local totalHeight = beam.Size.X
                 local ringCount = 8
-                
+              
                 for rIdx = 1, ringCount do
                     if not beam or not beam.Parent then break end
                     task.spawn(function()
@@ -604,7 +377,7 @@ local function MeteorFX(pos)
             
             beam.Size = Vector3.new(currentHeight, 60, 60)
             beam.CFrame = CFrame.new(pos + Vector3.new(0, currentHeight / 2, 0)) * CFrame.Angles(0, 0, math.rad(90))
-            
+           
             ringBeam.Size = Vector3.new(currentHeight * 0.95, 75, 75)
             ringBeam.CFrame = CFrame.new(pos + Vector3.new(0, currentHeight / 2, 0)) * CFrame.Angles(0, 0, math.rad(90))
             task.wait(0.04)
@@ -630,7 +403,7 @@ local function MeteorFX(pos)
                 local f = smoothAlpha * (R * 6.0)
                 w.Size = Vector3.new(3, 8 + f * 7, 8 + f * 7)
                 w.Transparency = alpha
-                
+              
                 w2.Size = Vector3.new(1.5, 10 + f * 7, 10 + f * 7)
                 w2.Transparency = 0.1 + (alpha * 0.9)
                 
@@ -685,6 +458,7 @@ ThrowFlower = function(tPos)
     local proj = Instance.new("Part", workspace)
     proj.Shape, proj.Size, proj.Position, proj.Material, proj.Color, proj.CanCollide = Enum.PartType.Ball, Vector3.new(2.8, 2.8, 2.8), hrp.Position + Vector3.new(0, 1.5, 0), Enum.Material.Neon, Color3.fromRGB(220, 50, 255), false
     Instance.new("PointLight", proj).Color, proj.PointLight.Range, proj.PointLight.Brightness = Color3.fromRGB(220, 50, 255), 14, 6
+  
     local a0, a1 = Instance.new("Attachment", proj), Instance.new("Attachment", proj)
     a0.Position, a1.Position = Vector3.new(0, 0, 1.4), Vector3.new(0, 0, -1.4)
     local tr = Instance.new("Trail", proj)
@@ -745,7 +519,6 @@ DoCombo = function()
     local bv = Instance.new("BodyVelocity", hrp)
     bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
     
-    -- Bay tới áp sát khoảng cách 8 studs
     while eHRP and eHRP.Parent and workspace:FindFirstChild("FlorentinoFlowers") and centerPos do
         if (eHRP.Position - centerPos).Magnitude > R then break end
         if (hrp.Position - eHRP.Position).Magnitude <= 8 then break end
@@ -765,7 +538,6 @@ DoCombo = function()
         local sw = char:FindFirstChild("Sword")
         local startTime = os.clock()
 
-        -- KHÓA CHẶT SAU LƯNG NHƯ BÓNG MA TRONG 5 GIÂY
         while os.clock() - startTime < 5 do
             if not eHRP or not eHRP.Parent or not workspace:FindFirstChild("FlorentinoFlowers") then break end
             
@@ -773,11 +545,9 @@ DoCombo = function()
             local targetPos = targetCFrame.Position
             local targetLookVector = targetCFrame.LookVector
             
-            -- Ép vị trí nằm chính xác phía sau lưng 2 studs và hướng mặt theo target
             local lockedBackPos = targetPos - (targetLookVector * 2) + Vector3.new(0, 0.5, 0)
             hrp.CFrame = CFrame.new(lockedBackPos, targetPos + targetLookVector * 5)
 
-            -- Auto bắn remote chém liên tục
             if sw and sw:FindFirstChild("ToolFolder") and sw.ToolFolder.Remotes:FindFirstChild("SlashRem") then
                 sw.ToolFolder.Remotes.SlashRem:FireServer()
                 lastSlash = os.clock()
@@ -786,7 +556,6 @@ DoCombo = function()
             RS.Heartbeat:Wait()
         end
 
-        -- Sau 5 giây, tự động TP lùi ra xa 15 studs rút lui an toàn
         if hrp and eHRP and eHRP.Parent then
             local safeBackPos = eHRP.Position - (eHRP.CFrame.LookVector * 15)
             hrp.CFrame = CFrame.new(safeBackPos, eHRP.Position)
@@ -805,4 +574,3 @@ end
 Mouse.Button1Down:Connect(function()
     if state == "ON" and Mouse.Hit then ThrowFlower(Mouse.Hit.Position) end
 end)
-
