@@ -516,6 +516,7 @@ DoCombo = function()
         end
     end)
 
+    -- 1. Bay lại gần 8 studs đầu tiên
     local bv = Instance.new("BodyVelocity", hrp)
     bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
     
@@ -538,15 +539,13 @@ DoCombo = function()
         local sw = char:FindFirstChild("Sword")
         local startTime = os.clock()
 
+        -- 2. Chui xuống đất 7 studs, nhích 3 studs và múa liên tục trong 5 giây
         while os.clock() - startTime < 5 do
             if not eHRP or not eHRP.Parent or not workspace:FindFirstChild("FlorentinoFlowers") then break end
             
             local targetCFrame = eHRP.CFrame
-            local targetPos = targetCFrame.Position
-            local targetLookVector = targetCFrame.LookVector
-            
-            local lockedBackPos = targetPos - (targetLookVector * 2) + Vector3.new(0, 0.5, 0)
-            hrp.CFrame = CFrame.new(lockedBackPos, targetPos + targetLookVector * 5)
+            local undergroundCFrame = targetCFrame + (targetCFrame.LookVector * 3.0) - Vector3.new(0, 7.0, 0)
+            hrp.CFrame = undergroundCFrame
 
             if sw and sw:FindFirstChild("ToolFolder") and sw.ToolFolder.Remotes:FindFirstChild("SlashRem") then
                 sw.ToolFolder.Remotes.SlashRem:FireServer()
@@ -556,9 +555,32 @@ DoCombo = function()
             RS.Heartbeat:Wait()
         end
 
+        -- 3. Thay vì TP giật cục, dùng cơ chế bay lùi ra sau 15 studs và nhấc cao lên 5 studs mượt mà
         if hrp and eHRP and eHRP.Parent then
-            local safeBackPos = eHRP.Position - (eHRP.CFrame.LookVector * 15)
-            hrp.CFrame = CFrame.new(safeBackPos, eHRP.Position)
+            local startPos = hrp.Position
+            local targetBackPos = eHRP.Position - (eHRP.CFrame.LookVector * 15) + Vector3.new(0, 5, 0)
+            local flightDuration = 0.4 -- Thời gian bay lùi (giây)
+            local fElapsed = 0
+
+            local fNoclip = RS.Stepped:Connect(function()
+                local c = LP.Character
+                if c then
+                    for _, p in ipairs(c:GetDescendants()) do 
+                        if p:IsA("BasePart") then p.CanCollide = false end 
+                    end
+                end
+            end)
+
+            while fElapsed < flightDuration and hrp and eHRP and eHRP.Parent do
+                local dt = RS.Heartbeat:Wait()
+                fElapsed = fElapsed + dt
+                local alpha = math.clamp(fElapsed / flightDuration, 0, 1)
+                -- Lấy vị trí mục tiêu mới nhất để bám theo điểm lùi chính xác theo đối thủ
+                local currentBackPos = eHRP.Position - (eHRP.CFrame.LookVector * 15) + Vector3.new(0, 5, 0)
+                hrp.CFrame = CFrame.new(startPos:Lerp(currentBackPos, alpha), eHRP.Position)
+            end
+
+            if fNoclip then fNoclip:Disconnect() end
         end
     end
     
