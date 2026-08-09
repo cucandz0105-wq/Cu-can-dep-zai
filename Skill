@@ -16,7 +16,7 @@ local function SetState(s)
     elseif s == "LOCKED" then 
         Btn.BackgroundColor3, Btn.Text = Color3.fromRGB(100, 100, 100), "ĐANG\nCHỜ..." 
     elseif s == "READY" then 
-        Btn.BackgroundColor3, Btn.Text = Color3.fromRGB(0, 210, 100), "TEST\nLÃNH ĐỊA!" 
+        Btn.BackgroundColor3, Btn.Text = Color3.fromRGB(0, 210, 100), "TEST\nLÃNH ĐỊA!"
     end
 end
 
@@ -92,7 +92,11 @@ if playerGui then
         if state == "OFF" then
             if not workspace:FindFirstChild("FlorentinoFlowers") and not flying then SetState("ON") end
         elseif state == "ON" then 
-            SetState("OFF")
+            if combo then
+                combo = false -- Bấm lần nữa khi đang múa sẽ ngắt vòng lặp và tự động lùi về sau
+            else
+                SetState("OFF")
+            end
         elseif state == "READY" then 
             DoCombo() 
         end
@@ -266,7 +270,7 @@ local function MeteorFX(pos)
             local currentHeight = alpha * 500
             beam.Size = Vector3.new(currentHeight, 60, 60)
             beam.CFrame = CFrame.new(pos + Vector3.new(0, currentHeight / 2, 0)) * CFrame.Angles(0, 0, math.rad(90))
-            
+         
             ringBeam.Size = Vector3.new(currentHeight * 0.95, 75, 75)
             ringBeam.CFrame = CFrame.new(pos + Vector3.new(0, currentHeight / 2, 0)) * CFrame.Angles(0, 0, math.rad(90))
             
@@ -497,7 +501,7 @@ DoCombo = function()
     if combo then return end
     local char, hrp = LP.Character, LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
     local domainObj = GetNearestFlower()
-    if not char or not hrp or not domainObj or not folder or not centerPos then combo = false; return end
+    if not char or not hrp or not domainObj or not folder or not centerPos then combo = false return end
 
     local myDistToCenter = (hrp.Position - centerPos).Magnitude
     if myDistToCenter > R then return end
@@ -506,6 +510,7 @@ DoCombo = function()
     if not eHRP then return end
 
     combo = true
+    SetState("ON")
 
     local noclip = RS.Stepped:Connect(function()
         local c = LP.Character
@@ -516,11 +521,10 @@ DoCombo = function()
         end
     end)
 
-    -- 1. Bay lại gần 8 studs đầu tiên
     local bv = Instance.new("BodyVelocity", hrp)
     bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
     
-    while eHRP and eHRP.Parent and workspace:FindFirstChild("FlorentinoFlowers") and centerPos do
+    while combo and eHRP and eHRP.Parent and workspace:FindFirstChild("FlorentinoFlowers") and centerPos do
         if (eHRP.Position - centerPos).Magnitude > R then break end
         if (hrp.Position - eHRP.Position).Magnitude <= 8 then break end
 
@@ -530,19 +534,19 @@ DoCombo = function()
     end
     bv:Destroy()
 
-    if noclip then noclip:Disconnect() end
+    if not combo then 
+        if noclip then noclip:Disconnect() end
+        if workspace:FindFirstChild("FlorentinoFlowers") then SetState("READY") else SetState("OFF") end
+        return 
+    end
 
     local isDomainStillActive = workspace:FindFirstChild("FlorentinoFlowers") and centerPos
     local isTargetStillValid = eHRP and eHRP.Parent and (eHRP.Position - centerPos).Magnitude <= R
 
     if isDomainStillActive and isTargetStillValid then
         local sw = char:FindFirstChild("Sword")
-        local startTime = os.clock()
 
-        -- 2. Chui xuống đất 7 studs, nhích 3 studs và múa liên tục trong 5 giây
-        while os.clock() - startTime < 5 do
-            if not eHRP or not eHRP.Parent or not workspace:FindFirstChild("FlorentinoFlowers") then break end
-            
+        while combo and eHRP and eHRP.Parent and workspace:FindFirstChild("FlorentinoFlowers") do
             local targetCFrame = eHRP.CFrame
             local undergroundCFrame = targetCFrame + (targetCFrame.LookVector * 3.0) - Vector3.new(0, 7.0, 0)
             hrp.CFrame = undergroundCFrame
@@ -555,34 +559,23 @@ DoCombo = function()
             RS.Heartbeat:Wait()
         end
 
-        -- 3. Thay vì TP giật cục, dùng cơ chế bay lùi ra sau 15 studs và nhấc cao lên 5 studs mượt mà
         if hrp and eHRP and eHRP.Parent then
             local startPos = hrp.Position
             local targetBackPos = eHRP.Position - (eHRP.CFrame.LookVector * 15) + Vector3.new(0, 5, 0)
-            local flightDuration = 0.4 -- Thời gian bay lùi (giây)
+            local flightDuration = 0.4
             local fElapsed = 0
-
-            local fNoclip = RS.Stepped:Connect(function()
-                local c = LP.Character
-                if c then
-                    for _, p in ipairs(c:GetDescendants()) do 
-                        if p:IsA("BasePart") then p.CanCollide = false end 
-                    end
-                end
-            end)
 
             while fElapsed < flightDuration and hrp and eHRP and eHRP.Parent do
                 local dt = RS.Heartbeat:Wait()
                 fElapsed = fElapsed + dt
                 local alpha = math.clamp(fElapsed / flightDuration, 0, 1)
-                -- Lấy vị trí mục tiêu mới nhất để bám theo điểm lùi chính xác theo đối thủ
                 local currentBackPos = eHRP.Position - (eHRP.CFrame.LookVector * 15) + Vector3.new(0, 5, 0)
                 hrp.CFrame = CFrame.new(startPos:Lerp(currentBackPos, alpha), eHRP.Position)
             end
-
-            if fNoclip then fNoclip:Disconnect() end
         end
     end
+    
+    if noclip then noclip:Disconnect() end
     
     if workspace:FindFirstChild("FlorentinoFlowers") then
         SetState("READY")
@@ -596,3 +589,4 @@ end
 Mouse.Button1Down:Connect(function()
     if state == "ON" and Mouse.Hit then ThrowFlower(Mouse.Hit.Position) end
 end)
+
