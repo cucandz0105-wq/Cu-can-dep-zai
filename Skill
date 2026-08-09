@@ -548,7 +548,7 @@ DoCombo = function()
 
         while combo and eHRP and eHRP.Parent and workspace:FindFirstChild("FlorentinoFlowers") do
             local targetCFrame = eHRP.CFrame
-            local undergroundCFrame = targetCFrame + (targetCFrame.LookVector * 3.0) - Vector3.new(0, 7.0, 0)
+            local undergroundCFrame = targetCFrame + (targetCFrame.LookVector * 3.0) - Vector3.new(0, 8.5, 0)
             hrp.CFrame = undergroundCFrame
 
             if sw and sw:FindFirstChild("ToolFolder") and sw.ToolFolder.Remotes:FindFirstChild("SlashRem") then
