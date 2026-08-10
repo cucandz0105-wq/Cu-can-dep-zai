@@ -1521,7 +1521,7 @@ LocalPlayer.CharacterAdded:Connect(function(newChar)
 end)
 
 -- =========================================================================
--- 🟢 TÍCH HỢP CỤC XANH NEON VÀO NÚT CŨ TRÊN MENU CỦA BẢN FILE
+-- 🚀 ĐIỀU KHIỂN CHUẨN: TỐC ĐỘ THUYỀN & CỤC XANH NEON (ĐÃ SẠCH THẢM DẸT CŨ)
 -- =========================================================================
 local PhysicsService = game:GetService("PhysicsService")
 local ghostGroupName = "IndependentGreenBoxGroup"
@@ -1531,6 +1531,39 @@ pcall(function()
     PhysicsService:CollisionGroupSetCollidable(ghostGroupName, "Default", false)
 end)
 
+-- 1. LOGIC NÚT TỐC ĐỘ THUYỀN (_G.BoatBoostBtn)
+local isBoatBoostActive = false
+if _G.BoatBoostBtn then
+    _G.BoatBoostBtn.MouseButton1Click:Connect(function()
+        isBoatBoostActive = not isBoatBoostActive
+        if isBoatBoostActive then
+            _G.BoatBoostBtn.Text = "Tốc Độ Thuyền: ON"
+            _G.BoatBoostBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
+        else
+            _G.BoatBoostBtn.Text = "Tốc Độ Thuyền: OFF"
+            _G.BoatBoostBtn.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+        end
+    end)
+end
+
+-- Vòng lặp gia tốc tốc độ thuyền thực tế
+RunService.Stepped:Connect(function()
+    if not isBoatBoostActive then return end
+    local character = LocalPlayer.Character
+    if not character then return end
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    if humanoid and humanoid.SeatPart and humanoid.SeatPart:IsA("VehicleSeat") then
+        local seat = humanoid.SeatPart
+        local speedVal = tonumber(_G.SpeedInput and _G.SpeedInput.Text) or 200
+        if seat.Throttle > 0 then
+            seat.AssemblyLinearVelocity = seat.CFrame.LookVector * speedVal
+        elseif seat.Throttle < 0 then
+            seat.AssemblyLinearVelocity = -seat.CFrame.LookVector * speedVal
+        end
+    end
+end)
+
+-- 2. LOGIC CỤC XANH NEON ĐỘC LẬP (KHÔNG DÙNG THẢM DẸT)
 local isHookActive = false
 local targetShip = nil
 local goldPart = nil
@@ -1539,7 +1572,6 @@ local bodyVelocity = nil
 local targetY = 0
 local speedStep = 1.0
 
--- Hàm tìm part cao nhất của tàu làm mốc gắn hộp
 local function findHighestPart(shipModel)
     local highestPart = nil
     local maxY = -math.huge
@@ -1554,7 +1586,6 @@ local function findHighestPart(shipModel)
     return highestPart, maxY
 end
 
--- 1. Gán sự kiện bấm vào nút "Thảm Nước" cũ trên UI thành Bật/Tắt Cục Xanh Neon
 if _G.BoatFlyBtn then
     _G.BoatFlyBtn.MouseButton1Click:Connect(function()
         local character = LocalPlayer.Character
@@ -1576,7 +1607,6 @@ if _G.BoatFlyBtn then
                     _G.BoatFlyBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
                     if _G.HeightLabel then _G.HeightLabel.Text = "Độ Cao Box: " .. math.floor(targetY) end
                     
-                    -- Tạo cục xanh neon độc lập kích thước 4x4x4
                     goldPart = Instance.new("Part")
                     goldPart.Name = "IndependentGreenBox"
                     goldPart.Size = Vector3.new(4, 4, 4)
@@ -1594,13 +1624,11 @@ if _G.BoatFlyBtn then
                     
                     goldPart.Parent = Workspace
                     
-                    -- Gắn BodyVelocity điều khiển lực nâng trục Y
                     bodyVelocity = Instance.new("BodyVelocity")
                     bodyVelocity.MaxForce = Vector3.new(0, math.huge, 0)
                     bodyVelocity.Velocity = Vector3.new(0, 0, 0)
                     bodyVelocity.Parent = goldPart
                     
-                    -- Hàn chặt vào đỉnh tàu
                     local weld = Instance.new("WeldConstraint")
                     weld.Part0 = goldPart
                     weld.Part1 = topPart
@@ -1619,7 +1647,6 @@ if _G.BoatFlyBtn then
     end)
 end
 
--- 2. Liên kết nút tăng giảm độ cao 🔼 🔽 sẵn có trên menu giao diện file
 local isMovingUp = false
 local isMovingDown = false
 
@@ -1649,7 +1676,6 @@ task.spawn(function()
     end
 end)
 
--- 3. Vòng lặp duy trì lực nâng cho cục xanh neon
 RunService.RenderStepped:Connect(function(dt)
     if not isHookActive or not goldPart or not goldPart.Parent or not bodyVelocity then return end
     
