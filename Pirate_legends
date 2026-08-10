@@ -629,7 +629,7 @@ local function getAbsoluteBoatBottom(boat)
             end
         end
     end
-    return highestY ~= -math.huge and highestY or 0
+    return highestY ~= -math.huge and highestY + 4 or 5
 end
 
 local function createRealCarpet()
