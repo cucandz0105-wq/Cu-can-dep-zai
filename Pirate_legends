@@ -642,7 +642,7 @@ local function createMastAnchor()
     MastAnchorPart = Instance.new("Part")
     MastAnchorPart.Name = "MastAnchorPart"
     MastAnchorPart.Size = Vector3.new(4, 4, 4) -- Thu nhỏ thành một khối gọn gàng
-    MastAnchorPart.Transparency = 1 -- Tàng hình hoặc chỉnh về 0.5 nếu muốn thấy khối
+    MastAnchorPart.Transparency = 0.3 -- Tàng hình hoặc chỉnh về 0.5 nếu muốn thấy khối
     MastAnchorPart.Color = Color3.fromRGB(0, 255, 128)
     MastAnchorPart.Material = Enum.Material.Neon
     MastAnchorPart.Anchored = true
