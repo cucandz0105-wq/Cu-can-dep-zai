@@ -602,26 +602,10 @@ AimBtn.MouseButton1Click:Connect(function()
 end)
 
 -- ==========================================
--- CƠ CHẾ KHỐI HỘP NEON XANH + CHỐNG VĂNG GHẾ TỐC ĐỘ CAO
+-- CƠ CHẾ KHỐI HỘP NEON XANH ĐỘC LẬP (THAY THẾ THẢM CŨ)
 -- ==========================================
 
 _G.SuperSailActive, _G.BoatFlyActive, _G.BoostMultiplier, _G.ManualOffset = false, false, 200, 0
-
--- Lắng nghe thay đổi ô nhập tốc độ
-if _G.SpeedInput then
-    _G.SpeedInput.FocusLost:Connect(function()
-        local num = tonumber(_G.SpeedInput.Text)
-        if num then _G.BoostMultiplier = num else _G.SpeedInput.Text = tostring(_G.BoostMultiplier) end
-    end)
-end
-
--- Hàm tìm ghế lái (Cực kỳ quan trọng để không bị văng khi bật speed)
-local function getDrivenSeat()
-    local char = LocalPlayer.Character if not char then return nil end
-    local humanoid = char:FindFirstChildWhichIsA("Humanoid")
-    if humanoid and humanoid.SeatPart and humanoid.SeatPart:IsA("VehicleSeat") then return humanoid.SeatPart end
-    return nil
-end
 
 local ghostGroupName = "IndependentGreenBoxGroup"
 pcall(function()
@@ -696,13 +680,12 @@ if _G.DownBtn then
     end)
 end
 
--- Vòng lặp điều khiển chính (Cả Thảm Nước & Tốc Độ)
+-- Vòng lặp điều khiển chính cập nhật liên tục cho khối hộp
 RunService.PreSimulation:Connect(function()
     local seat = getDrivenSeat and getDrivenSeat()
     if seat then
         local boat = seat.Parent
         if boat then
-            -- 🛡️ ĐOẠN NÀY ÉP QUYỀN MẠNG CHO GHẾ LÁI ĐỂ KHÔNG BAO GIỜ BỊ VĂNG KHI BẬT SPEED 200
             pcall(function()
                 seat:SetNetworkOwner(LocalPlayer)
                 seat.MaxTorque = Vector3.new(math.huge, 0, math.huge)
@@ -715,6 +698,7 @@ RunService.PreSimulation:Connect(function()
                 if highest then
                     topPart = highest
                     
+                    -- Khởi tạo cục hộp neon xanh độc lập lần đầu bật
                     if not goldPart or not goldPart.Parent then
                         targetY = highestY + (_G.ManualOffset or 0)
                         
@@ -735,16 +719,19 @@ RunService.PreSimulation:Connect(function()
                         
                         goldPart.Parent = Workspace
                         
+                        -- Gắn BodyVelocity điều khiển lực nâng dọc trục Y
                         bodyVelocity = Instance.new("BodyVelocity")
                         bodyVelocity.MaxForce = Vector3.new(0, math.huge, 0)
                         bodyVelocity.Velocity = Vector3.new(0, 0, 0)
                         bodyVelocity.Parent = goldPart
                         
+                        -- Hàn chết khối hộp vào đỉnh tàu để kéo toàn bộ tàu theo
                         local weld = Instance.new("WeldConstraint")
                         weld.Part0 = goldPart
                         weld.Part1 = topPart
                         weld.Parent = goldPart
                     else
+                        -- Cập nhật mục tiêu độ cao theo nút bấm 🔼 🔽 (thông qua _G.ManualOffset)
                         targetY = highest.Position.Y + (_G.ManualOffset or 0)
                         local currentY = goldPart.Position.Y
                         local diff = targetY - currentY
@@ -752,6 +739,7 @@ RunService.PreSimulation:Connect(function()
                     end
                 end
             else
+                -- Nếu tắt tính năng thì dọn dẹp sạch sẽ khối hộp
                 if goldPart then
                     cleanUpForces()
                 end
