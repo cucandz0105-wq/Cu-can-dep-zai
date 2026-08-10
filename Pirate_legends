@@ -41,6 +41,12 @@ local ProximityPromptService = game:GetService("ProximityPromptService")
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local Camera = Workspace.CurrentCamera
+local ghostGroupName = "IndependentGreenBoxGroup"
+pcall(function()
+    PhysicsService:RegisterCollisionGroup(ghostGroupName)
+    PhysicsService:CollisionGroupSetCollidable(ghostGroupName, "Default", false)
+end)
+
 
 _G.AutoDigAndPick, _G.AutoChestOnly, _G.IsDigging, _G.FakeFallSpeed = false, false, false, 0
 _G.CurrentTarget, _G.StuckTime = nil, 0
@@ -618,22 +624,69 @@ local function getDrivenSeat()
     return nil
 end
 
-local function getAbsoluteBoatBottom(seat)
-    local boat = seat.Parent local lowestY = seat.Position.Y
-    if boat and boat == lastCachedSeat then
-        for _, part in ipairs(currentBoatCache) do if part and part.Parent and part.Name ~= "RealNeonBottomCarpet" then local y = part.Position.Y if y < lowestY then lowestY = y end end end
-    else
-        if boat then for _, part in pairs(boat:GetDescendants()) do if part:IsA("BasePart") and part.Name ~= "RealNeonBottomCarpet" then if part.Position.Y < lowestY then lowestY = part.Position.Y end end end end
+local function getAbsoluteBoatBottom(boat)
+    local highestY = -math.huge
+    local highestPart = nil
+    if boat then
+        for _, part in pairs(boat:GetDescendants()) do
+            if part:IsA("BasePart") and part.Name ~= "RealNeonBottomCarpet" then
+                if part.Position.Y > highestY then
+                    highestY = part.Position.Y
+                    highestPart = part
+                end
+            end
+        end
     end
-    return lowestY
+    return highestY ~= -math.huge and highestY or 0, highestPart
 end
 
 local function createRealCarpet()
     if RealCarpet then RealCarpet:Destroy() end
-    RealCarpet = Instance.new("Part") RealCarpet.Name, RealCarpet.Size, RealCarpet.Transparency = "RealNeonBottomCarpet", Vector3.new(450, 4, 450), 1
-    RealCarpet.Color, RealCarpet.Material, RealCarpet.Anchored, RealCarpet.CanCollide = Color3.fromRGB(0, 255, 128), Enum.Material.Neon, true, true
-    RealCarpet.CollisionGroup, RealCarpet.CustomPhysicalProperties = "GhostCarpetGroup", PhysicalProperties.new(0, 0, 0, 0, 0)
+    
+    local char = LocalPlayer.Character
+    if not char then return end
+    local humanoid = char:FindFirstChildWhichIsA("Humanoid")
+    local seat = humanoid and humanoid.SeatPart
+    if not seat or (not seat:IsA("VehicleSeat") and not seat:IsA("Seat")) then return end
+    
+    local boat = seat.Parent
+    if not boat then return end
+    
+    local maxY, topPart = getAbsoluteBoatBottom(boat)
+    if not topPart then return end
+    
+    -- Tạo khối hộp xanh neon thay cho thảm dẹt
+    RealCarpet = Instance.new("Part")
+    RealCarpet.Name = "RealNeonBottomCarpet"
+    RealCarpet.Size = Vector3.new(4, 4, 4)
+    RealCarpet.CFrame = CFrame.new(topPart.Position.X, maxY + 4, topPart.Position.Z)
+    RealCarpet.Anchored = false
+    RealCarpet.CanCollide = true
+    RealCarpet.Massless = false
+    RealCarpet.Transparency = 0
+    RealCarpet.Color = Color3.fromRGB(0, 255, 128) -- Xanh neon chuẩn chỉnh
+    RealCarpet.Material = Enum.Material.Neon
+    
+    -- Tắt va chạm với mọi thứ ngoài tàu
+    pcall(function()
+        RealCarpet.CollisionGroup = ghostGroupName
+    end)
+    
     RealCarpet.Parent = Workspace
+    
+    -- Gắn BodyVelocity để hỗ trợ nâng hạ theo ý muốn
+    if not activeVelocity then
+        activeVelocity = Instance.new("BodyVelocity")
+        activeVelocity.MaxForce = Vector3.new(0, math.huge, 0)
+        activeVelocity.Velocity = Vector3.new(0, 0, 0)
+        activeVelocity.Parent = RealCarpet
+    end
+    
+    -- Hàn chặt vào đỉnh tàu để kéo toàn bộ tàu lơ lửng theo
+    local weld = Instance.new("WeldConstraint")
+    weld.Part0 = RealCarpet
+    weld.Part1 = topPart
+    weld.Parent = RealCarpet
 end
 
 local function cleanUpForces()
