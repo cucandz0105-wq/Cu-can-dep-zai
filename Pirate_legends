@@ -653,7 +653,7 @@ local function createMastAnchor(seat)
     MastAnchorPart.CFrame = CFrame.new(topPart.Position.X, maxY, topPart.Position.Z)
     MastAnchorPart.Anchored = false
     MastAnchorPart.CanCollide = true
-    MastAnchorPart.Transparency = 0.3 -- Giữ 0.3 để dễ kiểm tra xem đã lên đỉnh chưa
+    MastAnchorPart.Transparency = 1 -- Giữ 0.3 để dễ kiểm tra xem đã lên đỉnh chưa
     MastAnchorPart.Color = Color3.fromRGB(0, 255, 128)
     MastAnchorPart.Material = Enum.Material.Neon
     
