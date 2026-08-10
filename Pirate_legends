@@ -760,14 +760,24 @@ RunService.PreSimulation:Connect(function()
                 activeVelocity.VelocityConstraintMode = Enum.VelocityConstraintMode.Vector
                 activeVelocity.Parent = seat
             end
+            
             local forward = seat.CFrame.LookVector
-            activeVelocity.VectorVelocity = Vector3.new(forward.X, 0, forward.Z).Unit * (_G.BoostMultiplier or 100)
+            local targetVel = Vector3.new(forward.X, 0, forward.Z).Unit * (_G.BoostMultiplier or 100)
+            
+            if not _G.CurrentVectorVelocity then
+                _G.CurrentVectorVelocity = targetVel
+            end
+            _G.CurrentVectorVelocity = _G.CurrentVectorVelocity:Lerp(targetVel, 0.1)
+            
+            activeVelocity.VectorVelocity = _G.CurrentVectorVelocity
         else
             if activeVelocity then 
                 activeVelocity:Destroy() 
                 activeVelocity = nil 
             end
+            _G.CurrentVectorVelocity = nil -- Reset lại khi tắt tốc độ
         end
+
     else
         if cleanUpForces then cleanUpForces() end
         _G.BaseFloatLevel = nil 
