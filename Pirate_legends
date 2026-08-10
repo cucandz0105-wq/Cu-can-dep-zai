@@ -226,8 +226,8 @@ Instance.new("UICorner", _G.BoatBoostBtn).CornerRadius = UDim.new(0, 8)
 _G.HeightLabel = Instance.new("TextLabel")
 _G.HeightLabel.Size = UDim2.new(1, -20, 0, 30)
 _G.HeightLabel.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-_G.HeightLabel.Text = "Độ Cao Thảm: Tắt"
-_G.HeightLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
+_G.HeightLabel.Text = "Độ Cao Box: Tắt"
+_G.HeightLabel.TextColor3 = Color3.fromRGB(0, 255, 128)
 _G.HeightLabel.Font = Enum.Font.SourceSansBold
 _G.HeightLabel.TextSize = 14
 _G.HeightLabel.ZIndex = 17
@@ -243,7 +243,7 @@ FlyGroup.Parent = Container
 _G.BoatFlyBtn = Instance.new("TextButton")
 _G.BoatFlyBtn.Size = UDim2.new(0, 115, 0, 45)
 _G.BoatFlyBtn.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
-_G.BoatFlyBtn.Text = "Thảm Nước: OFF"
+_G.BoatFlyBtn.Text = "Cục Xanh: OFF"
 _G.BoatFlyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 _G.BoatFlyBtn.Font = Enum.Font.SourceSansBold
 _G.BoatFlyBtn.TextSize = 13
@@ -270,6 +270,136 @@ _G.DownBtn.TextSize = 14
 _G.DownBtn.ZIndex = 17
 _G.DownBtn.Parent = FlyGroup
 Instance.new("UICorner", _G.DownBtn).CornerRadius = UDim.new(0, 6)
+
+-- =========================================================================
+-- LOGIC ĐIỀU KHIỂN CỤC XANH NEON ĐỘC LẬP KẾT NỐI VỚI GIAO DIỆN TRÊN
+-- =========================================================================
+local PhysicsService = game:GetService("PhysicsService")
+local ghostGroupName = "IndependentGreenBoxGroup"
+
+pcall(function()
+    PhysicsService:RegisterCollisionGroup(ghostGroupName)
+    PhysicsService:CollisionGroupSetCollidable(ghostGroupName, "Default", false)
+end)
+
+local isHookActive = false
+local targetShip = nil
+local goldPart = nil
+local topPart = nil
+local bodyVelocity = nil
+local targetY = 0
+local speedStep = 1.0
+
+local function findHighestPart(shipModel)
+    local highestPart = nil
+    local maxY = -math.huge
+    for _, desc in pairs(shipModel:GetDescendants()) do
+        if desc:IsA("BasePart") and desc.Name ~= "IndependentGreenBox" then
+            if desc.Position.Y > maxY then
+                maxY = desc.Position.Y
+                highestPart = desc
+            end
+        end
+    end
+    return highestPart, maxY
+end
+
+_G.BoatFlyBtn.MouseButton1Click:Connect(function()
+    local character = LocalPlayer.Character
+    if not character then return end
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    
+    if not isHookActive then
+        if humanoid and humanoid.SeatPart and (humanoid.SeatPart:IsA("VehicleSeat") or humanoid.SeatPart:IsA("Seat")) then
+            local shipModel = humanoid.SeatPart:FindFirstAncestorOfClass("Model")
+            if shipModel and shipModel ~= character then
+                targetShip = shipModel
+                
+                topPart, targetY = findHighestPart(targetShip)
+                if not topPart then return end
+                
+                targetY = topPart.Position.Y + 4
+                isHookActive = true
+                _G.BoatFlyBtn.Text = "Cục Xanh: ON"
+                _G.BoatFlyBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
+                if _G.HeightLabel then _G.HeightLabel.Text = "Độ Cao Box: " .. math.floor(targetY) end
+                
+                goldPart = Instance.new("Part")
+                goldPart.Name = "IndependentGreenBox"
+                goldPart.Size = Vector3.new(4, 4, 4)
+                goldPart.CFrame = CFrame.new(topPart.Position.X, targetY, topPart.Position.Z)
+                goldPart.Anchored = false
+                goldPart.CanCollide = true 
+                goldPart.Massless = false
+                goldPart.Transparency = 0
+                goldPart.Color = Color3.fromRGB(0, 255, 128)
+                goldPart.Material = Enum.Material.Neon
+                
+                pcall(function()
+                    goldPart.CollisionGroup = ghostGroupName
+                end)
+                
+                goldPart.Parent = Workspace
+                
+                bodyVelocity = Instance.new("BodyVelocity")
+                bodyVelocity.MaxForce = Vector3.new(0, math.huge, 0)
+                bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+                bodyVelocity.Parent = goldPart
+                
+                local weld = Instance.new("WeldConstraint")
+                weld.Part0 = goldPart
+                weld.Part1 = topPart
+                weld.Parent = goldPart
+            end
+        end
+    else
+        isHookActive = false
+        if goldPart then goldPart:Destroy() goldPart = nil end
+        targetShip = nil
+        topPart = nil
+        _G.BoatFlyBtn.Text = "Cục Xanh: OFF"
+        _G.BoatFlyBtn.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+        if _G.HeightLabel then _G.HeightLabel.Text = "Độ Cao Box: Tắt" end
+    end
+end)
+
+local isMovingUp = false
+local isMovingDown = false
+
+if _G.UpBtn then
+    _G.UpBtn.MouseButton1Down:Connect(function() isMovingUp = true end)
+    _G.UpBtn.MouseButton1Up:Connect(function() isMovingUp = false end)
+end
+
+if _G.DownBtn then
+    _G.DownBtn.MouseButton1Down:Connect(function() isMovingDown = true end)
+    _G.DownBtn.MouseButton1Up:Connect(function() isMovingDown = false end)
+end
+
+task.spawn(function()
+    while true do
+        task.wait(0.03)
+        if isHookActive then
+            if isMovingUp then
+                targetY = targetY + speedStep
+                if _G.HeightLabel then _G.HeightLabel.Text = "Độ Cao Box: " .. math.floor(targetY) end
+            end
+            if isMovingDown then
+                targetY = targetY - speedStep
+                if _G.HeightLabel then _G.HeightLabel.Text = "Độ Cao Box: " .. math.floor(targetY) end
+            end
+        end
+    end
+end)
+
+RunService.RenderStepped:Connect(function(dt)
+    if not isHookActive or not goldPart or not goldPart.Parent or not bodyVelocity then return end
+    
+    local currentY = goldPart.Position.Y
+    local diff = targetY - currentY
+    
+    bodyVelocity.Velocity = Vector3.new(0, diff * 15, 0)
+end)
 
 _G.ToggleAimVisibleBtn = Instance.new("TextButton")
 _G.ToggleAimVisibleBtn.Size = UDim2.new(1, -20, 0, 45)
@@ -1388,4 +1518,143 @@ LocalPlayer.CharacterAdded:Connect(function(newChar)
     _G.IsPausedForAntiCheat = false
 
     isInteracting = false
+end)
+
+-- =========================================================================
+-- 🟢 TÍCH HỢP CỤC XANH NEON VÀO NÚT CŨ TRÊN MENU CỦA BẢN FILE
+-- =========================================================================
+local PhysicsService = game:GetService("PhysicsService")
+local ghostGroupName = "IndependentGreenBoxGroup"
+
+pcall(function()
+    PhysicsService:RegisterCollisionGroup(ghostGroupName)
+    PhysicsService:CollisionGroupSetCollidable(ghostGroupName, "Default", false)
+end)
+
+local isHookActive = false
+local targetShip = nil
+local goldPart = nil
+local topPart = nil
+local bodyVelocity = nil
+local targetY = 0
+local speedStep = 1.0
+
+-- Hàm tìm part cao nhất của tàu làm mốc gắn hộp
+local function findHighestPart(shipModel)
+    local highestPart = nil
+    local maxY = -math.huge
+    for _, desc in pairs(shipModel:GetDescendants()) do
+        if desc:IsA("BasePart") and desc.Name ~= "IndependentGreenBox" then
+            if desc.Position.Y > maxY then
+                maxY = desc.Position.Y
+                highestPart = desc
+            end
+        end
+    end
+    return highestPart, maxY
+end
+
+-- 1. Gán sự kiện bấm vào nút "Thảm Nước" cũ trên UI thành Bật/Tắt Cục Xanh Neon
+if _G.BoatFlyBtn then
+    _G.BoatFlyBtn.MouseButton1Click:Connect(function()
+        local character = LocalPlayer.Character
+        if not character then return end
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        
+        if not isHookActive then
+            if humanoid and humanoid.SeatPart and (humanoid.SeatPart:IsA("VehicleSeat") or humanoid.SeatPart:IsA("Seat")) then
+                local shipModel = humanoid.SeatPart:FindFirstAncestorOfClass("Model")
+                if shipModel and shipModel ~= character then
+                    targetShip = shipModel
+                    
+                    topPart, targetY = findHighestPart(targetShip)
+                    if not topPart then return end
+                    
+                    targetY = topPart.Position.Y + 4
+                    isHookActive = true
+                    _G.BoatFlyBtn.Text = "Cục Xanh: ON"
+                    _G.BoatFlyBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
+                    if _G.HeightLabel then _G.HeightLabel.Text = "Độ Cao Box: " .. math.floor(targetY) end
+                    
+                    -- Tạo cục xanh neon độc lập kích thước 4x4x4
+                    goldPart = Instance.new("Part")
+                    goldPart.Name = "IndependentGreenBox"
+                    goldPart.Size = Vector3.new(4, 4, 4)
+                    goldPart.CFrame = CFrame.new(topPart.Position.X, targetY, topPart.Position.Z)
+                    goldPart.Anchored = false
+                    goldPart.CanCollide = true 
+                    goldPart.Massless = false
+                    goldPart.Transparency = 0
+                    goldPart.Color = Color3.fromRGB(0, 255, 128)
+                    goldPart.Material = Enum.Material.Neon
+                    
+                    pcall(function()
+                        goldPart.CollisionGroup = ghostGroupName
+                    end)
+                    
+                    goldPart.Parent = Workspace
+                    
+                    -- Gắn BodyVelocity điều khiển lực nâng trục Y
+                    bodyVelocity = Instance.new("BodyVelocity")
+                    bodyVelocity.MaxForce = Vector3.new(0, math.huge, 0)
+                    bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+                    bodyVelocity.Parent = goldPart
+                    
+                    -- Hàn chặt vào đỉnh tàu
+                    local weld = Instance.new("WeldConstraint")
+                    weld.Part0 = goldPart
+                    weld.Part1 = topPart
+                    weld.Parent = goldPart
+                end
+            end
+        else
+            isHookActive = false
+            if goldPart then goldPart:Destroy() goldPart = nil end
+            targetShip = nil
+            topPart = nil
+            _G.BoatFlyBtn.Text = "Thảm Nước: OFF"
+            _G.BoatFlyBtn.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+            if _G.HeightLabel then _G.HeightLabel.Text = "Độ Cao Box: Tắt" end
+        end
+    end)
+end
+
+-- 2. Liên kết nút tăng giảm độ cao 🔼 🔽 sẵn có trên menu giao diện file
+local isMovingUp = false
+local isMovingDown = false
+
+if _G.UpBtn then
+    _G.UpBtn.MouseButton1Down:Connect(function() isMovingUp = true end)
+    _G.UpBtn.MouseButton1Up:Connect(function() isMovingUp = false end)
+end
+
+if _G.DownBtn then
+    _G.DownBtn.MouseButton1Down:Connect(function() isMovingDown = true end)
+    _G.DownBtn.MouseButton1Up:Connect(function() isMovingDown = false end)
+end
+
+task.spawn(function()
+    while true do
+        task.wait(0.03)
+        if isHookActive then
+            if isMovingUp then
+                targetY = targetY + speedStep
+                if _G.HeightLabel then _G.HeightLabel.Text = "Độ Cao Box: " .. math.floor(targetY) end
+            end
+            if isMovingDown then
+                targetY = targetY - speedStep
+                if _G.HeightLabel then _G.HeightLabel.Text = "Độ Cao Box: " .. math.floor(targetY) end
+            end
+        end
+    end
+end)
+
+-- 3. Vòng lặp duy trì lực nâng cho cục xanh neon
+RunService.RenderStepped:Connect(function(dt)
+    if not isHookActive or not goldPart or not goldPart.Parent or not bodyVelocity then return end
+    
+    local currentY = goldPart.Position.Y
+    local diff = targetY - currentY
+    
+    bodyVelocity.Velocity = Vector3.new(0, diff * 15, 0)
 end)
