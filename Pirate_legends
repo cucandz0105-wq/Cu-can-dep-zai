@@ -602,7 +602,7 @@ AimBtn.MouseButton1Click:Connect(function()
 end)
 
 _G.SuperSailActive, _G.BoatFlyActive, _G.BoostMultiplier, _G.ManualOffset, _G.BaseFloatLevel = false, false, 200, 0, nil
-local activeVelocity, activeAttachment, MastAnchorPart, currentBoatCache, lastCachedSeat = nil, nil, nil, {}, nil
+local activeVelocity, activeAttachment, MastAnchorPart, mastWeld, mastVelocity, currentBoatCache, lastCachedSeat = nil, nil, nil, nil, nil, {}, nil
 
 if _G.SpeedInput then
     _G.SpeedInput.FocusLost:Connect(function()
@@ -618,53 +618,71 @@ local function getDrivenSeat()
     return nil
 end
 
--- HÀM NHẬN DIỆN PHẦN CAO NHẤT CỦA CON TÀU (ĐỈNH CỘT BUỒM HOẶC MŨI CAO NHẤT)
-local function getAbsoluteBoatTop(seat)
-    local boat = seat.Parent 
-    local highestY = seat.Position.Y
-    
-    if boat then 
-        for _, part in pairs(boat:GetDescendants()) do 
-            if part:IsA("BasePart") and part.Name ~= "MastAnchorPart" then 
-                local topY = part.Position.Y + (part.Size.Y / 2)
-                if topY > highestY then 
-                    highestY = topY 
-                end 
-            end 
-        end 
+-- Hàm tìm phần cao nhất của tàu chính xác 100%
+local function findHighestPart(boatModel)
+    local highestPart = nil
+    local maxY = -math.huge
+    for _, desc in pairs(boatModel:GetDescendants()) do
+        if desc:IsA("BasePart") and desc.Name ~= "MastAnchorPart" then
+            if desc.Position.Y > maxY then
+                maxY = desc.Position.Y
+                highestPart = desc
+            end
+        end
     end
-    return highestY
+    return highestPart, maxY
 end
 
--- TẠO MỘT KHỐI NHỎ GỌN NGAY ĐỈNH TÀU THAY CHO TẤM THẢM KHỔNG LỒ
-local function createMastAnchor()
+-- Tạo cục xanh neon độc lập (Anchored = false) gắn weld vào đỉnh tàu
+local function createMastAnchor(seat)
     if MastAnchorPart then MastAnchorPart:Destroy() end
+    local boat = seat.Parent
+    if not boat then return end
+    
+    local topPart, maxY = findHighestPart(boat)
+    if not topPart then topPart = seat end
+    
+    if not _G.BaseFloatLevel then 
+        _G.BaseFloatLevel = topPart.Position.Y 
+    end
+    
     MastAnchorPart = Instance.new("Part")
     MastAnchorPart.Name = "MastAnchorPart"
-    MastAnchorPart.Size = Vector3.new(4, 4, 4) -- Thu nhỏ thành một khối gọn gàng
-    MastAnchorPart.Transparency = 0.3 -- Tàng hình hoặc chỉnh về 0.5 nếu muốn thấy khối
+    MastAnchorPart.Size = Vector3.new(4, 4, 4)
+    MastAnchorPart.CFrame = CFrame.new(topPart.Position.X, _G.BaseFloatLevel, topPart.Position.Z)
+    MastAnchorPart.Anchored = false
+    MastAnchorPart.CanCollide = true
+    MastAnchorPart.Transparency = 0.3 -- Giữ 0.5 để dễ nhìn thấy khối màu xanh khi test
     MastAnchorPart.Color = Color3.fromRGB(0, 255, 128)
     MastAnchorPart.Material = Enum.Material.Neon
-    MastAnchorPart.Anchored = true
-    MastAnchorPart.CanCollide = true
-    MastAnchorPart.CollisionGroup = "GhostCarpetGroup"
-    MastAnchorPart.CustomPhysicalProperties = PhysicalProperties.new(0, 0, 0, 0, 0)
+    
+    pcall(function()
+        PhysicsService:RegisterCollisionGroup("IndependentGreenBoxGroup")
+        MastAnchorPart.CollisionGroup = "IndependentGreenBoxGroup"
+    end)
+    
     MastAnchorPart.Parent = Workspace
+    
+    -- Tạo lực đẩy riêng cho khối xanh
+    mastVelocity = Instance.new("BodyVelocity")
+    mastVelocity.MaxForce = Vector3.new(0, math.huge, 0)
+    mastVelocity.Velocity = Vector3.new(0, 0, 0)
+    mastVelocity.Parent = MastAnchorPart
+    
+    -- Hàn cứng khối xanh vào đỉnh tàu để kéo tàu bay lên
+    mastWeld = Instance.new("WeldConstraint")
+    mastWeld.Part0 = MastAnchorPart
+    mastWeld.Part1 = topPart
+    mastWeld.Parent = MastAnchorPart
 end
 
 local function cleanUpForces()
     if activeVelocity then activeVelocity:Destroy() activeVelocity = nil end
     if activeAttachment then activeAttachment:Destroy() activeAttachment = nil end
     if MastAnchorPart then MastAnchorPart:Destroy() MastAnchorPart = nil end
+    mastVelocity, mastWeld = nil, nil
     currentBoatCache, lastCachedSeat = {}, nil
 end
-
-pcall(function()
-    PhysicsService:RegisterCollisionGroup("PlayerBoatGroup")
-    PhysicsService:RegisterCollisionGroup("GhostCarpetGroup")
-    PhysicsService:CollisionGroupSetCollidable("PlayerBoatGroup", "GhostCarpetGroup", true)
-    PhysicsService:CollisionGroupSetCollidable("Default", "GhostCarpetGroup", false)
-end)
 
 local holdingUp, holdingDown, changeInterval, changeAmount = false, false, 0.01, 2.5     
 if _G.UpBtn then
@@ -697,56 +715,24 @@ if _G.DownBtn then
     _G.DownBtn.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then holdingDown = false end end)
 end
 
-local function assignBoatToGroup(seat)
-    local boat = seat.Parent if not boat then return end
-    if lastCachedSeat ~= boat then
-        currentBoatCache, lastCachedSeat = {}, boat
-        for _, part in pairs(boat:GetDescendants()) do
-            if part:IsA("BasePart") and part.Name ~= "MastAnchorPart" then
-                table.insert(currentBoatCache, part)
-                pcall(function() 
-                    part.CollisionGroup = "PlayerBoatGroup" 
-                    if part:CanSetNetworkOwnership() then part:SetNetworkOwner(LocalPlayer) end 
-                end)
-            end
-        end
-    end
-end
-
+-- Vòng lặp PreSimulation cập nhật độ cao bằng BodyVelocity
 RunService.PreSimulation:Connect(function()
     local seat = getDrivenSeat and getDrivenSeat()
     if seat then
-        assignBoatToGroup(seat)
-        pcall(function() 
-            seat:CanSetNetworkOwnership() 
-            seat:SetNetworkOwner(LocalPlayer) 
-            for _, part in ipairs(currentBoatCache) do 
-                if part and part:CanSetNetworkOwnership() then part:SetNetworkOwner(LocalPlayer) end 
-            end 
-        end)
-        pcall(function() 
-            seat.MaxTorque = Vector3.new(math.huge, 0, math.huge) 
-            seat.AngularVelocity = Vector3.new(0, seat.AngularVelocity.Y, 0) 
-        end)
-        
         if _G.BoatFlyActive then
-            local currentTopY = getAbsoluteBoatTop(seat)
-            if not _G.BaseFloatLevel then _G.BaseFloatLevel = currentTopY + 5 end -- Neo cách đỉnh tàu một chút
+            if not MastAnchorPart or not MastAnchorPart.Parent then
+                createMastAnchor(seat)
+            end
             
-            local targetAnchorY = _G.BaseFloatLevel + _G.ManualOffset
+            local targetY = _G.BaseFloatLevel + _G.ManualOffset
             if _G.HeightLabel then 
-                _G.HeightLabel.Text = "Cao độ Đỉnh Thuyền Y: " .. tostring(math.floor(targetAnchorY)) 
+                _G.HeightLabel.Text = "Cao độ Đỉnh Thuyền Y: " .. tostring(math.floor(targetY)) 
             end
             
-            if not MastAnchorPart and createMastAnchor then 
-                createMastAnchor() 
-            end
-            
-            if MastAnchorPart then 
-                local _, rotY, _ = seat.CFrame:ToEulerAnglesYXZ()
-                -- Đồng bộ khối định vị theo tọa độ ngang của ghế lái nhưng bám theo độ cao đã chỉnh
-                local targetCFrame = CFrame.new(seat.Position.X, targetAnchorY, seat.Position.Z) * CFrame.fromEulerAnglesYXZ(0, rotY, 0)
-                MastAnchorPart.CFrame = MastAnchorPart.CFrame:Lerp(targetCFrame, 0.85) 
+            if MastAnchorPart and mastVelocity then
+                local currentY = MastAnchorPart.Position.Y
+                local diff = targetY - currentY
+                mastVelocity.Velocity = Vector3.new(0, diff * 15, 0)
             end
         else 
             if MastAnchorPart then 
