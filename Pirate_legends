@@ -705,7 +705,7 @@ if _G.BoatFlyBtn then
                         if not isHookActive or not goldPart or not goldPart.Parent or not bodyVelocity then return end
                         local currentY = goldPart.Position.Y
                         local diff = targetY - currentY
-                        bodyVelocity.Velocity = Vector3.new(0, diff * 10, 0)
+                        bodyVelocity.Velocity = Vector3.new(0, diff * 100, 0)
                     end)
                 end
             end
