@@ -666,7 +666,7 @@ local function createMastAnchor(seat)
     
     -- Gắn BodyVelocity riêng cho cục xanh
     mastVelocity = Instance.new("BodyVelocity")
-    mastVelocity.MaxForce = Vector3.new(0, math.huge, 0)
+    mastVelocity.MaxForce = Vector3.new(0, 50000, 0)
     mastVelocity.Velocity = Vector3.new(0, 0, 0)
     mastVelocity.Parent = MastAnchorPart
     
@@ -756,7 +756,7 @@ RunService.PreSimulation:Connect(function()
                 if activeVelocity then activeVelocity:Destroy() end
                 activeVelocity = Instance.new("LinearVelocity")
                 activeVelocity.Attachment0 = activeAttachment
-                activeVelocity.MaxForce = math.huge
+                activeVelocity.MaxForce = 50000
                 activeVelocity.VelocityConstraintMode = Enum.VelocityConstraintMode.Vector
                 activeVelocity.Parent = seat
             end
