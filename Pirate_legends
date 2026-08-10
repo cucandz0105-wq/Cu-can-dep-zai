@@ -602,7 +602,7 @@ AimBtn.MouseButton1Click:Connect(function()
 end)
 
 _G.SuperSailActive, _G.BoatFlyActive, _G.BoostMultiplier, _G.ManualOffset, _G.BaseFloatLevel = false, false, 200, 0, nil
-local activeVelocity, activeAttachment, RealCarpet, currentBoatCache, lastCachedSeat = nil, nil, nil, {}, nil
+local activeVelocity, activeAttachment, MastAnchorPart, currentBoatCache, lastCachedSeat = nil, nil, nil, {}, nil
 
 if _G.SpeedInput then
     _G.SpeedInput.FocusLost:Connect(function()
@@ -618,30 +618,176 @@ local function getDrivenSeat()
     return nil
 end
 
-local function getAbsoluteBoatBottom(seat)
-    local boat = seat.Parent local lowestY = seat.Position.Y
-    if boat and boat == lastCachedSeat then
-        for _, part in ipairs(currentBoatCache) do if part and part.Parent and part.Name ~= "RealNeonBottomCarpet" then local y = part.Position.Y if y < lowestY then lowestY = y end end end
-    else
-        if boat then for _, part in pairs(boat:GetDescendants()) do if part:IsA("BasePart") and part.Name ~= "RealNeonBottomCarpet" then if part.Position.Y < lowestY then lowestY = part.Position.Y end end end end
+-- HÀM NHẬN DIỆN PHẦN CAO NHẤT CỦA CON TÀU (ĐỈNH CỘT BUỒM HOẶC MŨI CAO NHẤT)
+local function getAbsoluteBoatTop(seat)
+    local boat = seat.Parent 
+    local highestY = seat.Position.Y
+    
+    if boat then 
+        for _, part in pairs(boat:GetDescendants()) do 
+            if part:IsA("BasePart") and part.Name ~= "MastAnchorPart" then 
+                local topY = part.Position.Y + (part.Size.Y / 2)
+                if topY > highestY then 
+                    highestY = topY 
+                end 
+            end 
+        end 
     end
-    return lowestY
+    return highestY
 end
 
-local function createRealCarpet()
-    if RealCarpet then RealCarpet:Destroy() end
-    RealCarpet = Instance.new("Part") RealCarpet.Name, RealCarpet.Size, RealCarpet.Transparency = "RealNeonBottomCarpet", Vector3.new(450, 4, 450), 1
-    RealCarpet.Color, RealCarpet.Material, RealCarpet.Anchored, RealCarpet.CanCollide = Color3.fromRGB(0, 255, 128), Enum.Material.Neon, true, true
-    RealCarpet.CollisionGroup, RealCarpet.CustomPhysicalProperties = "GhostCarpetGroup", PhysicalProperties.new(0, 0, 0, 0, 0)
-    RealCarpet.Parent = Workspace
+-- TẠO MỘT KHỐI NHỎ GỌN NGAY ĐỈNH TÀU THAY CHO TẤM THẢM KHỔNG LỒ
+local function createMastAnchor()
+    if MastAnchorPart then MastAnchorPart:Destroy() end
+    MastAnchorPart = Instance.new("Part")
+    MastAnchorPart.Name = "MastAnchorPart"
+    MastAnchorPart.Size = Vector3.new(4, 4, 4) -- Thu nhỏ thành một khối gọn gàng
+    MastAnchorPart.Transparency = 1 -- Tàng hình hoặc chỉnh về 0.5 nếu muốn thấy khối
+    MastAnchorPart.Color = Color3.fromRGB(0, 255, 128)
+    MastAnchorPart.Material = Enum.Material.Neon
+    MastAnchorPart.Anchored = true
+    MastAnchorPart.CanCollide = true
+    MastAnchorPart.CollisionGroup = "GhostCarpetGroup"
+    MastAnchorPart.CustomPhysicalProperties = PhysicalProperties.new(0, 0, 0, 0, 0)
+    MastAnchorPart.Parent = Workspace
 end
 
 local function cleanUpForces()
     if activeVelocity then activeVelocity:Destroy() activeVelocity = nil end
     if activeAttachment then activeAttachment:Destroy() activeAttachment = nil end
-    if RealCarpet then RealCarpet:Destroy() RealCarpet = nil end
+    if MastAnchorPart then MastAnchorPart:Destroy() MastAnchorPart = nil end
     currentBoatCache, lastCachedSeat = {}, nil
 end
+
+pcall(function()
+    PhysicsService:RegisterCollisionGroup("PlayerBoatGroup")
+    PhysicsService:RegisterCollisionGroup("GhostCarpetGroup")
+    PhysicsService:CollisionGroupSetCollidable("PlayerBoatGroup", "GhostCarpetGroup", true)
+    PhysicsService:CollisionGroupSetCollidable("Default", "GhostCarpetGroup", false)
+end)
+
+local holdingUp, holdingDown, changeInterval, changeAmount = false, false, 0.01, 2.5     
+if _G.UpBtn then
+    _G.UpBtn.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            holdingUp = true 
+            task.spawn(function() 
+                while holdingUp and _G.BoatFlyActive do 
+                    _G.ManualOffset = _G.ManualOffset + changeAmount 
+                    task.wait(changeInterval) 
+                end 
+            end)
+        end
+    end)
+    _G.UpBtn.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then holdingUp = false end end)
+end
+
+if _G.DownBtn then
+    _G.DownBtn.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            holdingDown = true 
+            task.spawn(function() 
+                while holdingDown and _G.BoatFlyActive do 
+                    _G.ManualOffset = _G.ManualOffset - changeAmount 
+                    task.wait(changeInterval) 
+                end 
+            end)
+        end
+    end)
+    _G.DownBtn.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then holdingDown = false end end)
+end
+
+local function assignBoatToGroup(seat)
+    local boat = seat.Parent if not boat then return end
+    if lastCachedSeat ~= boat then
+        currentBoatCache, lastCachedSeat = {}, boat
+        for _, part in pairs(boat:GetDescendants()) do
+            if part:IsA("BasePart") and part.Name ~= "MastAnchorPart" then
+                table.insert(currentBoatCache, part)
+                pcall(function() 
+                    part.CollisionGroup = "PlayerBoatGroup" 
+                    if part:CanSetNetworkOwnership() then part:SetNetworkOwner(LocalPlayer) end 
+                end)
+            end
+        end
+    end
+end
+
+RunService.PreSimulation:Connect(function()
+    local seat = getDrivenSeat and getDrivenSeat()
+    if seat then
+        assignBoatToGroup(seat)
+        pcall(function() 
+            seat:CanSetNetworkOwnership() 
+            seat:SetNetworkOwner(LocalPlayer) 
+            for _, part in ipairs(currentBoatCache) do 
+                if part and part:CanSetNetworkOwnership() then part:SetNetworkOwner(LocalPlayer) end 
+            end 
+        end)
+        pcall(function() 
+            seat.MaxTorque = Vector3.new(math.huge, 0, math.huge) 
+            seat.AngularVelocity = Vector3.new(0, seat.AngularVelocity.Y, 0) 
+        end)
+        
+        if _G.BoatFlyActive then
+            local currentTopY = getAbsoluteBoatTop(seat)
+            if not _G.BaseFloatLevel then _G.BaseFloatLevel = currentTopY + 5 end -- Neo cách đỉnh tàu một chút
+            
+            local targetAnchorY = _G.BaseFloatLevel + _G.ManualOffset
+            if _G.HeightLabel then 
+                _G.HeightLabel.Text = "Cao độ Đỉnh Thuyền Y: " .. tostring(math.floor(targetAnchorY)) 
+            end
+            
+            if not MastAnchorPart and createMastAnchor then 
+                createMastAnchor() 
+            end
+            
+            if MastAnchorPart then 
+                local _, rotY, _ = seat.CFrame:ToEulerAnglesYXZ()
+                -- Đồng bộ khối định vị theo tọa độ ngang của ghế lái nhưng bám theo độ cao đã chỉnh
+                local targetCFrame = CFrame.new(seat.Position.X, targetAnchorY, seat.Position.Z) * CFrame.fromEulerAnglesYXZ(0, rotY, 0)
+                MastAnchorPart.CFrame = MastAnchorPart.CFrame:Lerp(targetCFrame, 0.85) 
+            end
+        else 
+            if MastAnchorPart then 
+                MastAnchorPart:Destroy() 
+                MastAnchorPart = nil 
+            end
+            if _G.BaseFloatLevel then 
+                if _G.HeightLabel then _G.HeightLabel.Text = "Độ Cao Thảm: Tắt" end 
+                _G.BaseFloatLevel = nil 
+            end
+        end
+
+        if _G.SuperSailActive then
+            if not activeAttachment or activeAttachment.Parent ~= seat then
+                if activeAttachment then activeAttachment:Destroy() end
+                activeAttachment = Instance.new("Attachment")
+                activeAttachment.Parent = seat
+            end
+            if not activeVelocity or activeVelocity.Parent ~= seat then
+                if activeVelocity then activeVelocity:Destroy() end
+                activeVelocity = Instance.new("LinearVelocity")
+                activeVelocity.Attachment0 = activeAttachment
+                activeVelocity.MaxForce = math.huge
+                activeVelocity.VelocityConstraintMode = Enum.VelocityConstraintMode.Vector
+                activeVelocity.Parent = seat
+            end
+            local forward = seat.CFrame.LookVector
+            activeVelocity.VectorVelocity = Vector3.new(forward.X, 0, forward.Z).Unit * (_G.BoostMultiplier or 100)
+        else
+            if activeVelocity then 
+                activeVelocity:Destroy() 
+                activeVelocity = nil 
+            end
+        end
+    else
+        if cleanUpForces then cleanUpForces() end
+        _G.BaseFloatLevel = nil 
+        if _G.HeightLabel then _G.HeightLabel.Text = "Độ Cao Thảm: Tắt" end
+    end
+end)
+
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local PhysicsService = game:GetService("PhysicsService")
