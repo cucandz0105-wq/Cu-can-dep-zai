@@ -601,47 +601,64 @@ AimBtn.MouseButton1Click:Connect(function()
     else AimBtn.Text = "🔍\nNO TARGET" task.wait(0.15) AimBtn.Text = "🎯\nHYPER AIM\nv12.1" end
 end)
 
-_G.SuperSailActive, _G.BoatFlyActive, _G.BoostMultiplier, _G.ManualOffset, _G.BaseFloatLevel = false, false, 200, 0, nil
-local activeVelocity, activeAttachment, RealCarpet, currentBoatCache, lastCachedSeat = nil, nil, nil, {}, nil
+-- Chỗ này nằm ngay sau đoạn xử lý Tâm Bắn (AimBtn) trong file gốc của đại vương:
+_G.SuperSailActive, _G.BoatFlyActive, _G.BoostMultiplier, _G.ManualOffset, _G.BaseFloatLevel = false, false, 200, 0, nil 
+local activeVelocity, activeAttachment, RealCarpet, currentBoatCache, lastCachedSeat = nil, nil, nil, {}, nil 
 
-if _G.SpeedInput then
-    _G.SpeedInput.FocusLost:Connect(function()
-        local num = tonumber(_G.SpeedInput.Text)
-        if num then _G.BoostMultiplier = num else _G.SpeedInput.Text = tostring(_G.BoostMultiplier) end
-    end)
-end
+if _G.SpeedInput then 
+    _G.SpeedInput.FocusLost:Connect(function() 
+        local num = tonumber(_G.SpeedInput.Text) 
+        if num then _G.BoostMultiplier = num else _G.SpeedInput.Text = tostring(_G.BoostMultiplier) end 
+    end) 
+end 
 
-local function getDrivenSeat()
-    local char = LocalPlayer.Character if not char then return nil end
-    local humanoid = char:FindFirstChildWhichIsA("Humanoid")
-    if humanoid and humanoid.SeatPart and humanoid.SeatPart:IsA("VehicleSeat") then return humanoid.SeatPart end
-    return nil
-end
+local function getDrivenSeat() 
+    local char = LocalPlayer.Character 
+    if not char then return nil end 
+    local humanoid = char:FindFirstChildWhichIsA("Humanoid") 
+    if humanoid and humanoid.SeatPart and humanoid.SeatPart:IsA("VehicleSeat") then return humanoid.SeatPart end 
+    return nil 
+end 
 
-local function getAbsoluteBoatBottom(seat)
-    local boat = seat.Parent local lowestY = seat.Position.Y
-    if boat and boat == lastCachedSeat then
-        for _, part in ipairs(currentBoatCache) do if part and part.Parent and part.Name ~= "RealNeonBottomCarpet" then local y = part.Position.Y if y < lowestY then lowestY = y end end end
-    else
-        if boat then for _, part in pairs(boat:GetDescendants()) do if part:IsA("BasePart") and part.Name ~= "RealNeonBottomCarpet" then if part.Position.Y < lowestY then lowestY = part.Position.Y end end end end
-    end
-    return lowestY
-end
+local function getAbsoluteBoatBottom(seat) 
+    local boat = seat.Parent 
+    local lowestY = seat.Position.Y 
+    if boat and boat == lastCachedSeat then 
+        for _, part in ipairs(currentBoatCache) do 
+            if part and part.Parent and part.Name ~= "RealNeonBottomCarpet" then 
+                local y = part.Position.Y 
+                if y < lowestY then lowestY = y end 
+            end 
+        end 
+    else 
+        if boat then 
+            for _, part in pairs(boat:GetDescendants()) do 
+                if part:IsA("BasePart") and part.Name ~= "RealNeonBottomCarpet" then 
+                    if part.Position.Y < lowestY then lowestY = part.Position.Y end 
+                end 
+            end 
+        end 
+    end 
+    return lowestY 
+end 
 
-local function createRealCarpet()
-    if RealCarpet then RealCarpet:Destroy() end
-    RealCarpet = Instance.new("Part") RealCarpet.Name, RealCarpet.Size, RealCarpet.Transparency = "RealNeonBottomCarpet", Vector3.new(450, 4, 450), 1
-    RealCarpet.Color, RealCarpet.Material, RealCarpet.Anchored, RealCarpet.CanCollide = Color3.fromRGB(0, 255, 128), Enum.Material.Neon, true, true
-    RealCarpet.CollisionGroup, RealCarpet.CustomPhysicalProperties = "GhostCarpetGroup", PhysicalProperties.new(0, 0, 0, 0, 0)
-    RealCarpet.Parent = Workspace
-end
+-- ❌ ĐOẠN TẠO THẢM CŨ (BỊ LỖI THẢM DẸT SIÊU TO 450x4x450 VÀ DÙNG GHOST CARPET)
+local function createRealCarpet() 
+    if RealCarpet then RealCarpet:Destroy() end 
+    RealCarpet = Instance.new("Part") 
+    RealCarpet.Name, RealCarpet.Size, RealCarpet.Transparency = "RealNeonBottomCarpet", Vector3.new(450, 4, 450), 1 
+    RealCarpet.Color, RealCarpet.Material, RealCarpet.Anchored, RealCarpet.CanCollide = Color3.fromRGB(0, 255, 128), Enum.Material.Neon, true, true 
+    RealCarpet.CollisionGroup, RealCarpet.CustomPhysicalProperties = "GhostCarpetGroup", PhysicalProperties.new(0, 0, 0, 0, 0) 
+    RealCarpet.Parent = Workspace 
+end 
 
-local function cleanUpForces()
-    if activeVelocity then activeVelocity:Destroy() activeVelocity = nil end
-    if activeAttachment then activeAttachment:Destroy() activeAttachment = nil end
-    if RealCarpet then RealCarpet:Destroy() RealCarpet = nil end
-    currentBoatCache, lastCachedSeat = {}, nil
-end
+local function cleanUpForces() 
+    if activeVelocity then activeVelocity:Destroy() activeVelocity = nil end 
+    if activeAttachment then activeAttachment:Destroy() activeAttachment = nil end 
+    if RealCarpet then RealCarpet:Destroy() RealCarpet = nil end 
+    currentBoatCache, lastCachedSeat = {}, nil 
+end 
+
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local PhysicsService = game:GetService("PhysicsService")
