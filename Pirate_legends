@@ -618,14 +618,15 @@ local function getDrivenSeat()
     return nil
 end
 
--- Hàm tìm part cao nhất y chang bản của ông bạn (quét toàn bộ descendants theo Position.Y lớn nhất)
+-- Hàm tìm đỉnh chóp cao nhất của tàu (Tính cả chiều cao part: tâm Y + nửa chiều cao)
 local function findHighestPart(shipModel)
     local highestPart = nil
     local maxY = -math.huge
     for _, desc in pairs(shipModel:GetDescendants()) do
         if desc:IsA("BasePart") and desc.Name ~= "MastAnchorPart" then
-            if desc.Position.Y > maxY then
-                maxY = desc.Position.Y
+            local topY = desc.Position.Y + (desc.Size.Y / 2)
+            if topY > maxY then
+                maxY = topY
                 highestPart = desc
             end
         end
@@ -633,7 +634,7 @@ local function findHighestPart(shipModel)
     return highestPart, maxY
 end
 
--- Hàm tạo cục xanh neon độc lập bám chuẩn xác theo code ông bạn
+-- Hàm tạo cục xanh neon độc lập bám chuẩn xác tận đỉnh chóp cột buồm
 local function createMastAnchor(seat)
     if MastAnchorPart then MastAnchorPart:Destroy() end
     local boat = seat.Parent
@@ -642,17 +643,17 @@ local function createMastAnchor(seat)
     local topPart, maxY = findHighestPart(boat)
     if not topPart then topPart = seat end
     
-    if not _G.BaseFloatLevel then 
-        _G.BaseFloatLevel = topPart.Position.Y 
-    end
+    -- Cập nhật trực tiếp giá trị maxY (đỉnh chóp thực sự) làm mốc cơ sở
+    _G.BaseFloatLevel = maxY 
     
     MastAnchorPart = Instance.new("Part")
     MastAnchorPart.Name = "MastAnchorPart"
     MastAnchorPart.Size = Vector3.new(4, 4, 4)
-    MastAnchorPart.CFrame = CFrame.new(topPart.Position.X, _G.BaseFloatLevel, topPart.Position.Z)
+    -- Dùng trực tiếp maxY thay vì topPart.Position.Y để cục xanh nằm đúng ngọn chóp
+    MastAnchorPart.CFrame = CFrame.new(topPart.Position.X, maxY, topPart.Position.Z)
     MastAnchorPart.Anchored = false
     MastAnchorPart.CanCollide = true
-    MastAnchorPart.Transparency = 0.3 -- Giữ 0.3 để dễ nhìn thấy khối màu xanh neon
+    MastAnchorPart.Transparency = 0.3 -- Giữ 0.3 để dễ kiểm tra xem đã lên đỉnh chưa
     MastAnchorPart.Color = Color3.fromRGB(0, 255, 128)
     MastAnchorPart.Material = Enum.Material.Neon
     
@@ -669,7 +670,7 @@ local function createMastAnchor(seat)
     mastVelocity.Velocity = Vector3.new(0, 0, 0)
     mastVelocity.Parent = MastAnchorPart
     
-    -- Hàn cố định vào đỉnh tàu đúng chuẩn bản bạn bro
+    -- Hàn cố định vào đỉnh tàu để kéo toàn bộ thuyền bay lên
     mastWeld = Instance.new("WeldConstraint")
     mastWeld.Part0 = MastAnchorPart
     mastWeld.Part1 = topPart
