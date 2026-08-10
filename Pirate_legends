@@ -601,9 +601,13 @@ AimBtn.MouseButton1Click:Connect(function()
     else AimBtn.Text = "🔍\nNO TARGET" task.wait(0.15) AimBtn.Text = "🎯\nHYPER AIM\nv12.1" end
 end)
 
-_G.SuperSailActive, _G.BoatFlyActive, _G.BoostMultiplier, _G.ManualOffset, _G.BaseFloatLevel = false, false, 200, 0, nil
-local activeVelocity, activeAttachment, RealCarpet, currentBoatCache, lastCachedSeat = nil, nil, nil, {}, nil
+-- ==========================================
+-- CƠ CHẾ KHỐI HỘP NEON XANH + CHỐNG VĂNG GHẾ TỐC ĐỘ CAO
+-- ==========================================
 
+_G.SuperSailActive, _G.BoatFlyActive, _G.BoostMultiplier, _G.ManualOffset = false, false, 200, 0
+
+-- Lắng nghe thay đổi ô nhập tốc độ
 if _G.SpeedInput then
     _G.SpeedInput.FocusLost:Connect(function()
         local num = tonumber(_G.SpeedInput.Text)
@@ -611,6 +615,7 @@ if _G.SpeedInput then
     end)
 end
 
+-- Hàm tìm ghế lái (Cực kỳ quan trọng để không bị văng khi bật speed)
 local function getDrivenSeat()
     local char = LocalPlayer.Character if not char then return nil end
     local humanoid = char:FindFirstChildWhichIsA("Humanoid")
@@ -618,39 +623,145 @@ local function getDrivenSeat()
     return nil
 end
 
-local function getAbsoluteBoatBottom(seat)
-    local boat = seat.Parent local lowestY = seat.Position.Y
-    if boat and boat == lastCachedSeat then
-        for _, part in ipairs(currentBoatCache) do if part and part.Parent and part.Name ~= "RealNeonBottomCarpet" then local y = part.Position.Y if y < lowestY then lowestY = y end end end
-    else
-        if boat then for _, part in pairs(boat:GetDescendants()) do if part:IsA("BasePart") and part.Name ~= "RealNeonBottomCarpet" then if part.Position.Y < lowestY then lowestY = part.Position.Y end end end end
-    end
-    return lowestY
-end
-
-local function createRealCarpet()
-    if RealCarpet then RealCarpet:Destroy() end
-    RealCarpet = Instance.new("Part") RealCarpet.Name, RealCarpet.Size, RealCarpet.Transparency = "RealNeonBottomCarpet", Vector3.new(450, 4, 450), 1
-    RealCarpet.Color, RealCarpet.Material, RealCarpet.Anchored, RealCarpet.CanCollide = Color3.fromRGB(0, 255, 128), Enum.Material.Neon, true, true
-    RealCarpet.CollisionGroup, RealCarpet.CustomPhysicalProperties = "GhostCarpetGroup", PhysicalProperties.new(0, 0, 0, 0, 0)
-    RealCarpet.Parent = Workspace
-end
-
-local function cleanUpForces()
-    if activeVelocity then activeVelocity:Destroy() activeVelocity = nil end
-    if activeAttachment then activeAttachment:Destroy() activeAttachment = nil end
-    if RealCarpet then RealCarpet:Destroy() RealCarpet = nil end
-    currentBoatCache, lastCachedSeat = {}, nil
-end
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local PhysicsService = game:GetService("PhysicsService")
-local LocalPlayer = Players.LocalPlayer
-
+local ghostGroupName = "IndependentGreenBoxGroup"
 pcall(function()
-    PhysicsService:RegisterCollisionGroup("PlayerBoatGroup") PhysicsService:RegisterCollisionGroup("GhostCarpetGroup")
-    PhysicsService:CollisionGroupSetCollidable("PlayerBoatGroup", "GhostCarpetGroup", true)
-    PhysicsService:CollisionGroupSetCollidable("Default", "GhostCarpetGroup", false)
+    PhysicsService:RegisterCollisionGroup(ghostGroupName)
+    PhysicsService:CollisionGroupSetCollidable(ghostGroupName, "Default", false)
+end)
+
+local goldPart = nil
+local topPart = nil
+local bodyVelocity = nil
+local targetY = 0
+
+-- Hàm tìm part cao nhất của tàu để làm điểm gắn kết khối hộp
+local function findHighestPart(shipModel)
+    local highestPart = nil
+    local maxY = -math.huge
+    for _, desc in pairs(shipModel:GetDescendants()) do
+        if desc:IsA("BasePart") then
+            if desc.Position.Y > maxY then
+                maxY = desc.Position.Y
+                highestPart = desc
+            end
+        end
+    end
+    return highestPart, maxY
+end
+
+-- Hàm dọn dẹp khi tắt tính năng
+local function cleanUpForces()
+    if goldPart then 
+        goldPart:Destroy() 
+        goldPart = nil 
+    end
+    topPart = nil
+    bodyVelocity = nil
+end
+
+-- Xử lý nút tăng cao độ (🔼)
+local holdingUp, holdingDown = false, false
+if _G.UpBtn then
+    _G.UpBtn.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            holdingUp = true
+            task.spawn(function()
+                while holdingUp and _G.BoatFlyActive do
+                    _G.ManualOffset = _G.ManualOffset + 1.0
+                    task.wait(0.03)
+                end
+            end)
+        end
+    end)
+    _G.UpBtn.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then holdingUp = false end
+    end)
+end
+
+-- Xử lý nút giảm cao độ (🔽)
+if _G.DownBtn then
+    _G.DownBtn.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            holdingDown = true
+            task.spawn(function()
+                while holdingDown and _G.BoatFlyActive do
+                    _G.ManualOffset = _G.ManualOffset - 1.0
+                    task.wait(0.03)
+                end
+            end)
+        end
+    end)
+    _G.DownBtn.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then holdingDown = false end
+    end)
+end
+
+-- Vòng lặp điều khiển chính (Cả Thảm Nước & Tốc Độ)
+RunService.PreSimulation:Connect(function()
+    local seat = getDrivenSeat and getDrivenSeat()
+    if seat then
+        local boat = seat.Parent
+        if boat then
+            -- 🛡️ ĐOẠN NÀY ÉP QUYỀN MẠNG CHO GHẾ LÁI ĐỂ KHÔNG BAO GIỜ BỊ VĂNG KHI BẬT SPEED 200
+            pcall(function()
+                seat:SetNetworkOwner(LocalPlayer)
+                seat.MaxTorque = Vector3.new(math.huge, 0, math.huge)
+                seat.AngularVelocity = Vector3.new(0, seat.AngularVelocity.Y, 0)
+            end)
+            
+            -- Xử lý khi bật nút Thảm Nước (BoatFlyActive)
+            if _G.BoatFlyActive then
+                local highest, highestY = findHighestPart(boat)
+                if highest then
+                    topPart = highest
+                    
+                    if not goldPart or not goldPart.Parent then
+                        targetY = highestY + (_G.ManualOffset or 0)
+                        
+                        goldPart = Instance.new("Part")
+                        goldPart.Name = "IndependentGreenBox"
+                        goldPart.Size = Vector3.new(4, 4, 4)
+                        goldPart.CFrame = CFrame.new(topPart.Position.X, targetY, topPart.Position.Z)
+                        goldPart.Anchored = false
+                        goldPart.CanCollide = true 
+                        goldPart.Massless = false
+                        goldPart.Transparency = 0
+                        goldPart.Color = Color3.fromRGB(0, 255, 128)
+                        goldPart.Material = Enum.Material.Neon
+                        
+                        pcall(function()
+                            goldPart.CollisionGroup = ghostGroupName
+                        end)
+                        
+                        goldPart.Parent = Workspace
+                        
+                        bodyVelocity = Instance.new("BodyVelocity")
+                        bodyVelocity.MaxForce = Vector3.new(0, math.huge, 0)
+                        bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+                        bodyVelocity.Parent = goldPart
+                        
+                        local weld = Instance.new("WeldConstraint")
+                        weld.Part0 = goldPart
+                        weld.Part1 = topPart
+                        weld.Parent = goldPart
+                    else
+                        targetY = highest.Position.Y + (_G.ManualOffset or 0)
+                        local currentY = goldPart.Position.Y
+                        local diff = targetY - currentY
+                        bodyVelocity.Velocity = Vector3.new(0, diff * 10, 0)
+                    end
+                end
+            else
+                if goldPart then
+                    cleanUpForces()
+                end
+            end
+        end
+    else
+        if goldPart then
+            cleanUpForces()
+        end
+    end
 end)
 
 local holdingUp, holdingDown, changeInterval, changeAmount = false, false, 0.01, 2.5     
