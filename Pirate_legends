@@ -618,30 +618,149 @@ local function getDrivenSeat()
     return nil
 end
 
-local function getAbsoluteBoatBottom(seat)
-    local boat = seat.Parent local lowestY = seat.Position.Y
-    if boat and boat == lastCachedSeat then
-        for _, part in ipairs(currentBoatCache) do if part and part.Parent and part.Name ~= "RealNeonBottomCarpet" then local y = part.Position.Y if y < lowestY then lowestY = y end end end
-    else
-        if boat then for _, part in pairs(boat:GetDescendants()) do if part:IsA("BasePart") and part.Name ~= "RealNeonBottomCarpet" then if part.Position.Y < lowestY then lowestY = part.Position.Y end end end end
+local isHookActive = false
+local targetShip = nil
+local goldPart = nil
+local topPart = nil
+local bodyVelocity = nil
+local targetY = 0
+local speedStep = 2.5
+local boatFlyLoop = nil
+
+-- Hàm tìm part cao nhất của tàu để đặt khối hộp vàng lên đỉnh
+local function findHighestPart(shipModel)
+    local highestPart = nil
+    local maxY = -math.huge
+    for _, desc in pairs(shipModel:GetDescendants()) do
+        if desc:IsA("BasePart") and desc.Name ~= "IndependentGoldBox" then
+            if desc.Position.Y > maxY then
+                maxY = desc.Position.Y
+                highestPart = desc
+            end
+        end
     end
-    return lowestY
+    return highestPart, maxY
 end
 
-local function createRealCarpet()
-    if RealCarpet then RealCarpet:Destroy() end
-    RealCarpet = Instance.new("Part") RealCarpet.Name, RealCarpet.Size, RealCarpet.Transparency = "RealNeonBottomCarpet", Vector3.new(450, 4, 450), 1
-    RealCarpet.Color, RealCarpet.Material, RealCarpet.Anchored, RealCarpet.CanCollide = Color3.fromRGB(0, 255, 128), Enum.Material.Neon, true, true
-    RealCarpet.CollisionGroup, RealCarpet.CustomPhysicalProperties = "GhostCarpetGroup", PhysicalProperties.new(0, 0, 0, 0, 0)
-    RealCarpet.Parent = Workspace
+-- Hàm nhận diện ghế gốc của bản gốc
+local function getDrivenSeat()
+    local char = LocalPlayer.Character
+    if not char then return nil end
+    local humanoid = char:FindFirstChildWhichIsA("Humanoid")
+    if humanoid and humanoid.SeatPart and (humanoid.SeatPart:IsA("VehicleSeat") or humanoid.SeatPart:IsA("Seat")) then
+        return humanoid.SeatPart
+    end
+    return nil
 end
 
-local function cleanUpForces()
-    if activeVelocity then activeVelocity:Destroy() activeVelocity = nil end
-    if activeAttachment then activeAttachment:Destroy() activeAttachment = nil end
-    if RealCarpet then RealCarpet:Destroy() RealCarpet = nil end
-    currentBoatCache, lastCachedSeat = {}, nil
+-- Xử lý sự kiện bấm nút Bật/Tắt Thảm
+if _G.BoatFlyBtn then
+    _G.BoatFlyBtn.MouseButton1Click:Connect(function()
+        local seat = getDrivenSeat()
+        
+        if not isHookActive then
+            if seat then
+                local shipModel = seat.Parent
+                if shipModel then
+                    targetShip = shipModel
+                    
+                    topPart, targetY = findHighestPart(targetShip)
+                    if not topPart then return end
+                    
+                    targetY = topPart.Position.Y
+                    isHookActive = true
+                    
+                    _G.BoatFlyBtn.Text = "Khối Vàng: ON"
+                    _G.BoatFlyBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
+                    if _G.HeightLabel then _G.HeightLabel.Text = "Độ Cao Khối: Bật" end
+                    
+                    -- Tạo khối hộp vàng độc lập ngay đỉnh tàu
+                    goldPart = Instance.new("Part")
+                    goldPart.Name = "IndependentGoldBox"
+                    goldPart.Size = Vector3.new(4, 4, 4)
+                    goldPart.CFrame = CFrame.new(topPart.Position.X, targetY, topPart.Position.Z)
+                    goldPart.Anchored = false
+                    goldPart.CanCollide = true 
+                    goldPart.Massless = false
+                    goldPart.Transparency = 0
+                    goldPart.Color = Color3.fromRGB(255, 215, 0)
+                    goldPart.Material = Enum.Material.Neon
+                    goldPart.Parent = Workspace
+                    
+                    -- Gắn BodyVelocity kéo tàu lên xuống cực mượt theo phương Y
+                    bodyVelocity = Instance.new("BodyVelocity")
+                    bodyVelocity.MaxForce = Vector3.new(0, math.huge, 0)
+                    bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+                    bodyVelocity.Parent = goldPart
+                    
+                    -- Hàn nhẹ khối vàng vào đỉnh tàu
+                    local weld = Instance.new("WeldConstraint")
+                    weld.Part0 = goldPart
+                    weld.Part1 = topPart
+                    weld.Parent = goldPart
+                    
+                    -- Vòng lặp cập nhật mượt phăng phắc
+                    if boatFlyLoop then boatFlyLoop:Disconnect() end
+                    boatFlyLoop = RunService.RenderStepped:Connect(function()
+                        if not isHookActive or not goldPart or not goldPart.Parent or not bodyVelocity then return end
+                        local currentY = goldPart.Position.Y
+                        local diff = targetY - currentY
+                        bodyVelocity.Velocity = Vector3.new(0, diff * 10, 0)
+                    end)
+                end
+            end
+        else
+            isHookActive = false
+            if boatFlyLoop then boatFlyLoop:Disconnect() boatFlyLoop = nil end
+            if goldPart then goldPart:Destroy() goldPart = nil end
+            targetShip = nil
+            topPart = nil
+            
+            _G.BoatFlyBtn.Text = "Thảm Nước: OFF"
+            _G.BoatFlyBtn.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+            if _G.HeightLabel then _G.HeightLabel.Text = "Độ Cao Thảm: Tắt" end
+        end
+    end)
 end
+
+local isUpting = false
+if _G.UpBtn then
+    _G.UpBtn.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            isUpting = true
+            task.spawn(function()
+                while isUpting and isHookActive do
+                    targetY = targetY + speedStep
+                    task.wait(0.03)
+                end
+            end)
+        end
+    end)
+    _G.UpBtn.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then isUpting = false end
+    end)
+end
+
+local isDownting = false
+if _G.DownBtn then
+    _G.DownBtn.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            isDownting = true
+            task.spawn(function()
+                while isDownting and isHookActive do
+                    targetY = targetY - speedStep
+                    task.wait(0.03)
+                end
+            end)
+        end
+    end)
+    _G.DownBtn.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            isDownting = false
+        end
+    end)
+end
+
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local PhysicsService = game:GetService("PhysicsService")
