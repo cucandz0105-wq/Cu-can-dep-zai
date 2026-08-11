@@ -619,7 +619,7 @@ local function ClearBoatWelds()
     cannonConnections = {}
 end
 
--- 2. Hàm hàn toàn bộ tàu, triệt tiêu trọng lực pháo và cố định tọa độ an toàn (GIỮ NGUYÊN VEHICLESEAT)
+-- 2. Hàm hàn toàn bộ tàu, khóa chặt CFrame và triệt tiêu quán tính tốc độ cao của pháo
 local function WeldBoatParts(model)
     if model:GetAttribute("IsWelded") then return end
     model:SetAttribute("IsWelded", true)
@@ -648,21 +648,16 @@ local function WeldBoatParts(model)
         end
     end
     
-    -- 2. Xử lý phần pháo: Khử trọng lực (Massless) để không bị quán tính xé rách, tuyệt đối KHÔNG khóa ghế lái chung
+    -- 2. Xử lý phần pháo: Khử Massless và khóa chặt tọa độ + triệt tiêu quán tính từng mili-giây
     local cannonsFolder = model:FindFirstChild("Cannons", true) or Workspace:FindFirstChild("Cannons", true)
     if cannonsFolder then
-        for _, obj in pairs(cannonsFolder:GetDescendants()) do
-            if obj:IsA("BasePart") then
-                obj.Massless = true -- Triệt tiêu trọng lực và lực quán tính kéo giật của Roblox
-                obj.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-                obj.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
-            end
-        end
-        
-        -- Lưu lại tọa độ tương đối để giữ pháo bám chặt theo tàu khi bẻ cua
         local cannonData = {}
         for _, cannonPart in pairs(cannonsFolder:GetDescendants()) do
             if cannonPart:IsA("BasePart") then
+                cannonPart.Massless = true
+                cannonPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                cannonPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+                
                 local cannonWeld = Instance.new("WeldConstraint")
                 cannonWeld.Part0 = mainPart
                 cannonWeld.Part1 = cannonPart
@@ -673,11 +668,13 @@ local function WeldBoatParts(model)
             end
         end
         
-        -- Đồng bộ hóa vị trí mượt mà qua RenderStepped
+        -- Vòng lặp RenderStepped: Bắt buộc triệt tiêu vận tốc dư thừa và ép chặt CFrame bám theo tàu từng mili-giây
         local conn = RunService.RenderStepped:Connect(function()
             if not mainPart or not mainPart.Parent then return end
             for _, data in ipairs(cannonData) do
                 if data.Part and data.Part.Parent then
+                    data.Part.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                    data.Part.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
                     data.Part.CFrame = mainPart.CFrame:ToWorldSpace(data.Offset)
                 end
             end
