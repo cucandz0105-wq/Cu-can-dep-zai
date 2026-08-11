@@ -612,6 +612,7 @@ local function WeldBoatParts(model)
     local mainPart = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChildWhichIsA("BasePart")
     if not mainPart then return end
     
+    -- Hàn càn quét toàn bộ từ thân tàu, bệ pháo đến nòng pháo dính chặt vào một mối
     for _, part in pairs(model:GetDescendants()) do
         if part:IsA("BasePart") and part ~= mainPart then
             local hasWeld = false
