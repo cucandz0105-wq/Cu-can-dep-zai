@@ -612,7 +612,7 @@ local function WeldBoatParts(model)
     local mainPart = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChildWhichIsA("BasePart")
     if not mainPart then return end
     
-    -- Hàn càn quét toàn bộ từ thân tàu, bệ pháo đến nòng pháo dính chặt vào một mối
+    -- 🎯 1. VẪN HÀN THÂN TÀU NHƯ BÌNH THƯỜNG ĐỂ CHỐNG VĂNG
     for _, part in pairs(model:GetDescendants()) do
         if part:IsA("BasePart") and part ~= mainPart then
             local hasWeld = false
@@ -630,6 +630,22 @@ local function WeldBoatParts(model)
                 weld.Parent = part
                 
                 table.insert(activeWelds, weld)
+            end
+        end
+    end
+    
+    -- 🎯 2. ĐÍCH THÂN TÌM VÀ KHÓA CHẾT TOÀN BỘ THƯ MỤC "Cannons" CỦA TÀU
+    local cannonsFolder = model:FindFirstChild("Cannons", true) -- Tìm tự động thư mục Cannons bên trong tàu
+    if cannonsFolder then
+        for _, cannonModel in pairs(cannonsFolder:GetDescendants()) do
+            if cannonModel:IsA("BasePart") then
+                -- Trói chặt mọi phần của Cannon vào mainPart của tàu
+                local cannonWeld = Instance.new("WeldConstraint")
+                cannonWeld.Part0 = mainPart
+                cannonWeld.Part1 = cannonModel
+                cannonWeld.Parent = cannonModel
+                
+                table.insert(activeWelds, cannonWeld)
             end
         end
     end
