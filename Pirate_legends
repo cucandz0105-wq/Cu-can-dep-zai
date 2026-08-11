@@ -605,7 +605,7 @@ end)
 local RunService = game:GetService("RunService")
 local activeWelds = {}
 
--- Hàm dọn dẹp kết nối và weld cũ
+-- Hàm dọn dẹp kết nối cũ
 local function ClearBoatWelds()
     for _, weld in pairs(activeWelds) do
         if weld and weld.Parent then weld:Destroy() end
@@ -613,7 +613,7 @@ local function ClearBoatWelds()
     activeWelds = {}
 end
 
--- Hàm hàn toàn bộ tàu và đồng bộ hóa vật lý pháo (Tối ưu tuyệt đối)
+-- Hàm nâng cấp: Dùng LinearVelocity cho Speed Ship + Hàn cứng chống gãy pháo
 local function WeldBoatParts(model)
     if model:GetAttribute("IsWelded") then return end
     model:SetAttribute("IsWelded", true)
@@ -621,10 +621,28 @@ local function WeldBoatParts(model)
     local mainPart = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChildWhichIsA("BasePart")
     if not mainPart then return end
     
-    -- 1. Hàn toàn bộ các part trong model thành một khối thống nhất (Chống văng tuyệt đối)
+    -- 1. Đảm bảo thân tàu chính có đủ Attachment để gắn LinearVelocity nếu chưa có
+    local attachment = mainPart:FindFirstChild("ShipVelocityAttachment")
+    if not attachment then
+        attachment = Instance.new("Attachment")
+        attachment.Name = "ShipVelocityAttachment"
+        attachment.Parent = mainPart
+    end
+    
+    local linearVel = mainPart:FindFirstChild("ShipLinearVelocity")
+    if not linearVel then
+        linearVel = Instance.new("LinearVelocity")
+        linearVel.Name = "ShipLinearVelocity"
+        linearVel.Attachment0 = attachment
+        linearVel.MaxForce = math.huge
+        linearVel.RelativeTo = Enum.ActuatorRelativeTo.World
+        linearVel.VectorVelocity = Vector3.new(0, 0, 0) -- Ban đầu đứng yên hoặc theo tốc độ mặc định
+        linearVel.Parent = mainPart
+    end
+
+    -- 2. Hàn toàn bộ các part khác vào thân chính và tối ưu hóa ma sát
     for _, part in pairs(model:GetDescendants()) do
         if part:IsA("BasePart") and part ~= mainPart then
-            -- Tối ưu hóa ma sát và độ bám vật lý để không bị giật cục khi tăng tốc
             part.CustomPhysicalProperties = PhysicalProperties.new(0.01, 0.7, 0, 1, 1)
             
             local hasWeld = false
@@ -645,16 +663,14 @@ local function WeldBoatParts(model)
         end
     end
     
-    -- 2. Xử lý riêng phần pháo: Bật Massless và đồng bộ hóa Assembly Velocity tự nhiên
+    -- 3. Xử lý riêng biệt phần pháo: Bật Massless tuyệt đối để đi theo vector lực của LinearVelocity mượt mà
     local cannonsFolder = model:FindFirstChild("Cannons", true) or Workspace:FindFirstChild("Cannons", true)
     if cannonsFolder then
         for _, cannonPart in pairs(cannonsFolder:GetDescendants()) do
             if cannonPart:IsA("BasePart") then
-                -- Bật Massless để pháo không có trọng lượng riêng, triệt tiêu lực kéo xuống
                 cannonPart.Massless = true
                 cannonPart.CustomPhysicalProperties = PhysicalProperties.new(0, 0, 0, 0, 0)
                 
-                -- Hàn trực tiếp vào mainPart bằng WeldConstraint cứng nhất
                 local cannonWeld = Instance.new("WeldConstraint")
                 cannonWeld.Part0 = mainPart
                 cannonWeld.Part1 = cannonPart
