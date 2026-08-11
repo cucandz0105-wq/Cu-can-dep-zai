@@ -715,6 +715,30 @@ if _G.DownBtn then
     end)
     _G.DownBtn.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then holdingDown = false end end)
 end
+-- Hàm tự động hàn gắn đại bác và các part rời vào tàu chống giật
+local function WeldBoatParts(model)
+    local mainPart = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChildWhichIsA("BasePart")
+    if not mainPart then return end
+    
+    for _, part in pairs(model:GetDescendants()) do
+        if part:IsA("BasePart") and part ~= mainPart then
+            local hasWeld = false
+            for _, child in pairs(part:GetChildren()) do
+                if child:IsA("WeldConstraint") or child:IsA("Weld") then
+                    hasWeld = true
+                    break
+                end
+            end
+            
+            if not hasWeld then
+                local weld = Instance.new("WeldConstraint")
+                weld.Part0 = mainPart
+                weld.Part1 = part
+                weld.Parent = part
+            end
+        end
+    end
+end
 
 -- Vòng lặp PreSimulation hoàn chỉnh: Cache ghế + Chống rơi + Siêu tốc math.huge + Giảm chấn chống văng
 RunService.PreSimulation:Connect(function()
@@ -724,6 +748,9 @@ RunService.PreSimulation:Connect(function()
         lastCachedSeat = seat
         local model = seat:FindFirstAncestorOfClass("Model")
         if model then
+            -- 💥 GỌI HÀM WELD Ở ĐÂY LÀ CHUẨN XÁC NHẤT
+            WeldBoatParts(model)
+            
             currentBoatCache = {}
             for _, p in pairs(model:GetDescendants()) do
                 if p:IsA("BasePart") then
