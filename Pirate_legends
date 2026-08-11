@@ -606,7 +606,6 @@ local RunService = game:GetService("RunService")
 local activeWelds = {}
 local cannonConnections = {}
 
--- Hàm dọn dẹp toàn bộ weld và ngắt kết nối vòng lặp khi rời ghế hoặc reset
 local function ClearBoatWelds()
     for _, weld in pairs(activeWelds) do
         if weld and weld.Parent then weld:Destroy() end
@@ -619,7 +618,6 @@ local function ClearBoatWelds()
     cannonConnections = {}
 end
 
--- 2. Hàm hàn toàn bộ tàu, khóa chặt CFrame và triệt tiêu quán tính tốc độ cao của pháo
 local function WeldBoatParts(model)
     if model:GetAttribute("IsWelded") then return end
     model:SetAttribute("IsWelded", true)
@@ -648,9 +646,16 @@ local function WeldBoatParts(model)
         end
     end
     
-    -- 2. Xử lý phần pháo: Khử Massless và khóa chặt tọa độ + triệt tiêu quán tính từng mili-giây
+    -- 2. TIÊU DIỆT TẬN GỐC: Xóa sạch mọi khớp ẩn, bản lề, constraint của pháo để chúng không tự kéo nhau gãy nữa
     local cannonsFolder = model:FindFirstChild("Cannons", true) or Workspace:FindFirstChild("Cannons", true)
     if cannonsFolder then
+        -- Xóa toàn bộ các khớp nối vật lý cũ có thể gây xung đột
+        for _, obj in pairs(cannonsFolder:GetDescendants()) do
+            if obj:IsA("Constraint") or obj:IsA("JointInstance") or obj:IsA("BodyMover") or obj:IsA("VectorForce") or obj:IsA("AlignPosition") or obj:IsA("Torque") or obj:IsA("AngularVelocity") then
+                obj:Destroy() -- Phá hủy hoàn toàn khớp gây xung đột
+            end
+        end
+        
         local cannonData = {}
         for _, cannonPart in pairs(cannonsFolder:GetDescendants()) do
             if cannonPart:IsA("BasePart") then
@@ -658,6 +663,7 @@ local function WeldBoatParts(model)
                 cannonPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
                 cannonPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
                 
+                -- Tạo Weld cứng tuyệt đối nối trực tiếp từng part pháo vào thân chính tàu
                 local cannonWeld = Instance.new("WeldConstraint")
                 cannonWeld.Part0 = mainPart
                 cannonWeld.Part1 = cannonPart
@@ -668,7 +674,7 @@ local function WeldBoatParts(model)
             end
         end
         
-        -- Vòng lặp RenderStepped: Bắt buộc triệt tiêu vận tốc dư thừa và ép chặt CFrame bám theo tàu từng mili-giây
+        -- Khóa chặt tuyệt đối tọa độ từng mili-giây
         local conn = RunService.RenderStepped:Connect(function()
             if not mainPart or not mainPart.Parent then return end
             for _, data in ipairs(cannonData) do
