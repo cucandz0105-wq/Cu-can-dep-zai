@@ -612,8 +612,27 @@ local function WeldBoatParts(model)
     local mainPart = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChildWhichIsA("BasePart")
     if not mainPart then return end
     
+    -- 1. Tự động quét tìm tất cả các Part đang làm khớp chuyển động (HingeConstraint / Khớp quay của pháo, cửa, vô lăng...)
+    local movableParts = {}
+    for _, desc in pairs(model:GetDescendants()) do
+        if desc:IsA("HingeConstraint") or desc:IsA("CylindricalConstraint") then
+            if desc.Attachment0 and desc.Attachment0.Parent then
+                movableParts[desc.Attachment0.Parent] = true
+            end
+            if desc.Attachment1 and desc.Attachment1.Parent then
+                movableParts[desc.Attachment1.Parent] = true
+            end
+        end
+    end
+    
+    -- 2. Tiến hành hàn toàn bộ tàu, nhưng tự động loại trừ các phần đang làm khớp quay (giúp nòng pháo tự do)
     for _, part in pairs(model:GetDescendants()) do
         if part:IsA("BasePart") and part ~= mainPart then
+            -- Nếu part này thuộc bộ phận chuyển động/khớp quay của pháo -> Bỏ qua không weld chết
+            if movableParts[part] then
+                continue
+            end
+            
             local hasWeld = false
             for _, child in pairs(part:GetChildren()) do
                 if child:IsA("WeldConstraint") or child:IsA("Weld") or child:IsA("RigidJoint") then
