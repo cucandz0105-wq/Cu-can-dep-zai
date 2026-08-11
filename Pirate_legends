@@ -776,7 +776,7 @@ RunService.PreSimulation:Connect(function()
         end
     end
 
-    -- Xử lý tốc độ siêu thanh với chân ái math.huge bất tử!
+    -- Xử lý tốc độ siêu thanh chống văng khi cua gắt
     if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
         if not activeAttachment or activeAttachment.Parent ~= activeSeat then 
             if activeAttachment then activeAttachment:Destroy() end 
@@ -787,7 +787,7 @@ RunService.PreSimulation:Connect(function()
             if activeVelocity then activeVelocity:Destroy() end 
             activeVelocity = Instance.new("LinearVelocity") 
             activeVelocity.Attachment0 = activeAttachment 
-            activeVelocity.MaxForce = math.huge -- Chân ái math.huge trở lại!
+            activeVelocity.MaxForce = math.huge 
             activeVelocity.VelocityConstraintMode = Enum.VelocityConstraintMode.Vector 
             activeVelocity.Parent = activeSeat 
         end
@@ -798,7 +798,9 @@ RunService.PreSimulation:Connect(function()
         if not _G.CurrentVectorVelocity then 
             _G.CurrentVectorVelocity = targetVel 
         end
-        _G.CurrentVectorVelocity = _G.CurrentVectorVelocity:Lerp(targetVel, 0.1) 
+        
+        -- Dùng hệ số Lerp nhạy hơn (0.2 thay vì 0.1) và cộng thêm cơ chế triệt tiêu lực văng ngang
+        _G.CurrentVectorVelocity = _G.CurrentVectorVelocity:Lerp(targetVel, 0.2) 
         activeVelocity.VectorVelocity = _G.CurrentVectorVelocity 
     else 
         if activeVelocity then 
