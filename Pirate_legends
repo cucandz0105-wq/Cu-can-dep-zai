@@ -612,7 +612,7 @@ local function WeldBoatParts(model)
     local mainPart = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChildWhichIsA("BasePart")
     if not mainPart then return end
     
-    -- 🎯 1. VẪN HÀN THÂN TÀU NHƯ BÌNH THƯỜNG ĐỂ CHỐNG VĂNG
+    -- 1. Hàn thân tàu chính chống văng
     for _, part in pairs(model:GetDescendants()) do
         if part:IsA("BasePart") and part ~= mainPart then
             local hasWeld = false
@@ -628,23 +628,34 @@ local function WeldBoatParts(model)
                 weld.Part0 = mainPart
                 weld.Part1 = part
                 weld.Parent = part
-                
                 table.insert(activeWelds, weld)
             end
         end
     end
     
-    -- 🎯 2. ĐÍCH THÂN TÌM VÀ KHÓA CHẾT TOÀN BỘ THƯ MỤC "Cannons" CỦA TÀU
-    local cannonsFolder = model:FindFirstChild("Cannons", true) -- Tìm tự động thư mục Cannons bên trong tàu
+    -- 2. Nhắm thẳng thư mục Cannons: Vừa Weld cứng vừa Tắt toàn bộ khớp xoay để không bị xé part
+    local cannonsFolder = model:FindFirstChild("Cannons", true)
     if cannonsFolder then
-        for _, cannonModel in pairs(cannonsFolder:GetDescendants()) do
-            if cannonModel:IsA("BasePart") then
-                -- Trói chặt mọi phần của Cannon vào mainPart của tàu
+        -- Tắt sạch các ràng buộc khớp (Hinge, Constraint, Motor) để physics không bẻ gãy pháo
+        for _, obj in pairs(cannonsFolder:GetDescendants()) do
+            if obj:IsA("HingeConstraint") or obj:IsA("Constraint") or obj:IsA("SpringConstraint") then
+                obj.Enabled = false
+            elseif obj:IsA("BodyMover") or obj:IsA("VectorForce") or obj:IsA("AlignPosition") then
+                obj:Destroy()
+            end
+        end
+        
+        -- Tiến hành trói chặt mọi BasePart của Cannon vào mainPart
+        for _, cannonPart in pairs(cannonsFolder:GetDescendants()) do
+            if cannonPart:IsA("BasePart") then
+                -- Đảm bảo không bị dính trọng lực riêng gây xé part
+                cannonPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                cannonPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+                
                 local cannonWeld = Instance.new("WeldConstraint")
                 cannonWeld.Part0 = mainPart
-                cannonWeld.Part1 = cannonModel
-                cannonWeld.Parent = cannonModel
-                
+                cannonWeld.Part1 = cannonPart
+                cannonWeld.Parent = cannonPart
                 table.insert(activeWelds, cannonWeld)
             end
         end
