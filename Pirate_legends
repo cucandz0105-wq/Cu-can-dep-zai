@@ -666,7 +666,7 @@ local function createMastAnchor(seat)
     
     -- Gắn BodyVelocity riêng cho cục xanh
     mastVelocity = Instance.new("BodyVelocity")
-    mastVelocity.MaxForce = Vector3.new(0, 100000000000000, 0)
+    mastVelocity.MaxForce = Vector3.new(0, math.huge, 0)
     mastVelocity.Velocity = Vector3.new(0, 0, 0)
     mastVelocity.Parent = MastAnchorPart
     
@@ -716,72 +716,96 @@ if _G.DownBtn then
     _G.DownBtn.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then holdingDown = false end end)
 end
 
--- Vòng lặp PreSimulation cập nhật độ cao bằng BodyVelocity
+-- Vòng lặp PreSimulation hoàn chỉnh: Cache ghế + Chống rơi + Siêu tốc math.huge + Giảm chấn chống văng
 RunService.PreSimulation:Connect(function()
     local seat = getDrivenSeat and getDrivenSeat()
-    if seat then
-        if _G.BoatFlyActive then
-            if not MastAnchorPart or not MastAnchorPart.Parent then
-                createMastAnchor(seat)
+    
+    -- Ghi nhớ (cache) ghế và toàn bộ linh kiện chiếc tàu khi đang ngồi
+    if seat and seat:IsA("VehicleSeat") then
+        lastCachedSeat = seat
+        local model = seat:FindFirstAncestorOfClass("Model")
+        if model then
+            currentBoatCache = {}
+            for _, p in pairs(model:GetDescendants()) do
+                if p:IsA("BasePart") then
+                    table.insert(currentBoatCache, p)
+                end
             end
-            
-            local targetY = _G.BaseFloatLevel + _G.ManualOffset
-            if _G.HeightLabel then 
-                _G.HeightLabel.Text = "Cao độ Đỉnh Thuyền Y: " .. tostring(math.floor(targetY)) 
-            end
-            
-            if MastAnchorPart and mastVelocity then
-                local currentY = MastAnchorPart.Position.Y
-                local diff = targetY - currentY
-                mastVelocity.Velocity = Vector3.new(0, diff * 15, 0)
-            end
-        else 
-            if MastAnchorPart then 
-                MastAnchorPart:Destroy() 
-                MastAnchorPart = nil 
-            end
+        end
+    end
+    
+    local activeSeat = seat or lastCachedSeat
+    
+    if _G.BoatFlyActive and activeSeat and activeSeat.Parent then
+        if not MastAnchorPart or not MastAnchorPart.Parent then 
+            createMastAnchor(activeSeat) 
+        end
+        
+        local targetY = (_G.BaseFloatLevel or activeSeat.Position.Y) + _G.ManualOffset
+        if _G.HeightLabel then 
+            _G.HeightLabel.Text = "Cao độ Đỉnh Thuyền Y: " .. tostring(math.floor(targetY)) 
+        end
+        
+        if MastAnchorPart and mastVelocity then 
+            local currentY = MastAnchorPart.Position.Y 
+            local diff = targetY - currentY 
+            -- Giảm nhẹ hệ số xuống 10 để tạo độ dãn nệm lò xo, chống tích tụ áp suất gây văng
+            mastVelocity.Velocity = Vector3.new(0, diff * 10, 0) 
+        end
+        
+        -- Ép Network Ownership liên tục để client không bị mất quyền điều khiển khi rời ghế
+        if #currentBoatCache > 0 then
+            pcall(function()
+                for _, part in pairs(currentBoatCache) do
+                    if part and part.Parent then
+                        part:SetNetworkOwner(LocalPlayer)
+                    end
+                end
+            end)
+        end
+        
+    else
+        if not _G.BoatFlyActive then
+            if MastAnchorPart then MastAnchorPart:Destroy() MastAnchorPart = nil end
             if _G.BaseFloatLevel then 
                 if _G.HeightLabel then _G.HeightLabel.Text = "Độ Cao Thảm: Tắt" end 
                 _G.BaseFloatLevel = nil 
             end
+            currentBoatCache = {}
+            lastCachedSeat = nil
         end
+    end
 
-        if _G.SuperSailActive then
-            if not activeAttachment or activeAttachment.Parent ~= seat then
-                if activeAttachment then activeAttachment:Destroy() end
-                activeAttachment = Instance.new("Attachment")
-                activeAttachment.Parent = seat
-            end
-            if not activeVelocity or activeVelocity.Parent ~= seat then
-                if activeVelocity then activeVelocity:Destroy() end
-                activeVelocity = Instance.new("LinearVelocity")
-                activeVelocity.Attachment0 = activeAttachment
-                activeVelocity.MaxForce = 100000000000000
-                activeVelocity.VelocityConstraintMode = Enum.VelocityConstraintMode.Vector
-                activeVelocity.Parent = seat
-            end
-            
-            local forward = seat.CFrame.LookVector
-            local targetVel = Vector3.new(forward.X, 0, forward.Z).Unit * (_G.BoostMultiplier or 100)
-            
-            if not _G.CurrentVectorVelocity then
-                _G.CurrentVectorVelocity = targetVel
-            end
-            _G.CurrentVectorVelocity = _G.CurrentVectorVelocity:Lerp(targetVel, 0.1)
-            
-            activeVelocity.VectorVelocity = _G.CurrentVectorVelocity
-        else
-            if activeVelocity then 
-                activeVelocity:Destroy() 
-                activeVelocity = nil 
-            end
-            _G.CurrentVectorVelocity = nil -- Reset lại khi tắt tốc độ
+    -- Xử lý tốc độ siêu thanh với chân ái math.huge bất tử!
+    if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
+        if not activeAttachment or activeAttachment.Parent ~= activeSeat then 
+            if activeAttachment then activeAttachment:Destroy() end 
+            activeAttachment = Instance.new("Attachment") 
+            activeAttachment.Parent = activeSeat 
         end
-
-    else
-        if cleanUpForces then cleanUpForces() end
-        _G.BaseFloatLevel = nil 
-        if _G.HeightLabel then _G.HeightLabel.Text = "Độ Cao Thảm: Tắt" end
+        if not activeVelocity or activeVelocity.Parent ~= activeSeat then 
+            if activeVelocity then activeVelocity:Destroy() end 
+            activeVelocity = Instance.new("LinearVelocity") 
+            activeVelocity.Attachment0 = activeAttachment 
+            activeVelocity.MaxForce = math.huge -- Chân ái math.huge trở lại!
+            activeVelocity.VelocityConstraintMode = Enum.VelocityConstraintMode.Vector 
+            activeVelocity.Parent = activeSeat 
+        end
+        
+        local forward = activeSeat.CFrame.LookVector 
+        local targetVel = Vector3.new(forward.X, 0, forward.Z).Unit * (_G.BoostMultiplier or 200) 
+        
+        if not _G.CurrentVectorVelocity then 
+            _G.CurrentVectorVelocity = targetVel 
+        end
+        _G.CurrentVectorVelocity = _G.CurrentVectorVelocity:Lerp(targetVel, 0.1) 
+        activeVelocity.VectorVelocity = _G.CurrentVectorVelocity 
+    else 
+        if activeVelocity then 
+            activeVelocity:Destroy() 
+            activeVelocity = nil 
+        end 
+        _G.CurrentVectorVelocity = nil 
     end
 end)
 
