@@ -791,13 +791,28 @@ end
 
 -- Vòng lặp PreSimulation hoàn chỉnh: Cache ghế + Chống rơi + Siêu tốc math.huge + Giảm chấn chống văng + Hàn gắn động
 RunService.PreSimulation:Connect(function()
-    local seat = getDrivenSeat and getDrivenSeat()
+    local char = LocalPlayer.Character
+    local humanoid = char and char:FindFirstChildOfClass("Humanoid")
+    local seat = humanoid and humanoid.SeatPart
     
     if seat and seat:IsA("VehicleSeat") then
+        -- 🛑 KIỂM TRA ĐƯỜNG DẪN XEM ĐÂY LÀ GHẾ LÁI HAY GHẾ PHÁO
+        local seatPath = seat:GetFullName()
+        
+        -- Nếu là ghế pháo (có chữ Cannons hoặc Cannon trong đường dẫn) -> BỎ QUA KHÔNG WELD
+        if string.find(string.lower(seatPath), "cannon") or string.find(string.lower(seatPath), "phao") then
+            if lastCachedSeat ~= nil then
+                ClearBoatWelds()
+                lastCachedSeat = nil
+                currentBoatCache = {}
+            end
+            return
+        end
+        
+        -- Ngược lại, nếu là ghế lái chính (thuộc PartsModels hoặc thân tàu) -> KÍCH HOẠT WELD CHỐNG VĂNG
         lastCachedSeat = seat
         local model = seat:FindFirstAncestorOfClass("Model")
         if model then
-            -- 💥 Gọi hàm hàn toàn bộ part của tàu chống văng khi đang lái/bay
             WeldBoatParts(model)
             
             currentBoatCache = {}
@@ -808,7 +823,7 @@ RunService.PreSimulation:Connect(function()
             end
         end
     else
-        -- 🧹 Nếu nhảy ra khỏi ghế, tự động xóa sạch dữ liệu weld và trả lại nguyên trạng
+        -- Rời ghế hoặc ngồi ghế thường -> Dọn sạch weld
         if lastCachedSeat ~= nil then
             ClearBoatWelds()
             lastCachedSeat = nil
