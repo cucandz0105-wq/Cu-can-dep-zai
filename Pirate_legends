@@ -601,6 +601,55 @@ AimBtn.MouseButton1Click:Connect(function()
     else AimBtn.Text = "🔍\nNO TARGET" task.wait(0.15) AimBtn.Text = "🎯\nHYPER AIM\nv12.1" end
 end)
 
+-- 1. Biến quản lý danh sách weld động và trạng thái
+local activeWelds = {}
+
+-- 2. Hàm hàn toàn bộ tàu khi ngồi lên ghế
+local function WeldBoatParts(model)
+    if model:GetAttribute("IsWelded") then return end
+    model:SetAttribute("IsWelded", true)
+    
+    local mainPart = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChildWhichIsA("BasePart")
+    if not mainPart then return end
+    
+    for _, part in pairs(model:GetDescendants()) do
+        if part:IsA("BasePart") and part ~= mainPart then
+            local hasWeld = false
+            for _, child in pairs(part:GetChildren()) do
+                if child:IsA("WeldConstraint") or child:IsA("Weld") or child:IsA("RigidJoint") then
+                    hasWeld = true
+                    break
+                end
+            end
+            
+            if not hasWeld then
+                local weld = Instance.new("WeldConstraint")
+                weld.Part0 = mainPart
+                weld.Part1 = part
+                weld.Parent = part
+                
+                table.insert(activeWelds, weld)
+            end
+        end
+    end
+end
+
+-- 3. Hàm xóa sạch dữ liệu và gỡ weld khi rời ghế
+local function ClearBoatWelds()
+    for _, weld in ipairs(activeWelds) do
+        if weld and weld.Parent then
+            weld:Destroy()
+        end
+    end
+    activeWelds = {}
+    
+    for _, obj in ipairs(Workspace:GetDescendants()) do
+        if obj:IsA("Model") then
+            obj:SetAttribute("IsWelded", nil)
+        end
+    end
+end
+
 _G.SuperSailActive, _G.BoatFlyActive, _G.BoostMultiplier, _G.ManualOffset, _G.BaseFloatLevel = false, false, 200, 0, nil
 local activeVelocity, activeAttachment, MastAnchorPart, mastWeld, mastVelocity, currentBoatCache, lastCachedSeat = nil, nil, nil, nil, nil, {}, nil
 
@@ -740,7 +789,7 @@ local function WeldBoatParts(model)
     end
 end
 
--- Vòng lặp PreSimulation hoàn chỉnh: Cache ghế + Chống rơi + Siêu tốc math.huge + Giảm chấn chống văng
+-- Vòng lặp PreSimulation hoàn chỉnh: Cache ghế + Chống rơi + Siêu tốc math.huge + Giảm chấn chống văng + Hàn gắn động
 RunService.PreSimulation:Connect(function()
     local seat = getDrivenSeat and getDrivenSeat()
     
@@ -748,7 +797,7 @@ RunService.PreSimulation:Connect(function()
         lastCachedSeat = seat
         local model = seat:FindFirstAncestorOfClass("Model")
         if model then
-            -- 💥 GỌI HÀM WELD Ở ĐÂY LÀ CHUẨN XÁC NHẤT
+            -- 💥 Gọi hàm hàn toàn bộ part của tàu chống văng khi đang lái/bay
             WeldBoatParts(model)
             
             currentBoatCache = {}
@@ -758,8 +807,15 @@ RunService.PreSimulation:Connect(function()
                 end
             end
         end
+    else
+        -- 🧹 Nếu nhảy ra khỏi ghế, tự động xóa sạch dữ liệu weld và trả lại nguyên trạng
+        if lastCachedSeat ~= nil then
+            ClearBoatWelds()
+            lastCachedSeat = nil
+            currentBoatCache = {}
+        end
     end
-    
+
     local activeSeat = seat or lastCachedSeat
     
     if _G.BoatFlyActive and activeSeat and activeSeat.Parent then
