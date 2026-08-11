@@ -828,7 +828,6 @@ RunService.PreSimulation:Connect(function()
             currentBoatCache = {}
         end
     end
-end)
 
     local activeSeat = seat or lastCachedSeat
     
