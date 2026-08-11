@@ -601,7 +601,7 @@ AimBtn.MouseButton1Click:Connect(function()
     else AimBtn.Text = "🔍\nNO TARGET" task.wait(0.15) AimBtn.Text = "🎯\nHYPER AIM\nv12.1" end
 end)
 
--- 1. Biến quản lý danh sách weld động, trạng thái và bộ khóa góc quay pháo
+-- 1. Biến quản lý danh sách weld động và trạng thái
 local RunService = game:GetService("RunService")
 local activeWelds = {}
 local cannonConnections = {}
@@ -619,7 +619,7 @@ local function ClearBoatWelds()
     cannonConnections = {}
 end
 
--- 2. Hàm hàn toàn bộ tàu, bóp chết VehicleSeat và khóa cứng ngắc pháo chống bẻ lái
+-- 2. Hàm hàn toàn bộ tàu, triệt tiêu trọng lực pháo và cố định tọa độ an toàn (GIỮ NGUYÊN VEHICLESEAT)
 local function WeldBoatParts(model)
     if model:GetAttribute("IsWelded") then return end
     model:SetAttribute("IsWelded", true)
@@ -627,7 +627,7 @@ local function WeldBoatParts(model)
     local mainPart = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChildWhichIsA("BasePart")
     if not mainPart then return end
     
-    -- Hàn thân tàu chính chống văng
+    -- 1. Hàn thân tàu chính chống văng
     for _, part in pairs(model:GetDescendants()) do
         if part:IsA("BasePart") and part ~= mainPart then
             local hasWeld = false
@@ -648,28 +648,21 @@ local function WeldBoatParts(model)
         end
     end
     
-    -- Nhắm thẳng thư mục Cannons: Vô hiệu hóa ghế VehicleSeat, tắt khớp xoay và ép cứng CFrame
+    -- 2. Xử lý phần pháo: Khử trọng lực (Massless) để không bị quán tính xé rách, tuyệt đối KHÔNG khóa ghế lái chung
     local cannonsFolder = model:FindFirstChild("Cannons", true) or Workspace:FindFirstChild("Cannons", true)
     if cannonsFolder then
-        -- Phế võ công toàn bộ khớp xoay và vô hiệu hóa sạch sẽ cái ghế điều khiển pháo (VehicleSeat)
         for _, obj in pairs(cannonsFolder:GetDescendants()) do
-            if obj:IsA("HingeConstraint") or obj:IsA("CylindricalConstraint") or obj:IsA("SpringConstraint") then
-                obj.Enabled = false
-                obj.ActuatorType = Enum.ActuatorType.None
-            elseif obj:IsA("VehicleSeat") or obj:IsA("Seat") then
-                obj.Disabled = true -- Khóa ngắt ghế pháo để nó không tranh quyền điều khiển góc quay nữa
-            elseif obj:IsA("BodyMover") or obj:IsA("VectorForce") or obj:IsA("AlignPosition") or obj:IsA("Torque") or obj:IsA("AngularVelocity") then
-                obj:Destroy()
+            if obj:IsA("BasePart") then
+                obj.Massless = true -- Triệt tiêu trọng lực và lực quán tính kéo giật của Roblox
+                obj.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                obj.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
             end
         end
         
-        -- Lưu lại tọa độ tương đối để khóa chặt pháo vào thân tàu
+        -- Lưu lại tọa độ tương đối để giữ pháo bám chặt theo tàu khi bẻ cua
         local cannonData = {}
         for _, cannonPart in pairs(cannonsFolder:GetDescendants()) do
             if cannonPart:IsA("BasePart") then
-                cannonPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-                cannonPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
-                
                 local cannonWeld = Instance.new("WeldConstraint")
                 cannonWeld.Part0 = mainPart
                 cannonWeld.Part1 = cannonPart
@@ -680,7 +673,7 @@ local function WeldBoatParts(model)
             end
         end
         
-        -- Dùng RenderStepped đồng bộ hóa góc quay tuyệt đối từng mili-giây, bao chấp bẻ lái khét lẹt
+        -- Đồng bộ hóa vị trí mượt mà qua RenderStepped
         local conn = RunService.RenderStepped:Connect(function()
             if not mainPart or not mainPart.Parent then return end
             for _, data in ipairs(cannonData) do
