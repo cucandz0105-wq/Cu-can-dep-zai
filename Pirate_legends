@@ -601,10 +601,24 @@ AimBtn.MouseButton1Click:Connect(function()
     else AimBtn.Text = "🔍\nNO TARGET" task.wait(0.15) AimBtn.Text = "🎯\nHYPER AIM\nv12.1" end
 end)
 
--- 1. Biến quản lý danh sách weld động và trạng thái
+--  Biến quản lý danh sách weld động và trạng thái
+local RunService = game:GetService("RunService")
 local activeWelds = {}
+local cannonConnections = {} -- Lưu lại vòng lặp khóa cứng góc quay pháo
 
--- 2. Hàm hàn toàn bộ tàu khi ngồi lên ghế
+local function ClearBoatWelds()
+    for _, weld in pairs(activeWelds) do
+        if weld and weld.Parent then weld:Destroy() end
+    end
+    activeWelds = {}
+    
+    -- Ngắt kết nối khóa cứng pháo khi rời ghế hoặc reset tàu
+    for _, conn in pairs(cannonConnections) do
+        if conn then conn:Disconnect() end
+    end
+    cannonConnections = {}
+end
+
 local function WeldBoatParts(model)
     if model:GetAttribute("IsWelded") then return end
     model:SetAttribute("IsWelded", true)
@@ -633,32 +647,48 @@ local function WeldBoatParts(model)
         end
     end
     
-    -- 2. Nhắm thẳng thư mục Cannons: Vừa Weld cứng vừa Tắt toàn bộ khớp xoay để không bị xé part
+    -- 2. Khóa chết cứng ngắc thư mục Cannons, tiêu diệt hoàn toàn hiện tượng tự quay khi bẻ lái
     local cannonsFolder = model:FindFirstChild("Cannons", true)
     if cannonsFolder then
-        -- Tắt sạch các ràng buộc khớp (Hinge, Constraint, Motor) để physics không bẻ gãy pháo
+        -- Triệt tiêu toàn bộ động cơ, motor, lực xoay ngầm của pháo
         for _, obj in pairs(cannonsFolder:GetDescendants()) do
-            if obj:IsA("HingeConstraint") or obj:IsA("Constraint") or obj:IsA("SpringConstraint") then
+            if obj:IsA("HingeConstraint") or obj:IsA("CylindricalConstraint") or obj:IsA("SpringConstraint") then
                 obj.Enabled = false
-            elseif obj:IsA("BodyMover") or obj:IsA("VectorForce") or obj:IsA("AlignPosition") then
+                obj.ActuatorType = Enum.ActuatorType.None -- Tắt hoàn toàn cơ chế tự động xoay
+            elseif obj:IsA("BodyMover") or obj:IsA("VectorForce") or obj:IsA("AlignPosition") or obj:IsA("Torque") or obj:IsA("AngularVelocity") then
                 obj:Destroy()
             end
         end
         
-        -- Tiến hành trói chặt mọi BasePart của Cannon vào mainPart
+        -- Lưu lại vị trí ban đầu tương đối giữa từng phần pháo và thân tàu để bắt chúng dính chặt
+        local cannonData = {}
         for _, cannonPart in pairs(cannonsFolder:GetDescendants()) do
             if cannonPart:IsA("BasePart") then
-                -- Đảm bảo không bị dính trọng lực riêng gây xé part
                 cannonPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
                 cannonPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
                 
+                -- Tạo WeldConstraint cố định
                 local cannonWeld = Instance.new("WeldConstraint")
                 cannonWeld.Part0 = mainPart
                 cannonWeld.Part1 = cannonPart
                 cannonWeld.Parent = cannonPart
                 table.insert(activeWelds, cannonWeld)
+                
+                -- Ghi nhớ khoảng cách gốc để ép chặt không cho lệch pha khi bẻ lái gấp
+                table.insert(cannonData, {Part = cannonPart, Offset = mainPart.CFrame:ToObjectSpace(cannonPart.CFrame)})
             end
         end
+        
+        -- Dùng RenderStepped ép thẳng góc quay của pháo đi theo thân tàu từng mili-giây, chống bẻ lái xé pháo
+        local conn = RunService.RenderStepped:Connect(function()
+            if not mainPart or not mainPart.Parent then return end
+            for _, data in ipairs(cannonData) do
+                if data.Part and data.Part.Parent then
+                    data.Part.CFrame = mainPart.CFrame:ToWorldSpace(data.Offset)
+                end
+            end
+        end)
+        table.insert(cannonConnections, conn)
     end
 end
 
