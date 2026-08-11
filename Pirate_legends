@@ -677,7 +677,6 @@ end
             end
         end
     end
-end
 
 -- 3. Hàm xóa sạch dữ liệu và gỡ weld khi rời ghế
 local function ClearBoatWelds()
