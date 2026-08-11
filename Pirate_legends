@@ -604,7 +604,7 @@ end)
 -- 1. Biến quản lý danh sách weld động và trạng thái
 local activeWelds = {}
 
--- 2. Hàm hàn toàn bộ tàu khi ngồi lên ghế
+-- 2. Hàm hàn toàn bộ tàu khi ngồi lên ghế lái chính
 local function WeldBoatParts(model)
     if model:GetAttribute("IsWelded") then return end
     model:SetAttribute("IsWelded", true)
@@ -634,7 +634,7 @@ local function WeldBoatParts(model)
     end
 end
 
--- 3. Hàm xóa sạch dữ liệu và gỡ weld khi rời ghế
+-- 3. Hàm xóa sạch dữ liệu và gỡ weld tận gốc khi rời ghế
 local function ClearBoatWelds()
     for _, weld in ipairs(activeWelds) do
         if weld and weld.Parent then
@@ -646,6 +646,11 @@ local function ClearBoatWelds()
     for _, obj in ipairs(Workspace:GetDescendants()) do
         if obj:IsA("Model") then
             obj:SetAttribute("IsWelded", nil)
+            for _, descendant in ipairs(obj:GetDescendants()) do
+                if descendant:IsA("WeldConstraint") then
+                    descendant:Destroy()
+                end
+            end
         end
     end
 end
@@ -656,14 +661,22 @@ local activeVelocity, activeAttachment, MastAnchorPart, mastWeld, mastVelocity, 
 if _G.SpeedInput then
     _G.SpeedInput.FocusLost:Connect(function()
         local num = tonumber(_G.SpeedInput.Text)
-        if num then _G.BoostMultiplier = num else _G.SpeedInput.Text = tostring(_G.BoostMultiplier) end
+        if num then _G.SpeedInput.Text = tostring(_G.BoostMultiplier) end
     end)
 end
 
+-- Hàm lấy ghế lái chính (ĐÃ LỌC BỎ GHẾ PHÁO ĐỂ KHÔNG BỊ KẸT NÒNG PHÁO)
 local function getDrivenSeat()
     local char = LocalPlayer.Character if not char then return nil end
     local humanoid = char:FindFirstChildWhichIsA("Humanoid")
-    if humanoid and humanoid.SeatPart and humanoid.SeatPart:IsA("VehicleSeat") then return humanoid.SeatPart end
+    if humanoid and humanoid.SeatPart and humanoid.SeatPart:IsA("VehicleSeat") then 
+        local seat = humanoid.SeatPart
+        local nameLower = string.lower(seat.Name)
+        if string.find(nameLower, "gun") or string.find(nameLower, "phao") or string.find(nameLower, "cannon") then
+            return nil
+        end
+        return seat 
+    end
     return nil
 end
 
@@ -789,7 +802,7 @@ local function WeldBoatParts(model)
     end
 end
 
--- Vòng lặp PreSimulation hoàn chỉnh: Cache ghế + Chống rơi + Siêu tốc math.huge + Giảm chấn chống văng + Hàn gắn động
+-- Vòng lặp PreSimulation hoàn chỉnh: Chống văng tàu + Né ghế pháo + Tự động dọn sạch khi rời ghế
 RunService.PreSimulation:Connect(function()
     local seat = getDrivenSeat and getDrivenSeat()
     
@@ -797,7 +810,7 @@ RunService.PreSimulation:Connect(function()
         lastCachedSeat = seat
         local model = seat:FindFirstAncestorOfClass("Model")
         if model then
-            -- 💥 Gọi hàm hàn toàn bộ part của tàu chống văng khi đang lái/bay
+            -- Gọi hàm hàn toàn bộ tàu chống văng khi đang ngồi ghế lái
             WeldBoatParts(model)
             
             currentBoatCache = {}
@@ -808,13 +821,14 @@ RunService.PreSimulation:Connect(function()
             end
         end
     else
-        -- 🧹 Nếu nhảy ra khỏi ghế, tự động xóa sạch dữ liệu weld và trả lại nguyên trạng
+        -- Nếu không ngồi ghế lái (hoặc sang ngồi ghế pháo), tự động giải thể toàn bộ weld
         if lastCachedSeat ~= nil then
             ClearBoatWelds()
             lastCachedSeat = nil
             currentBoatCache = {}
         end
     end
+end)
 
     local activeSeat = seat or lastCachedSeat
     
