@@ -943,12 +943,10 @@ RunService.PreSimulation:Connect(function()
             activeVelocity.Parent = activeSeat 
         end
         
-        -- Lấy trực tiếp hướng nhìn hiện tại của ghế
         local forward = activeSeat.CFrame.LookVector 
         local currentSpeed = tonumber(_G.SpeedInput and _G.SpeedInput.Text) or (_G.BoostMultiplier or 200)
         local targetVel = Vector3.new(forward.X, 0, forward.Z).Unit * currentSpeed 
         
-        -- Gán thẳng vector velocity, bỏ qua Lerp rườm rà gây trượt văng
         if targetVel.Magnitude == targetVel.Magnitude then
             activeVelocity.VectorVelocity = targetVel 
         end
