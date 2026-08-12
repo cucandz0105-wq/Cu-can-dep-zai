@@ -945,17 +945,16 @@ RunService.PreSimulation:Connect(function()
             activeVelocity.Parent = activeSeat 
         end
         
-        -- BUFF MẠNH TAY: Đẩy hệ số nhân trọng lượng lên cao ngút (hoặc tối thiểu 5 triệu lực) 
-        -- Đảm bảo đủ cơ bắp kéo con tàu vút đi mà vẫn giữ được độ đàn hồi tự nhiên
-        local currentWeight = 5000 -- Giá trị mặc định an toàn nếu không lấy được trọng lượng
+        -- QUAY VỀ ĐÚNG GU: Cho phép MaxForce đạt ngưỡng từ 100,000 trở lên theo đúng thói quen của tàu
+        local currentWeight = 10000
         pcall(function()
             if activeSeat.AssemblyMass and activeSeat.AssemblyMass > 0 then
                 currentWeight = activeSeat.AssemblyMass
             end
         end)
         
-        -- Ép lực kéo cực đại cực mạnh (nhân 50,000 thay vì 5,000) để tàu không bao giờ bị hụt hơi
-        activeVelocity.MaxForce = math.max(5000000, currentWeight * 50000) 
+        -- Đảm bảo lực kéo tối thiểu từ 100,000 trở lên để tàu đủ sức vút đi mạnh mẽ
+        activeVelocity.MaxForce = math.max(100000, currentWeight * 10000) 
         
         local forward = activeSeat.CFrame.LookVector 
         local targetVel = Vector3.new(forward.X, 0, forward.Z).Unit * (_G.BoostMultiplier or 200) 
@@ -964,13 +963,11 @@ RunService.PreSimulation:Connect(function()
             _G.CurrentVectorVelocity = targetVel 
         end
         
-        -- Lerp 0.15 cho độ mượt mà tối ưu, không bị giật cục mà vẫn phản hồi nhanh
         _G.CurrentVectorVelocity = _G.CurrentVectorVelocity:Lerp(targetVel, 0.15) 
         
         activeVelocity.LineDirection = _G.CurrentVectorVelocity.Unit
         activeVelocity.LineVelocity = _G.CurrentVectorVelocity.Magnitude
         
-        -- Giữ ổn định trục quay chống trượt ngang
         pcall(function()
             activeSeat.AssemblyAngularVelocity = Vector3.new(0, activeSeat.AssemblyAngularVelocity.Y, 0)
         end)
