@@ -928,22 +928,32 @@ RunService.PreSimulation:Connect(function()
         end
     end
 
-        if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
+    if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
         if not activeAttachment or activeAttachment.Parent ~= activeSeat then 
             if activeAttachment then activeAttachment:Destroy() end 
             activeAttachment = Instance.new("Attachment") 
             activeAttachment.Parent = activeSeat 
         end
+        
         if not activeVelocity or activeVelocity.Parent ~= activeSeat then 
             if activeVelocity then activeVelocity:Destroy() end 
             activeVelocity = Instance.new("LinearVelocity") 
             activeVelocity.Attachment0 = activeAttachment 
-            activeVelocity.MaxForce = math.huge -- Chân ái math.huge bất tử
-            -- Chuyển sang chế độ Line để bám đường thẳng tắp, triệt tiêu trượt ngang
+            -- ĐIỀM TỈNH Ở ĐÂY: Dùng chế độ Line kết hợp thả lỏng định hướng không gian
             activeVelocity.VelocityConstraintMode = Enum.VelocityConstraintMode.Line
             activeVelocity.RelativeTo = Enum.ActuatorRelativeTo.World
             activeVelocity.Parent = activeSeat 
         end
+        
+        -- MỀM HÓA LỰC: Thay vì math.huge cứng nhắc, ta dùng lực vừa đủ lớn nhưng có độ co giãn
+        -- Giúp tàu tự động hấp thụ các dao động nhỏ của mặt nước thay vì bị giật cục
+        local currentWeight = 0
+        pcall(function()
+            currentWeight = activeSeat.AssemblyMass
+        end)
+        
+        -- Tự động tính toán MaxForce dựa theo trọng lượng thực tế của tàu + độ dự trữ lực kéo
+        activeVelocity.MaxForce = math.max(100000, currentWeight * 5000) 
         
         local forward = activeSeat.CFrame.LookVector 
         local targetVel = Vector3.new(forward.X, 0, forward.Z).Unit * (_G.BoostMultiplier or 200) 
@@ -951,13 +961,14 @@ RunService.PreSimulation:Connect(function()
         if not _G.CurrentVectorVelocity then 
             _G.CurrentVectorVelocity = targetVel 
         end
-        -- Hạ Lerp xuống 0.15 để mượt mà và bám đường chắc hơn nữa
-        _G.CurrentVectorVelocity = _G.CurrentVectorVelocity:Lerp(targetVel, 0.15) 
+        
+        -- Tăng độ dẻo của Lerp (0.1) để quán tính chuyển tiếp cực kỳ êm ái
+        _G.CurrentVectorVelocity = _G.CurrentVectorVelocity:Lerp(targetVel, 0.1) 
         
         activeVelocity.LineDirection = _G.CurrentVectorVelocity.Unit
         activeVelocity.LineVelocity = _G.CurrentVectorVelocity.Magnitude
         
-        -- Khóa cứng góc xoay ngang, chống trượt bánh trớn
+        -- Giữ ổn định trục quay chống trượt ngang
         pcall(function()
             activeSeat.AssemblyAngularVelocity = Vector3.new(0, activeSeat.AssemblyAngularVelocity.Y, 0)
         end)
