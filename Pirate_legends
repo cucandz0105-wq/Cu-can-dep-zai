@@ -929,12 +929,12 @@ RunService.PreSimulation:Connect(function()
     end
 
 local lastRefreshTick = tick()
-local REFRESH_INTERVAL = 25 -- Chu kỳ reset ngầm 25 giây để làm sạch hoàn toàn sai số
+local REFRESH_INTERVAL = 25 -- Chu kỳ 25 giây làm sạch sai số ngầm
 
 if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
     local rootPart = activeSeat.AssemblyRootPart or activeSeat.Parent:FindFirstChild("HumanoidRootPart") or activeSeat.Parent:FindFirstChild("Part")
 
-    -- Định kỳ tự hủy ngầm để xóa sạch rác và quán tính tích tụ
+    -- Định kỳ reset toàn diện để chống tích tụ sai số đường dài
     if tick() - lastRefreshTick >= REFRESH_INTERVAL then
         if activeVelocity then 
             activeVelocity:Destroy() 
@@ -970,15 +970,20 @@ if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
         activeVelocity.Parent = activeSeat 
     end
     
-    -- Lấy hướng tiến, đồng thời kết hợp độ bám lái để triệt tiêu trượt trớn khi cua
     local forward = activeSeat.CFrame.LookVector 
     local currentSpeed = tonumber(_G.SpeedInput and _G.SpeedInput.Text) or (_G.BoostMultiplier or 200)
     
-    -- Ép hướng vector di chuyển chuẩn xác theo mặt phẳng ngang, loại bỏ triệt để sai số chéo
+    -- Tính hướng tiến chuẩn trên mặt phẳng ngang
     local targetVel = Vector3.new(forward.X, 0, forward.Z).Unit * currentSpeed 
     
-    if targetVel.Magnitude == targetVel.Magnitude then
-        activeVelocity.VectorVelocity = targetVel 
+    -- TRỊ DỨT ĐIỂM TRƯỢT TRỚN KHI CUA: Kết hợp vận tốc hiện tại của thân tàu để triệt tiêu lực văng ngang
+    if rootPart and targetVel.Magnitude == targetVel.Magnitude then
+        local currentVel = rootPart.AssemblyLinearVelocity
+        -- Triệt tiêu bớt quán tính ngang (lateral drift) để tàu bám sát hướng bẻ lái ngay lập tức
+        local lateralVel = currentVel - (forward * currentVel:Dot(forward))
+        local adjustedVel = targetVel - (lateralVel * 0.5) -- Lọc bớt 50% lực văng ngang giúp ôm cua mượt mà không bị trượt dài
+        
+        activeVelocity.VectorVelocity = Vector3.new(adjustedVel.X, targetVel.Y, adjustedVel.Z)
     end
 else 
     if activeVelocity then 
