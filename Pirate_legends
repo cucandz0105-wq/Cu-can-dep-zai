@@ -946,24 +946,42 @@ if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
         activeVelocity.Parent = activeSeat 
     end
     
-    -- 🎯 Ý tưởng chuẩn xác của bro: Xử lý vector lookvector phẳng tuyệt đối
-    local forward = activeSeat.CFrame.LookVector 
-    local flat = Vector3.new(forward.X, 0, forward.Z)
+    -- 1. Lấy hướng nhìn hiện tại của ghế
+    local rawLook = activeSeat.CFrame.LookVector
+    local flatLook = Vector3.new(rawLook.X, 0, rawLook.Z)
     local currentSpeed = tonumber(_G.SpeedInput and _G.SpeedInput.Text) or (_G.BoostMultiplier or 200)
 
-    if rootPart and flat.Magnitude > 0.001 then
-        -- Ép vận tốc chuẩn xác dựa trên vector phẳng đã lọc an toàn, không rườm rà
-        activeVelocity.VectorVelocity = flat.Unit * currentSpeed
+    if rootPart and flatLook.Magnitude > 0.001 then
+        local targetDir = flatLook.Unit
         
-        -- Khóa chặt góc quay ly tâm và văng ngang để tàu bám đường thẳng tắp
+        -- 2. Lấy vận tốc thực tế của vật lý đang gánh
+        local realVel = rootPart.AssemblyLinearVelocity
+        local realVelFlat = Vector3.new(realVel.X, 0, realVel.Z)
+
+        -- 3. Đo góc lệch (Dot Product) giữa Hướng nhìn và Vận tốc thực tế
+        local dotProduct = 0
+        if realVelFlat.Magnitude > 0.5 then
+            dotProduct = targetDir:Dot(realVelFlat.Unit)
+        end
+
+        -- 4. In log thời gian thực ra F9 để bắt tay án mạng
+        print(string.format("[DEBUG TRƯỢT] Dot: %.4f | LookX: %.2f LookZ: %.2f | VelX: %.2f VelZ: %.2f", 
+            dotProduct, targetDir.X, targetDir.Z, realVelFlat.X, realVelFlat.Z))
+
+        -- 5. Áp dụng lực đẩy
+        activeVelocity.VectorVelocity = targetDir * currentSpeed
+        
+        -- Khóa góc quay ly tâm
         rootPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
-        local currentAssemblyVel = rootPart.AssemblyLinearVelocity
-        rootPart.AssemblyLinearVelocity = Vector3.new(flat.Unit.X * currentSpeed, currentAssemblyVel.Y, flat.Unit.Z * currentSpeed)
+        
+        -- Ép vận tốc ngang đồng bộ
+        rootPart.AssemblyLinearVelocity = Vector3.new(targetDir.X * currentSpeed, realVel.Y, targetDir.Z * currentSpeed)
     end
 else 
     if activeVelocity then activeVelocity:Destroy() activeVelocity = nil end 
     if activeAttachment then activeAttachment:Destroy() activeAttachment = nil end
 end
+
 end)
 
 local Players = game:GetService("Players")
