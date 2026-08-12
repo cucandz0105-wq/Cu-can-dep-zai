@@ -928,55 +928,22 @@ RunService.PreSimulation:Connect(function()
         end
     end
 
-local lastRefreshTick = tick()
-local REFRESH_INTERVAL = 5
-
 if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
-    if tick() - lastRefreshTick >= REFRESH_INTERVAL then
-        if activeVelocity then 
-            activeVelocity:Destroy() 
-            activeVelocity = nil 
-        end
-        if activeAttachment then 
-            activeAttachment:Destroy() 
-            activeAttachment = nil 
-        end
-        lastRefreshTick = tick()
-    end
-
-    if not activeAttachment or activeAttachment.Parent ~= activeSeat then 
-        if activeAttachment then activeAttachment:Destroy() end 
-        activeAttachment = Instance.new("Attachment") 
-        activeAttachment.Parent = activeSeat 
-    end
-    if not activeVelocity or activeVelocity.Parent ~= activeSeat then 
-        if activeVelocity then activeVelocity:Destroy() end 
-        activeVelocity = Instance.new("LinearVelocity") 
-        activeVelocity.Attachment0 = activeAttachment 
-        activeVelocity.MaxForce = math.huge 
-        activeVelocity.VelocityConstraintMode = Enum.VelocityConstraintMode.Vector 
-        activeVelocity.Parent = activeSeat 
-    end
+    local rootPart = activeSeat.AssemblyRootPart or activeSeat.Parent:FindFirstChild("HumanoidRootPart") or activeSeat.Parent:FindFirstChild("Part")
     
-    local forward = activeSeat.CFrame.LookVector 
-    local currentSpeed = tonumber(_G.SpeedInput and _G.SpeedInput.Text) or (_G.BoostMultiplier or 200)
-    local targetVel = Vector3.new(forward.X, 0, forward.Z).Unit * currentSpeed 
-    
-    if targetVel.Magnitude == targetVel.Magnitude then
-        activeVelocity.VectorVelocity = targetVel 
+    if rootPart then
+        local forward = activeSeat.CFrame.LookVector 
+        local currentSpeed = tonumber(_G.SpeedInput and _G.SpeedInput.Text) or (_G.BoostMultiplier or 200)
+        
+        -- Gán trực tiếp vận tốc vào AssemblyLinearVelocity của vật thể
+        -- Giữ nguyên trục Y hiện tại của tàu để không bị lún chìm hay bay vô định
+        local currentVel = rootPart.AssemblyLinearVelocity
+        rootPart.AssemblyLinearVelocity = Vector3.new(forward.X * currentSpeed, currentVel.Y, forward.Z * currentSpeed)
     end
 else 
-    if activeVelocity then 
-        activeVelocity:Destroy() 
-        activeVelocity = nil 
-    end 
-    if activeAttachment then
-        activeAttachment:Destroy()
-        activeAttachment = nil
-    end
-    _G.CurrentVectorVelocity = nil 
-    lastRefreshTick = tick()
+    -- Khi tắt, không làm gì cả vì không dùng LinearVelocity rác nữa
 end
+
 end)
 
 local Players = game:GetService("Players")
