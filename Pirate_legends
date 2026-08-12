@@ -878,35 +878,19 @@ RunService.PreSimulation:Connect(function()
 
     if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
         -- Dọn sạch tàn tích cũ
-        if activeVelocity then activeVelocity:Destroy() activeVelocity = nil end
+        if activeVectorForce then activeVectorForce:Destroy() activeVectorForce = nil end
+        if activeAttachment then activeAttachment:Destroy() activeAttachment = nil end
         
         local boatRoot = activeSeat.AssemblyRootPart or activeSeat
-        
-        -- Tạo Attachment để neo lực
-        if not activeAttachment or activeAttachment.Parent ~= boatRoot then
-            if activeAttachment then activeAttachment:Destroy() end
-            activeAttachment = Instance.new("Attachment")
-            activeAttachment.Parent = boatRoot
-        end
-        
-        -- Dùng VectorForce với lực kéo cưỡng bức cực lớn để bao kéo nổi tàu
-        if not activeVectorForce or activeVectorForce.Parent ~= boatRoot then
-            if activeVectorForce then activeVectorForce:Destroy() end
-            activeVectorForce = Instance.new("VectorForce")
-            activeVectorForce.Attachment0 = activeAttachment
-            activeVectorForce.RelativeTo = Enum.ActuatorRelativeTo.World
-            activeVectorForce.Parent = boatRoot
-        end
         
         local forward = activeSeat.CFrame.LookVector
         local moveDir = Vector3.new(forward.X, 0, forward.Z).Unit
         local speed = _G.BoostMultiplier or 200
         
-        -- Tăng vọt hệ số nhân lực (nhân 50 lần khối lượng) để ép tàu phải bay đi bằng sạch
-        local mass = boatRoot.AssemblyMass
-        activeVectorForce.Force = moveDir * speed * mass * 50 
+        -- Ép thẳng vận tốc vào AssemblyLinearVelocity (Chạy mượt, không cần Attachment, không sợ lì máy)
+        boatRoot.AssemblyLinearVelocity = Vector3.new(moveDir.X * speed, boatRoot.AssemblyLinearVelocity.Y, moveDir.Z * speed)
         
-        -- Khóa chống lật để tàu giữ thăng bằng
+        -- Khóa chống lật ngang
         pcall(function()
             boatRoot.AssemblyAngularVelocity = Vector3.new(0, boatRoot.AssemblyAngularVelocity.Y, 0)
         end)
