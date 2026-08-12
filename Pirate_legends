@@ -928,20 +928,70 @@ RunService.PreSimulation:Connect(function()
         end
     end
 
+local lastRefreshTick = tick()
+local REFRESH_INTERVAL = 35 -- Cứ 35 giây reset toàn bộ một lần như tắt/bật tay
+
 if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
     local rootPart = activeSeat.AssemblyRootPart or activeSeat.Parent:FindFirstChild("HumanoidRootPart") or activeSeat.Parent:FindFirstChild("Part")
-    
-    if rootPart then
-        local forward = activeSeat.CFrame.LookVector 
-        local currentSpeed = tonumber(_G.SpeedInput and _G.SpeedInput.Text) or (_G.BoostMultiplier or 200)
+
+    -- Đã đến chu kỳ? Thực hiện "Tự hủy toàn bộ" y hệt như lúc bro bấm tắt script thủ công
+    if tick() - lastRefreshTick >= REFRESH_INTERVAL then
+        if activeVelocity then 
+            activeVelocity:Destroy() 
+            activeVelocity = nil 
+        end
+        if activeAttachment then 
+            activeAttachment:Destroy() 
+            activeAttachment = nil 
+        end
         
-        -- Gán trực tiếp vận tốc vào AssemblyLinearVelocity của vật thể
-        -- Giữ nguyên trục Y hiện tại của tàu để không bị lún chìm hay bay vô định
-        local currentVel = rootPart.AssemblyLinearVelocity
-        rootPart.AssemblyLinearVelocity = Vector3.new(forward.X * currentSpeed, currentVel.Y, forward.Z * currentSpeed)
+        -- Xóa sạch quán tính thân tàu để lúc bật lại nó không bị lực đà cũ kéo trượt
+        if rootPart then
+            rootPart.AssemblyLinearVelocity = Vector3.new(0, rootPart.AssemblyLinearVelocity.Y, 0)
+            rootPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+        end
+        
+        -- Ngắt luôn biến ghế tạm thời để buộc vòng lặp khung hình sau "Tái sinh" lại từ con số 0 tròn trĩnh y hệt lúc bấm bật mới
+        activeSeat = nil 
+        lastRefreshTick = tick()
+        return -- Dừng 1 frame để game xả bộ nhớ đệm sạch sẽ
+    end
+
+    -- Khởi tạo lại từ đầu hoàn toàn mới (Giống hệt lúc bấm nút Bật)
+    if not activeAttachment or activeAttachment.Parent ~= activeSeat then 
+        if activeAttachment then activeAttachment:Destroy() end 
+        activeAttachment = Instance.new("Attachment") 
+        activeAttachment.Parent = activeSeat 
+    end
+    
+    if not activeVelocity or activeVelocity.Parent ~= activeSeat then 
+        if activeVelocity then activeVelocity:Destroy() end 
+        activeVelocity = Instance.new("LinearVelocity") 
+        activeVelocity.Attachment0 = activeAttachment 
+        activeVelocity.MaxForce = math.huge 
+        activeVelocity.VelocityConstraintMode = Enum.VelocityConstraintMode.Vector 
+        activeVelocity.Parent = activeSeat 
+    end
+    
+    local forward = activeSeat.CFrame.LookVector 
+    local currentSpeed = tonumber(_G.SpeedInput and _G.SpeedInput.Text) or (_G.BoostMultiplier or 200)
+    local targetVel = Vector3.new(forward.X, 0, forward.Z).Unit * currentSpeed 
+    
+    if targetVel.Magnitude == targetVel.Magnitude then
+        activeVelocity.VectorVelocity = targetVel 
     end
 else 
-    -- Khi tắt, không làm gì cả vì không dùng LinearVelocity rác nữa
+    -- Khi tắt hoặc đang trong pha reset, dọn sạch sẽ 100%
+    if activeVelocity then 
+        activeVelocity:Destroy() 
+        activeVelocity = nil 
+    end 
+    if activeAttachment then
+        activeAttachment:Destroy()
+        activeAttachment = nil
+    end
+    _G.CurrentVectorVelocity = nil 
+    lastRefreshTick = tick()
 end
 
 end)
