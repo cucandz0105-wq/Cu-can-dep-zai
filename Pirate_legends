@@ -958,20 +958,20 @@ if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
             _G.CurrentVectorVelocity = targetVel
         end
         
-        -- 🔥 BỘ ĐẾM RESET NGẦM CHỐNG TRƯỢT (~3 giây / 180 frame)
+        -- BỘ ĐẾM CHỐNG TRƯỢT ỔN ĐỊNH HƠN (~3 giây / 180 frame)
         _G.ResetTimer = (_G.ResetTimer or 0) + 1
         if _G.ResetTimer > 180 then
-            -- Chớp mắt thả MaxForce về 0 trong 1 frame để xóa sạch sai số trượt
-            activeVelocity.MaxForce = 0
+            -- Thay vì sập MaxForce về 0 gây hẫng tàu, ta chỉ cần "giật nhẹ" Lerp về thẳng targetVel 
+            -- để đồng bộ lại hướng mà vẫn giữ nguyên lực kéo vạm vỡ 50000!
+            _G.CurrentVectorVelocity = targetVel
+            activeVelocity.MaxForce = 50000
             _G.ResetTimer = 0
-            -- Vẫn giữ vector vận tốc trôi theo hướng cũ để không bị khựng ngắt quãng
-            activeVelocity.VectorVelocity = _G.CurrentVectorVelocity
         else
-            -- Hoạt động bình thường với lực kéo tối ưu 50000
             activeVelocity.MaxForce = 50000 
             _G.CurrentVectorVelocity = _G.CurrentVectorVelocity:Lerp(targetVel, 0.2)
-            activeVelocity.VectorVelocity = _G.CurrentVectorVelocity
         end
+        
+        activeVelocity.VectorVelocity = _G.CurrentVectorVelocity
     end
     
     pcall(function()
