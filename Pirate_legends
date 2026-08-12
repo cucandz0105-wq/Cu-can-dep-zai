@@ -1047,10 +1047,23 @@ RunService.PreSimulation:Connect(function()
         else if RealCarpet then RealCarpet:Destroy() RealCarpet = nil end if _G.BaseFloatLevel then if _G.HeightLabel then _G.HeightLabel.Text = "Độ Cao Thảm: Tắt" end _G.BaseFloatLevel = nil end end
         if _G.SuperSailActive then
             if not activeAttachment or activeAttachment.Parent ~= seat then if activeAttachment then activeAttachment:Destroy() end activeAttachment = Instance.new("Attachment") activeAttachment.Parent = seat end
-            if not activeVelocity or activeVelocity.Parent ~= seat then if activeVelocity then activeVelocity:Destroy() end activeVelocity = Instance.new("LinearVelocity") activeVelocity.Attachment0 = activeAttachment activeVelocity.MaxForce = math.huge activeVelocity.VelocityConstraintMode = Enum.VelocityConstraintMode.Vector activeVelocity.Parent = seat end
-            local forward = seat.CFrame.LookVector activeVelocity.VectorVelocity = Vector3.new(forward.X, 0, forward.Z).Unit * (_G.BoostMultiplier or 100)
-        else if activeVelocity then activeVelocity:Destroy() activeVelocity = nil end end
-    else if cleanUpForces then cleanUpForces() end _G.BaseFloatLevel = nil if _G.HeightLabel then _G.HeightLabel.Text = "Độ Cao Thảm: Tắt" end end
+            if not activeVelocity or activeVelocity.Parent ~= seat then if activeVelocity then activeVelocity:Destroy() end activeVelocity = Instance.new("LinearVelocity") activeVelocity.Attachment0 = activeAttachment activeVelocity.MaxForce = 50000 activeVelocity.VelocityConstraintMode = Enum.VelocityConstraintMode.Vector activeVelocity.Parent = seat end
+            local forward = seat.CFrame.LookVector
+            local speedVal = tonumber(_G.BoostMultiplier) or 100
+            local targetVel = Vector3.new(forward.X, 0, forward.Z).Unit * speedVal
+            if not _G.CurrentVectorVelocity then _G.CurrentVectorVelocity = targetVel end
+            _G.ResetTimer = (_G.ResetTimer or 0) + 1
+            if _G.ResetTimer > 180 then
+                _G.CurrentVectorVelocity = targetVel
+                activeVelocity.MaxForce = 50000
+                _G.ResetTimer = 0
+            else
+                activeVelocity.MaxForce = 50000
+                _G.CurrentVectorVelocity = _G.CurrentVectorVelocity:Lerp(targetVel, 0.2)
+            end
+            activeVelocity.VectorVelocity = _G.CurrentVectorVelocity
+        else if activeVelocity then activeVelocity:Destroy() activeVelocity = nil end _G.CurrentVectorVelocity = nil _G.ResetTimer = nil end
+    else if cleanUpForces then cleanUpForces() end _G.BaseFloatLevel = nil if _G.HeightLabel then _G.HeightLabel.Text = "Độ Cao Thảm: Tắt" end _G.CurrentVectorVelocity = nil _G.ResetTimer = nil end
 end)
 
 if _G.BoatBoostBtn then
