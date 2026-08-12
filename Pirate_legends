@@ -928,6 +928,7 @@ RunService.PreSimulation:Connect(function()
         end
     end
 
+RunService.PreSimulation:Connect(function()
     if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
         if not activeAttachment or activeAttachment.Parent ~= activeSeat then 
             if activeAttachment then activeAttachment:Destroy() end 
@@ -938,25 +939,30 @@ RunService.PreSimulation:Connect(function()
             if activeVelocity then activeVelocity:Destroy() end 
             activeVelocity = Instance.new("LinearVelocity") 
             activeVelocity.Attachment0 = activeAttachment 
-            activeVelocity.MaxForce = math.huge -- Chỉnh lại thành math.huge để tàu bám sát tốc độ chuẩn hơn (hoặc giữ nguyên nếu bro thích)
+            activeVelocity.MaxForce = math.huge 
             activeVelocity.VelocityConstraintMode = Enum.VelocityConstraintMode.Vector 
             activeVelocity.Parent = activeSeat 
         end
         
         local forward = activeSeat.CFrame.LookVector 
-        local targetVel = Vector3.new(forward.X, 0, forward.Z).Unit * (_G.BoostMultiplier or 200) 
+        local rawVel = Vector3.new(forward.X, 0, forward.Z).Unit * (_G.BoostMultiplier or 200) 
+        
+        -- KỸ THUẬT LÀM TRÒN SỐ (QUANTIZATION): 
+        -- Ép làm tròn các số thập phân quá nhỏ ở đuôi để triệt tiêu hoàn toàn sai số drift 
+        -- mà hoàn toàn không làm tàu bị khựng hay gián đoạn một nhịp nào cả!
+        local targetVel = Vector3.new(
+            math.round(rawVel.X * 1000) / 1000,
+            0,
+            math.round(rawVel.Z * 1000) / 1000
+        ) * (_G.BoostMultiplier or 200)
         
         if not _G.CurrentVectorVelocity then 
             _G.CurrentVectorVelocity = targetVel 
         else
-            -- Tính khoảng cách sai số giữa vận tốc hiện tại và vận tốc đích
             local diff = (targetVel - _G.CurrentVectorVelocity).Magnitude
-            
-            if diff < 0.5 then
-                -- Ép thẳng giá trị đích khi đã sát nút để triệt tiêu hoàn toàn sai số Lerp
-                _G.CurrentVectorVelocity = targetVel
+            if diff < 1.0 then
+                _G.CurrentVectorVelocity = targetVel 
             else
-                -- Vẫn giữ Lerp giai đoạn đầu để tăng tốc mượt mà
                 _G.CurrentVectorVelocity = _G.CurrentVectorVelocity:Lerp(targetVel, 0.2)
             end
         end
