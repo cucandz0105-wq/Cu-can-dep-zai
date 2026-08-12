@@ -928,7 +928,7 @@ RunService.PreSimulation:Connect(function()
         end
     end
 
-    if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
+        if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
         if not activeAttachment or activeAttachment.Parent ~= activeSeat then 
             if activeAttachment then activeAttachment:Destroy() end 
             activeAttachment = Instance.new("Attachment") 
@@ -938,8 +938,10 @@ RunService.PreSimulation:Connect(function()
             if activeVelocity then activeVelocity:Destroy() end 
             activeVelocity = Instance.new("LinearVelocity") 
             activeVelocity.Attachment0 = activeAttachment 
-            activeVelocity.MaxForce = 50000
-            activeVelocity.VelocityConstraintMode = Enum.VelocityConstraintMode.Vector 
+            activeVelocity.MaxForce = math.huge -- Chân ái math.huge bất tử
+            -- Chuyển sang chế độ Line để bám đường thẳng tắp, triệt tiêu trượt ngang
+            activeVelocity.VelocityConstraintMode = Enum.VelocityConstraintMode.Line
+            activeVelocity.RelativeTo = Enum.ActuatorRelativeTo.World
             activeVelocity.Parent = activeSeat 
         end
         
@@ -949,13 +951,25 @@ RunService.PreSimulation:Connect(function()
         if not _G.CurrentVectorVelocity then 
             _G.CurrentVectorVelocity = targetVel 
         end
-        _G.CurrentVectorVelocity = _G.CurrentVectorVelocity:Lerp(targetVel, 0.2) -- Lerp 0.2 mượt mà chống trượt văng
-        activeVelocity.VectorVelocity = _G.CurrentVectorVelocity 
+        -- Hạ Lerp xuống 0.15 để mượt mà và bám đường chắc hơn nữa
+        _G.CurrentVectorVelocity = _G.CurrentVectorVelocity:Lerp(targetVel, 0.15) 
+        
+        activeVelocity.LineDirection = _G.CurrentVectorVelocity.Unit
+        activeVelocity.LineVelocity = _G.CurrentVectorVelocity.Magnitude
+        
+        -- Khóa cứng góc xoay ngang, chống trượt bánh trớn
+        pcall(function()
+            activeSeat.AssemblyAngularVelocity = Vector3.new(0, activeSeat.AssemblyAngularVelocity.Y, 0)
+        end)
     else 
         if activeVelocity then 
             activeVelocity:Destroy() 
             activeVelocity = nil 
         end 
+        if activeAttachment then 
+            activeAttachment:Destroy() 
+            activeAttachment = nil 
+        end
         _G.CurrentVectorVelocity = nil 
     end
 end)
