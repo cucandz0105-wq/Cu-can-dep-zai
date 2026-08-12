@@ -876,20 +876,20 @@ RunService.PreSimulation:Connect(function()
         end
     end
 
-        if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
+    if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
         -- Dọn sạch tàn tích cũ
         if activeVelocity then activeVelocity:Destroy() activeVelocity = nil end
         
         local boatRoot = activeSeat.AssemblyRootPart or activeSeat
         
-        -- Tạo Attachment để đặt điểm neo lực nếu chưa có
+        -- Tạo Attachment để neo lực
         if not activeAttachment or activeAttachment.Parent ~= boatRoot then
             if activeAttachment then activeAttachment:Destroy() end
             activeAttachment = Instance.new("Attachment")
             activeAttachment.Parent = boatRoot
         end
         
-        -- Tạo VectorForce để đẩy tàu đi bằng lực tự nhiên
+        -- Dùng VectorForce với lực kéo cưỡng bức cực lớn để bao kéo nổi tàu
         if not activeVectorForce or activeVectorForce.Parent ~= boatRoot then
             if activeVectorForce then activeVectorForce:Destroy() end
             activeVectorForce = Instance.new("VectorForce")
@@ -898,21 +898,19 @@ RunService.PreSimulation:Connect(function()
             activeVectorForce.Parent = boatRoot
         end
         
-        -- Tính toán lực đẩy dựa trên hướng nhìn của ghế lái và speed mong muốn
         local forward = activeSeat.CFrame.LookVector
         local moveDir = Vector3.new(forward.X, 0, forward.Z).Unit
         local speed = _G.BoostMultiplier or 200
         
-        -- Nhân với khối lượng của tàu (AssemblyMass) để lực đẩy chuẩn xác theo trọng lượng thực tế
+        -- Tăng vọt hệ số nhân lực (nhân 50 lần khối lượng) để ép tàu phải bay đi bằng sạch
         local mass = boatRoot.AssemblyMass
-        activeVectorForce.Force = moveDir * speed * mass * 15 -- Hệ số 15 giúp tàu vọt nhanh và mạnh mượt mà
+        activeVectorForce.Force = moveDir * speed * mass * 50 
         
-        -- Khóa chống lật ngang dọc cho tàu bám mặt nước ổn định
+        -- Khóa chống lật để tàu giữ thăng bằng
         pcall(function()
             boatRoot.AssemblyAngularVelocity = Vector3.new(0, boatRoot.AssemblyAngularVelocity.Y, 0)
         end)
     else
-        -- Dọn dẹp khi tắt tính năng
         if activeVectorForce then activeVectorForce:Destroy() activeVectorForce = nil end
         if activeAttachment then activeAttachment:Destroy() activeAttachment = nil end
     end
