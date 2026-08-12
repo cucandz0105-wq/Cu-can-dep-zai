@@ -876,7 +876,7 @@ RunService.PreSimulation:Connect(function()
         end
     end
 
-        if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
+    if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
         if not activeAttachment or activeAttachment.Parent ~= activeSeat then 
             if activeAttachment then activeAttachment:Destroy() end 
             activeAttachment = Instance.new("Attachment") 
@@ -888,29 +888,34 @@ RunService.PreSimulation:Connect(function()
             activeVelocity = Instance.new("LinearVelocity") 
             activeVelocity.Attachment0 = activeAttachment 
             
-            -- SỬ DỤNG CHẾ ĐỘ LINE KẾT HỢP MAXFORCE HỮU HẠN (Tránh hoàn toàn lỗi trôi số của math.huge)
             activeVelocity.VelocityConstraintMode = Enum.VelocityConstraintMode.Line
             activeVelocity.RelativeTo = Enum.ActuatorRelativeTo.World
-            
-            -- Đặt MaxForce hữu hạn để vừa đủ đô kéo tàu mà vẫn có khoảng "rơ" xả áp tự nhiên
-            activeVelocity.MaxForce = 50000
+            activeVelocity.MaxForce = 50000 
             activeVelocity.Parent = activeSeat 
         end
         
         local forward = activeSeat.CFrame.LookVector 
-        local targetVel = Vector3.new(forward.X, 0, forward.Z).Unit * (_G.BoostMultiplier or 200) 
+        local targetVel = Vector3.new(forward.X, 0, forward.Z).Unit * (_G.BoostMultiplier or 30) 
         
         if not _G.CurrentVectorVelocity then 
             _G.CurrentVectorVelocity = targetVel 
         end
         
-        -- Lerp mềm mại 0.2 để không bị giật cục
+        -- Dùng Lerp mượt mà
         _G.CurrentVectorVelocity = _G.CurrentVectorVelocity:Lerp(targetVel, 1) 
+        
+        -- CƠ CHẾ TỰ ĐỘNG LÀM MỚI MỐC VECTƠ NGẦM (CHỐNG TRÔI SỐ MÀ KHÔNG KHỰNG)
+        if not _G.ResetTimer then _G.ResetTimer = 0 end
+        _G.ResetTimer = _G.ResetTimer + 1
+        
+        if _G.ResetTimer > 120 then -- Cứ khoảng mỗi 2 giây (120 khung hình) tự động làm sạch bộ nhớ đệm hướng đi
+            _G.CurrentVectorVelocity = targetVel
+            _G.ResetTimer = 0
+        end
         
         activeVelocity.LineDirection = _G.CurrentVectorVelocity.Unit
         activeVelocity.LineVelocity = _G.CurrentVectorVelocity.Magnitude
         
-        -- Chống văng lắc trục ngang
         pcall(function()
             activeSeat.AssemblyAngularVelocity = Vector3.new(0, activeSeat.AssemblyAngularVelocity.Y, 0)
         end)
@@ -924,6 +929,7 @@ RunService.PreSimulation:Connect(function()
             activeAttachment = nil 
         end
         _G.CurrentVectorVelocity = nil 
+        _G.ResetTimer = nil
     end
 end)
 
