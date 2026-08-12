@@ -928,7 +928,7 @@ RunService.PreSimulation:Connect(function()
         end
     end
 
-    if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
+        if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
         if not activeAttachment or activeAttachment.Parent ~= activeSeat then 
             if activeAttachment then activeAttachment:Destroy() end 
             activeAttachment = Instance.new("Attachment") 
@@ -938,18 +938,33 @@ RunService.PreSimulation:Connect(function()
             if activeVelocity then activeVelocity:Destroy() end 
             activeVelocity = Instance.new("LinearVelocity") 
             activeVelocity.Attachment0 = activeAttachment 
-            activeVelocity.MaxForce = math.huge -- Chân ái math.huge bất tử
+            activeVelocity.MaxForce = math.huge 
             activeVelocity.VelocityConstraintMode = Enum.VelocityConstraintMode.Vector 
             activeVelocity.Parent = activeSeat 
         end
         
         local forward = activeSeat.CFrame.LookVector 
-        local targetVel = Vector3.new(forward.X, 0, forward.Z).Unit * (_G.BoostMultiplier or 200) 
+        local rawVel = Vector3.new(forward.X, 0, forward.Z).Unit * (_G.BoostMultiplier or 200) 
+        
+        -- KỸ THUẬT LÀM TRÒN LƯỢNG TỬ: Cắt gọt số thập phân thừa thãi để chống trôi dạt đường dài
+        local targetVel = Vector3.new(
+            math.round(rawVel.X * 1000) / 1000,
+            0,
+            math.round(rawVel.Z * 1000) / 1000
+        ) * (_G.BoostMultiplier or 200)
         
         if not _G.CurrentVectorVelocity then 
             _G.CurrentVectorVelocity = targetVel 
+        else
+            local diff = (targetVel - _G.CurrentVectorVelocity).Magnitude
+            if diff < 1.0 then
+                -- Ép thẳng giá trị khi đã tiệm cận để xóa sạch sai số Lerp
+                _G.CurrentVectorVelocity = targetVel 
+            else
+                _G.CurrentVectorVelocity = _G.CurrentVectorVelocity:Lerp(targetVel, 0.2)
+            end
         end
-        _G.CurrentVectorVelocity = _G.CurrentVectorVelocity:Lerp(targetVel, 0.2) -- Lerp 0.2 mượt mà chống trượt văng
+        
         activeVelocity.VectorVelocity = _G.CurrentVectorVelocity 
     else 
         if activeVelocity then 
