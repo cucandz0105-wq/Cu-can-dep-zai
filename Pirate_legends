@@ -929,26 +929,18 @@ RunService.PreSimulation:Connect(function()
     end
 
 _G.LastRefreshTick = _G.LastRefreshTick or tick()
-local REFRESH_INTERVAL = 100000000
+local REFRESH_INTERVAL = 25000000000
 
 if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
     local rootPart = activeSeat.AssemblyRootPart or activeSeat.Parent:FindFirstChild("HumanoidRootPart") or activeSeat.Parent:FindFirstChild("Part")
 
     if tick() - _G.LastRefreshTick >= REFRESH_INTERVAL then
-        if activeVelocity then 
-            activeVelocity:Destroy() 
-            activeVelocity = nil 
-        end
-        if activeAttachment then 
-            activeAttachment:Destroy() 
-            activeAttachment = nil 
-        end
-        
+        if activeVelocity then activeVelocity:Destroy() activeVelocity = nil end
+        if activeAttachment then activeAttachment:Destroy() activeAttachment = nil end
         if rootPart then
-            rootPart.AssemblyLinearVelocity = Vector3.new(0, rootPart.AssemblyLinearVelocity.Y, 0)
+            rootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
             rootPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
         end
-        
         activeSeat = nil 
         _G.LastRefreshTick = tick()
         return 
@@ -971,30 +963,22 @@ if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
     
     local forward = activeSeat.CFrame.LookVector 
     local currentSpeed = tonumber(_G.SpeedInput and _G.SpeedInput.Text) or (_G.BoostMultiplier or 200)
-    
     local targetVel = Vector3.new(forward.X, 0, forward.Z).Unit * currentSpeed 
     
     if rootPart and targetVel.Magnitude == targetVel.Magnitude then
-        -- 1. Gán tốc độ chủ đạo cho LinearVelocity
+        -- 1. Ép thẳng vận tốc tuyệt đối
         activeVelocity.VectorVelocity = targetVel
         
-        -- 2. Đòn chí mạng: Ép trực tiếp AssemblyLinearVelocity để bóp chết quán tính văng ngang của WeldBoatParts
-        local currentAssemblyVel = rootPart.AssemblyLinearVelocity
-        local driftVelocity = currentAssemblyVel - (forward * currentAssemblyVel:Dot(forward))
+        -- 2. Triệt tiêu hoàn toàn góc quay dư thừa (Angular Velocity) do ghế lái mặc định gây ra
+        -- Giúp tàu không bị xoay vòng hoặc tạo quán tính văng ngang ảo
+        rootPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
         
-        -- Triệt tiêu lực văng trượt băng, ép thân tàu bám sát hướng đầu tàu 100%
-        rootPart.AssemblyLinearVelocity = targetVel + Vector3.new(0, currentAssemblyVel.Y, 0) - (driftVelocity * 0.85)
+        -- 3. Khóa cứng vận tốc ngang, bắt tàu đi đúng hướng LookVector 100%, không cho trượt
+        rootPart.AssemblyLinearVelocity = Vector3.new(targetVel.X, rootPart.AssemblyLinearVelocity.Y, targetVel.Z)
     end
 else 
-    if activeVelocity then 
-        activeVelocity:Destroy() 
-        activeVelocity = nil 
-    end 
-    if activeAttachment then
-        activeAttachment:Destroy()
-        activeAttachment = nil
-    end
-    _G.CurrentVectorVelocity = nil 
+    if activeVelocity then activeVelocity:Destroy() activeVelocity = nil end 
+    if activeAttachment then activeAttachment:Destroy() activeAttachment = nil end
     _G.LastRefreshTick = tick()
 end
 
