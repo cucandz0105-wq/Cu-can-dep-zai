@@ -928,7 +928,7 @@ RunService.PreSimulation:Connect(function()
         end
     end
 
-    if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
+        if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
         if not activeAttachment or activeAttachment.Parent ~= activeSeat then 
             if activeAttachment then activeAttachment:Destroy() end 
             activeAttachment = Instance.new("Attachment") 
@@ -939,21 +939,23 @@ RunService.PreSimulation:Connect(function()
             if activeVelocity then activeVelocity:Destroy() end 
             activeVelocity = Instance.new("LinearVelocity") 
             activeVelocity.Attachment0 = activeAttachment 
-            -- ĐIỀM TỈNH Ở ĐÂY: Dùng chế độ Line kết hợp thả lỏng định hướng không gian
+            
             activeVelocity.VelocityConstraintMode = Enum.VelocityConstraintMode.Line
             activeVelocity.RelativeTo = Enum.ActuatorRelativeTo.World
             activeVelocity.Parent = activeSeat 
         end
         
-        -- MỀM HÓA LỰC: Thay vì math.huge cứng nhắc, ta dùng lực vừa đủ lớn nhưng có độ co giãn
-        -- Giúp tàu tự động hấp thụ các dao động nhỏ của mặt nước thay vì bị giật cục
-        local currentWeight = 0
+        -- BUFF MẠNH TAY: Đẩy hệ số nhân trọng lượng lên cao ngút (hoặc tối thiểu 5 triệu lực) 
+        -- Đảm bảo đủ cơ bắp kéo con tàu vút đi mà vẫn giữ được độ đàn hồi tự nhiên
+        local currentWeight = 5000 -- Giá trị mặc định an toàn nếu không lấy được trọng lượng
         pcall(function()
-            currentWeight = activeSeat.AssemblyMass
+            if activeSeat.AssemblyMass and activeSeat.AssemblyMass > 0 then
+                currentWeight = activeSeat.AssemblyMass
+            end
         end)
         
-        -- Tự động tính toán MaxForce dựa theo trọng lượng thực tế của tàu + độ dự trữ lực kéo
-        activeVelocity.MaxForce = math.max(100000, currentWeight * 5000) 
+        -- Ép lực kéo cực đại cực mạnh (nhân 50,000 thay vì 5,000) để tàu không bao giờ bị hụt hơi
+        activeVelocity.MaxForce = math.max(5000000, currentWeight * 50000) 
         
         local forward = activeSeat.CFrame.LookVector 
         local targetVel = Vector3.new(forward.X, 0, forward.Z).Unit * (_G.BoostMultiplier or 200) 
@@ -962,8 +964,8 @@ RunService.PreSimulation:Connect(function()
             _G.CurrentVectorVelocity = targetVel 
         end
         
-        -- Tăng độ dẻo của Lerp (0.1) để quán tính chuyển tiếp cực kỳ êm ái
-        _G.CurrentVectorVelocity = _G.CurrentVectorVelocity:Lerp(targetVel, 0.1) 
+        -- Lerp 0.15 cho độ mượt mà tối ưu, không bị giật cục mà vẫn phản hồi nhanh
+        _G.CurrentVectorVelocity = _G.CurrentVectorVelocity:Lerp(targetVel, 0.15) 
         
         activeVelocity.LineDirection = _G.CurrentVectorVelocity.Unit
         activeVelocity.LineVelocity = _G.CurrentVectorVelocity.Magnitude
