@@ -877,59 +877,37 @@ RunService.PreSimulation:Connect(function()
     end
 
     if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
-        if not activeAttachment or activeAttachment.Parent ~= activeSeat then 
-            if activeAttachment then activeAttachment:Destroy() end 
-            activeAttachment = Instance.new("Attachment") 
-            activeAttachment.Parent = activeSeat 
-        end
+        -- Dọn dẹp sạch sẽ tàn tích của LinearVelocity cũ nếu còn sót lại
+        if activeVelocity then activeVelocity:Destroy() activeVelocity = nil end
+        if activeAttachment then activeAttachment:Destroy() activeAttachment = nil end
         
-        if not activeVelocity or activeVelocity.Parent ~= activeSeat then 
-            if activeVelocity then activeVelocity:Destroy() end 
-            activeVelocity = Instance.new("LinearVelocity") 
-            activeVelocity.Attachment0 = activeAttachment 
-            
-            activeVelocity.VelocityConstraintMode = Enum.VelocityConstraintMode.Line
-            activeVelocity.RelativeTo = Enum.ActuatorRelativeTo.World
-            activeVelocity.MaxForce = 50000 
-            activeVelocity.Parent = activeSeat 
-        end
+        -- Lấy root part của tàu hoặc dùng trực tiếp ghế lái
+        local boatRoot = activeSeat.AssemblyRootPart or activeSeat
         
-        local forward = activeSeat.CFrame.LookVector 
-        local targetVel = Vector3.new(forward.X, 0, forward.Z).Unit * (_G.BoostMultiplier or 30) 
+        -- Tính toán vector hướng di chuyển
+        local forward = activeSeat.CFrame.LookVector
+        local moveDir = Vector3.new(forward.X, 0, forward.Z).Unit
+        local speed = _G.BoostMultiplier or 200
         
-        if not _G.CurrentVectorVelocity then 
-            _G.CurrentVectorVelocity = targetVel 
-        end
+        -- Dùng CFrame dịch chuyển trực tiếp theo từng khung hình (RenderStepped)
+        local dt = RunService.RenderStepped:Wait()
+        local nextCFrame = boatRoot.CFrame + (moveDir * speed * dt)
         
-        -- Dùng Lerp mượt mà
-        _G.CurrentVectorVelocity = _G.CurrentVectorVelocity:Lerp(targetVel, 1) 
+        -- Khóa chặt góc quay, chỉ cho phép xoay theo ý muốn của ghế lái, tránh lật tàu
+        local _, currentY, _ = boatRoot.CFrame:ToOrientation()
+        local targetCFrame = CFrame.new(nextCFrame.Position) * CFrame.Angles(0, currentY, 0)
         
-        -- CƠ CHẾ TỰ ĐỘNG LÀM MỚI MỐC VECTƠ NGẦM (CHỐNG TRÔI SỐ MÀ KHÔNG KHỰNG)
-        if not _G.ResetTimer then _G.ResetTimer = 0 end
-        _G.ResetTimer = _G.ResetTimer + 1
+        boatRoot.CFrame = targetCFrame
         
-        if _G.ResetTimer > 120 then -- Cứ khoảng mỗi 2 giây (120 khung hình) tự động làm sạch bộ nhớ đệm hướng đi
-            _G.CurrentVectorVelocity = targetVel
-            _G.ResetTimer = 0
-        end
-        
-        activeVelocity.LineDirection = _G.CurrentVectorVelocity.Unit
-        activeVelocity.LineVelocity = _G.CurrentVectorVelocity.Magnitude
-        
+        -- Triệt tiêu hoàn toàn quán tính thừa gây trượt
         pcall(function()
-            activeSeat.AssemblyAngularVelocity = Vector3.new(0, activeSeat.AssemblyAngularVelocity.Y, 0)
+            boatRoot.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+            boatRoot.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
         end)
-    else 
-        if activeVelocity then 
-            activeVelocity:Destroy() 
-            activeVelocity = nil 
-        end 
-        if activeAttachment then 
-            activeAttachment:Destroy() 
-            activeAttachment = nil 
-        end
-        _G.CurrentVectorVelocity = nil 
-        _G.ResetTimer = nil
+    else
+        -- Dọn dẹp khi tắt
+        if activeVelocity then activeVelocity:Destroy() activeVelocity = nil end
+        if activeAttachment then activeAttachment:Destroy() activeAttachment = nil end
     end
 end)
 
