@@ -928,36 +928,55 @@ RunService.PreSimulation:Connect(function()
         end
     end
 
-    if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
-        if not activeAttachment or activeAttachment.Parent ~= activeSeat then 
-            if activeAttachment then activeAttachment:Destroy() end 
-            activeAttachment = Instance.new("Attachment") 
-            activeAttachment.Parent = activeSeat 
-        end
-        if not activeVelocity or activeVelocity.Parent ~= activeSeat then 
-            if activeVelocity then activeVelocity:Destroy() end 
-            activeVelocity = Instance.new("LinearVelocity") 
-            activeVelocity.Attachment0 = activeAttachment 
-            activeVelocity.MaxForce = math.huge 
-            activeVelocity.VelocityConstraintMode = Enum.VelocityConstraintMode.Vector 
-            activeVelocity.Parent = activeSeat 
-        end
-        
-        -- Lấy toàn bộ hướng 3D thực tế của ghế (Bỏ số 0 ở trục Y đi để tàu không bị kẹt mặt phẳng)
-        local forward = activeSeat.CFrame.LookVector 
-        local currentSpeed = tonumber(_G.SpeedInput and _G.SpeedInput.Text) or (_G.BoostMultiplier or 200)
-        local targetVel = forward * currentSpeed 
-        
-        if targetVel.Magnitude == targetVel.Magnitude then
-            activeVelocity.VectorVelocity = targetVel 
-        end
-    else 
+local lastRefreshTick = tick()
+local REFRESH_INTERVAL = 45
+
+if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
+    if tick() - lastRefreshTick >= REFRESH_INTERVAL then
         if activeVelocity then 
             activeVelocity:Destroy() 
             activeVelocity = nil 
-        end 
-        _G.CurrentVectorVelocity = nil 
+        end
+        if activeAttachment then 
+            activeAttachment:Destroy() 
+            activeAttachment = nil 
+        end
+        lastRefreshTick = tick()
     end
+
+    if not activeAttachment or activeAttachment.Parent ~= activeSeat then 
+        if activeAttachment then activeAttachment:Destroy() end 
+        activeAttachment = Instance.new("Attachment") 
+        activeAttachment.Parent = activeSeat 
+    end
+    if not activeVelocity or activeVelocity.Parent ~= activeSeat then 
+        if activeVelocity then activeVelocity:Destroy() end 
+        activeVelocity = Instance.new("LinearVelocity") 
+        activeVelocity.Attachment0 = activeAttachment 
+        activeVelocity.MaxForce = math.huge 
+        activeVelocity.VelocityConstraintMode = Enum.VelocityConstraintMode.Vector 
+        activeVelocity.Parent = activeSeat 
+    end
+    
+    local forward = activeSeat.CFrame.LookVector 
+    local currentSpeed = tonumber(_G.SpeedInput and _G.SpeedInput.Text) or (_G.BoostMultiplier or 200)
+    local targetVel = Vector3.new(forward.X, 0, forward.Z).Unit * currentSpeed 
+    
+    if targetVel.Magnitude == targetVel.Magnitude then
+        activeVelocity.VectorVelocity = targetVel 
+    end
+else 
+    if activeVelocity then 
+        activeVelocity:Destroy() 
+        activeVelocity = nil 
+    end 
+    if activeAttachment then
+        activeAttachment:Destroy()
+        activeAttachment = nil
+    end
+    _G.CurrentVectorVelocity = nil 
+    lastRefreshTick = tick()
+end
 end)
 
 local Players = game:GetService("Players")
