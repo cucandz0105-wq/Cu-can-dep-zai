@@ -938,7 +938,7 @@ RunService.PreSimulation:Connect(function()
             if activeVelocity then activeVelocity:Destroy() end 
             activeVelocity = Instance.new("LinearVelocity") 
             activeVelocity.Attachment0 = activeAttachment 
-            activeVelocity.MaxForce = math.huge -- Chân ái math.huge bất tử
+            activeVelocity.MaxForce = 1 -- Chân ái math.huge bất tử
             activeVelocity.VelocityConstraintMode = Enum.VelocityConstraintMode.Vector 
             activeVelocity.Parent = activeSeat 
         end
