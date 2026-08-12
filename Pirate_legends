@@ -929,12 +929,12 @@ RunService.PreSimulation:Connect(function()
     end
 
 local lastRefreshTick = tick()
-local REFRESH_INTERVAL = 35 -- Cứ 35 giây reset toàn bộ một lần như tắt/bật tay
+local REFRESH_INTERVAL = 25 -- Chu kỳ reset ngầm 25 giây để làm sạch hoàn toàn sai số
 
 if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
     local rootPart = activeSeat.AssemblyRootPart or activeSeat.Parent:FindFirstChild("HumanoidRootPart") or activeSeat.Parent:FindFirstChild("Part")
 
-    -- Đã đến chu kỳ? Thực hiện "Tự hủy toàn bộ" y hệt như lúc bro bấm tắt script thủ công
+    -- Định kỳ tự hủy ngầm để xóa sạch rác và quán tính tích tụ
     if tick() - lastRefreshTick >= REFRESH_INTERVAL then
         if activeVelocity then 
             activeVelocity:Destroy() 
@@ -945,19 +945,16 @@ if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
             activeAttachment = nil 
         end
         
-        -- Xóa sạch quán tính thân tàu để lúc bật lại nó không bị lực đà cũ kéo trượt
         if rootPart then
             rootPart.AssemblyLinearVelocity = Vector3.new(0, rootPart.AssemblyLinearVelocity.Y, 0)
             rootPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
         end
         
-        -- Ngắt luôn biến ghế tạm thời để buộc vòng lặp khung hình sau "Tái sinh" lại từ con số 0 tròn trĩnh y hệt lúc bấm bật mới
         activeSeat = nil 
         lastRefreshTick = tick()
-        return -- Dừng 1 frame để game xả bộ nhớ đệm sạch sẽ
+        return 
     end
 
-    -- Khởi tạo lại từ đầu hoàn toàn mới (Giống hệt lúc bấm nút Bật)
     if not activeAttachment or activeAttachment.Parent ~= activeSeat then 
         if activeAttachment then activeAttachment:Destroy() end 
         activeAttachment = Instance.new("Attachment") 
@@ -973,15 +970,17 @@ if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
         activeVelocity.Parent = activeSeat 
     end
     
+    -- Lấy hướng tiến, đồng thời kết hợp độ bám lái để triệt tiêu trượt trớn khi cua
     local forward = activeSeat.CFrame.LookVector 
     local currentSpeed = tonumber(_G.SpeedInput and _G.SpeedInput.Text) or (_G.BoostMultiplier or 200)
+    
+    -- Ép hướng vector di chuyển chuẩn xác theo mặt phẳng ngang, loại bỏ triệt để sai số chéo
     local targetVel = Vector3.new(forward.X, 0, forward.Z).Unit * currentSpeed 
     
     if targetVel.Magnitude == targetVel.Magnitude then
         activeVelocity.VectorVelocity = targetVel 
     end
 else 
-    -- Khi tắt hoặc đang trong pha reset, dọn sạch sẽ 100%
     if activeVelocity then 
         activeVelocity:Destroy() 
         activeVelocity = nil 
