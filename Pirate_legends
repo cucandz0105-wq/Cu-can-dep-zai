@@ -928,7 +928,7 @@ RunService.PreSimulation:Connect(function()
         end
     end
 
-        if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
+    if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
         if not activeAttachment or activeAttachment.Parent ~= activeSeat then 
             if activeAttachment then activeAttachment:Destroy() end 
             activeAttachment = Instance.new("Attachment") 
@@ -943,29 +943,15 @@ RunService.PreSimulation:Connect(function()
             activeVelocity.Parent = activeSeat 
         end
         
+        -- Lấy trực tiếp hướng nhìn hiện tại của ghế
         local forward = activeSeat.CFrame.LookVector 
-        local rawVel = Vector3.new(forward.X, 0, forward.Z).Unit * (_G.BoostMultiplier or 200) 
+        local currentSpeed = tonumber(_G.SpeedInput and _G.SpeedInput.Text) or (_G.BoostMultiplier or 200)
+        local targetVel = Vector3.new(forward.X, 0, forward.Z).Unit * currentSpeed 
         
-        -- KỸ THUẬT LÀM TRÒN LƯỢNG TỬ: Cắt gọt số thập phân thừa thãi để chống trôi dạt đường dài
-        local targetVel = Vector3.new(
-            math.round(rawVel.X * 1000) / 1000,
-            0,
-            math.round(rawVel.Z * 1000) / 1000
-        ) * (_G.BoostMultiplier or 200)
-        
-        if not _G.CurrentVectorVelocity then 
-            _G.CurrentVectorVelocity = targetVel 
-        else
-            local diff = (targetVel - _G.CurrentVectorVelocity).Magnitude
-            if diff < 1.0 then
-                -- Ép thẳng giá trị khi đã tiệm cận để xóa sạch sai số Lerp
-                _G.CurrentVectorVelocity = targetVel 
-            else
-                _G.CurrentVectorVelocity = _G.CurrentVectorVelocity:Lerp(targetVel, 0.2)
-            end
+        -- Gán thẳng vector velocity, bỏ qua Lerp rườm rà gây trượt văng
+        if targetVel.Magnitude == targetVel.Magnitude then
+            activeVelocity.VectorVelocity = targetVel 
         end
-        
-        activeVelocity.VectorVelocity = _G.CurrentVectorVelocity 
     else 
         if activeVelocity then 
             activeVelocity:Destroy() 
