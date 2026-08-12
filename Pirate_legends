@@ -938,7 +938,7 @@ RunService.PreSimulation:Connect(function()
             if activeVelocity then activeVelocity:Destroy() end 
             activeVelocity = Instance.new("LinearVelocity") 
             activeVelocity.Attachment0 = activeAttachment 
-            activeVelocity.MaxForce = 1 -- Chân ái math.huge bất tử
+            activeVelocity.MaxForce = math.huge -- Chỉnh lại thành math.huge để tàu bám sát tốc độ chuẩn hơn (hoặc giữ nguyên nếu bro thích)
             activeVelocity.VelocityConstraintMode = Enum.VelocityConstraintMode.Vector 
             activeVelocity.Parent = activeSeat 
         end
@@ -948,8 +948,19 @@ RunService.PreSimulation:Connect(function()
         
         if not _G.CurrentVectorVelocity then 
             _G.CurrentVectorVelocity = targetVel 
+        else
+            -- Tính khoảng cách sai số giữa vận tốc hiện tại và vận tốc đích
+            local diff = (targetVel - _G.CurrentVectorVelocity).Magnitude
+            
+            if diff < 0.5 then
+                -- Ép thẳng giá trị đích khi đã sát nút để triệt tiêu hoàn toàn sai số Lerp
+                _G.CurrentVectorVelocity = targetVel
+            else
+                -- Vẫn giữ Lerp giai đoạn đầu để tăng tốc mượt mà
+                _G.CurrentVectorVelocity = _G.CurrentVectorVelocity:Lerp(targetVel, 0.2)
+            end
         end
-        _G.CurrentVectorVelocity = _G.CurrentVectorVelocity:Lerp(targetVel, 0.2) -- Lerp 0.2 mượt mà chống trượt văng
+        
         activeVelocity.VectorVelocity = _G.CurrentVectorVelocity 
     else 
         if activeVelocity then 
