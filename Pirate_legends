@@ -928,7 +928,7 @@ RunService.PreSimulation:Connect(function()
         end
     end
 
-        if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
+    if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
         if not activeAttachment or activeAttachment.Parent ~= activeSeat then 
             if activeAttachment then activeAttachment:Destroy() end 
             activeAttachment = Instance.new("Attachment") 
@@ -939,22 +939,10 @@ RunService.PreSimulation:Connect(function()
             if activeVelocity then activeVelocity:Destroy() end 
             activeVelocity = Instance.new("LinearVelocity") 
             activeVelocity.Attachment0 = activeAttachment 
-            
-            activeVelocity.VelocityConstraintMode = Enum.VelocityConstraintMode.Line
-            activeVelocity.RelativeTo = Enum.ActuatorRelativeTo.World
+            activeVelocity.MaxForce = math.huge -- Giữ nguyên lực khủng để không bị yếu
+            activeVelocity.VelocityConstraintMode = Enum.VelocityConstraintMode.Vector 
             activeVelocity.Parent = activeSeat 
         end
-        
-        -- QUAY VỀ ĐÚNG GU: Cho phép MaxForce đạt ngưỡng từ 100,000 trở lên theo đúng thói quen của tàu
-        local currentWeight = 10000
-        pcall(function()
-            if activeSeat.AssemblyMass and activeSeat.AssemblyMass > 0 then
-                currentWeight = activeSeat.AssemblyMass
-            end
-        end)
-        
-        -- Đảm bảo lực kéo tối thiểu từ 100,000 trở lên để tàu đủ sức vút đi mạnh mẽ
-        activeVelocity.MaxForce = math.max(100000, currentWeight * 10000) 
         
         local forward = activeSeat.CFrame.LookVector 
         local targetVel = Vector3.new(forward.X, 0, forward.Z).Unit * (_G.BoostMultiplier or 200) 
@@ -963,14 +951,20 @@ RunService.PreSimulation:Connect(function()
             _G.CurrentVectorVelocity = targetVel 
         end
         
-        _G.CurrentVectorVelocity = _G.CurrentVectorVelocity:Lerp(targetVel, 0.15) 
+        -- MÔ PHỎNG LÒ XO ĐÀN HỒI (Spring Damper Effect):
+        -- Thay vì Lerp cứng nhắc, ta dùng thuật toán gia tốc có độ "rơ" tự nhiên
+        if not _G.CurrentVelocityAccel then 
+            _G.CurrentVelocityAccel = Vector3.new(0, 0, 0) 
+        end
         
-        activeVelocity.LineDirection = _G.CurrentVectorVelocity.Unit
-        activeVelocity.LineVelocity = _G.CurrentVectorVelocity.Magnitude
+        -- Lực hút hướng về mục tiêu với độ đàn hồi (Spring stiffness & Damping)
+        local displacement = targetVel - _G.CurrentVectorVelocity
+        local springForce = displacement * 0.15 -- Độ cứng của lò xo
         
-        pcall(function()
-            activeSeat.AssemblyAngularVelocity = Vector3.new(0, activeSeat.AssemblyAngularVelocity.Y, 0)
-        end)
+        _G.CurrentVelocityAccel = (_G.CurrentVelocityAccel + springForce) * 0.75 -- Hệ số giảm xóc (Damping) giúp triệt tiêu rung động và chống trượt
+        _G.CurrentVectorVelocity = _G.CurrentVectorVelocity + _G.CurrentVelocityAccel
+        
+        activeVelocity.VectorVelocity = _G.CurrentVectorVelocity 
     else 
         if activeVelocity then 
             activeVelocity:Destroy() 
@@ -981,6 +975,7 @@ RunService.PreSimulation:Connect(function()
             activeAttachment = nil 
         end
         _G.CurrentVectorVelocity = nil 
+        _G.CurrentVelocityAccel = nil
     end
 end)
 
