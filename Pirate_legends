@@ -876,37 +876,44 @@ RunService.PreSimulation:Connect(function()
         end
     end
 
-    if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
-        -- Dọn dẹp sạch sẽ tàn tích của LinearVelocity cũ nếu còn sót lại
+        if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
+        -- Dọn sạch tàn tích cũ
         if activeVelocity then activeVelocity:Destroy() activeVelocity = nil end
-        if activeAttachment then activeAttachment:Destroy() activeAttachment = nil end
         
-        -- Lấy root part của tàu hoặc dùng trực tiếp ghế lái
         local boatRoot = activeSeat.AssemblyRootPart or activeSeat
         
-        -- Tính toán vector hướng di chuyển
+        -- Tạo Attachment để đặt điểm neo lực nếu chưa có
+        if not activeAttachment or activeAttachment.Parent ~= boatRoot then
+            if activeAttachment then activeAttachment:Destroy() end
+            activeAttachment = Instance.new("Attachment")
+            activeAttachment.Parent = boatRoot
+        end
+        
+        -- Tạo VectorForce để đẩy tàu đi bằng lực tự nhiên
+        if not activeVectorForce or activeVectorForce.Parent ~= boatRoot then
+            if activeVectorForce then activeVectorForce:Destroy() end
+            activeVectorForce = Instance.new("VectorForce")
+            activeVectorForce.Attachment0 = activeAttachment
+            activeVectorForce.RelativeTo = Enum.ActuatorRelativeTo.World
+            activeVectorForce.Parent = boatRoot
+        end
+        
+        -- Tính toán lực đẩy dựa trên hướng nhìn của ghế lái và speed mong muốn
         local forward = activeSeat.CFrame.LookVector
         local moveDir = Vector3.new(forward.X, 0, forward.Z).Unit
         local speed = _G.BoostMultiplier or 200
         
-        -- Dùng CFrame dịch chuyển trực tiếp theo từng khung hình (RenderStepped)
-        local dt = RunService.RenderStepped:Wait()
-        local nextCFrame = boatRoot.CFrame + (moveDir * speed * dt)
+        -- Nhân với khối lượng của tàu (AssemblyMass) để lực đẩy chuẩn xác theo trọng lượng thực tế
+        local mass = boatRoot.AssemblyMass
+        activeVectorForce.Force = moveDir * speed * mass * 15 -- Hệ số 15 giúp tàu vọt nhanh và mạnh mượt mà
         
-        -- Khóa chặt góc quay, chỉ cho phép xoay theo ý muốn của ghế lái, tránh lật tàu
-        local _, currentY, _ = boatRoot.CFrame:ToOrientation()
-        local targetCFrame = CFrame.new(nextCFrame.Position) * CFrame.Angles(0, currentY, 0)
-        
-        boatRoot.CFrame = targetCFrame
-        
-        -- Triệt tiêu hoàn toàn quán tính thừa gây trượt
+        -- Khóa chống lật ngang dọc cho tàu bám mặt nước ổn định
         pcall(function()
-            boatRoot.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-            boatRoot.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+            boatRoot.AssemblyAngularVelocity = Vector3.new(0, boatRoot.AssemblyAngularVelocity.Y, 0)
         end)
     else
-        -- Dọn dẹp khi tắt
-        if activeVelocity then activeVelocity:Destroy() activeVelocity = nil end
+        -- Dọn dẹp khi tắt tính năng
+        if activeVectorForce then activeVectorForce:Destroy() activeVectorForce = nil end
         if activeAttachment then activeAttachment:Destroy() activeAttachment = nil end
     end
 end)
