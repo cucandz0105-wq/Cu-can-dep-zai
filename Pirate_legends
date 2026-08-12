@@ -946,29 +946,24 @@ if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
         activeVelocity.Parent = activeSeat 
     end
     
+    -- 🎯 Ý tưởng chuẩn xác của bro: Xử lý vector lookvector phẳng tuyệt đối
     local forward = activeSeat.CFrame.LookVector 
+    local flat = Vector3.new(forward.X, 0, forward.Z)
     local currentSpeed = tonumber(_G.SpeedInput and _G.SpeedInput.Text) or (_G.BoostMultiplier or 200)
-    
-    -- Gán thẳng vector hướng đi, không Lerp, không sai số đường dài
-    local targetVel = Vector3.new(forward.X, 0, forward.Z).Unit * currentSpeed 
-    
-    if rootPart and targetVel.Magnitude == targetVel.Magnitude then
-        -- 1. Kéo tàu đi bằng LinearVelocity tuyệt đối
-        activeVelocity.VectorVelocity = targetVel 
+
+    if rootPart and flat.Magnitude > 0.001 then
+        -- Ép vận tốc chuẩn xác dựa trên vector phẳng đã lọc an toàn, không rườm rà
+        activeVelocity.VectorVelocity = flat.Unit * currentSpeed
         
-        -- 2. Triệt tiêu hoàn toàn góc quay ly tâm (Angular Velocity) tránh văng lắc
+        -- Khóa chặt góc quay ly tâm và văng ngang để tàu bám đường thẳng tắp
         rootPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
-        
-        -- 3. Cưỡng chế AssemblyLinearVelocity bám chặt đường thẳng
         local currentAssemblyVel = rootPart.AssemblyLinearVelocity
-        rootPart.AssemblyLinearVelocity = Vector3.new(targetVel.X, currentAssemblyVel.Y, targetVel.Z)
+        rootPart.AssemblyLinearVelocity = Vector3.new(flat.Unit.X * currentSpeed, currentAssemblyVel.Y, flat.Unit.Z * currentSpeed)
     end
 else 
     if activeVelocity then activeVelocity:Destroy() activeVelocity = nil end 
     if activeAttachment then activeAttachment:Destroy() activeAttachment = nil end
-    _G.CurrentVectorVelocity = nil 
 end
-
 end)
 
 local Players = game:GetService("Players")
