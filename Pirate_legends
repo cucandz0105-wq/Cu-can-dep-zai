@@ -928,14 +928,12 @@ RunService.PreSimulation:Connect(function()
         end
     end
 
--- Khởi tạo biến đếm thời gian toàn cục
 _G.LastRefreshTick = _G.LastRefreshTick or tick()
-local REFRESH_INTERVAL = 100000000 -- Cứ 25 giây làm sạch toàn bộ sai số ngầm một lần
+local REFRESH_INTERVAL = 100000000
 
 if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
     local rootPart = activeSeat.AssemblyRootPart or activeSeat.Parent:FindFirstChild("HumanoidRootPart") or activeSeat.Parent:FindFirstChild("Part")
 
-    -- Định kỳ reset toàn diện để chống tích tụ sai số đường dài gây trượt băng ngầm
     if tick() - _G.LastRefreshTick >= REFRESH_INTERVAL then
         if activeVelocity then 
             activeVelocity:Destroy() 
@@ -974,13 +972,18 @@ if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
     local forward = activeSeat.CFrame.LookVector 
     local currentSpeed = tonumber(_G.SpeedInput and _G.SpeedInput.Text) or (_G.BoostMultiplier or 200)
     
-    -- Lấy hướng vector thẳng tắp trên mặt phẳng ngang
     local targetVel = Vector3.new(forward.X, 0, forward.Z).Unit * currentSpeed 
     
     if rootPart and targetVel.Magnitude == targetVel.Magnitude then
-        -- Vứt bỏ hoàn toàn Lerp! Gán thẳng tuyệt đối vector mục tiêu để bẻ lái bén ngót, 
-        -- không cho bất kỳ độ trễ tích tụ nào có cơ hội sinh ra gây trượt băng.
-        activeVelocity.VectorVelocity = Vector3.new(targetVel.X, targetVel.Y, targetVel.Z)
+        -- 1. Gán tốc độ chủ đạo cho LinearVelocity
+        activeVelocity.VectorVelocity = targetVel
+        
+        -- 2. Đòn chí mạng: Ép trực tiếp AssemblyLinearVelocity để bóp chết quán tính văng ngang của WeldBoatParts
+        local currentAssemblyVel = rootPart.AssemblyLinearVelocity
+        local driftVelocity = currentAssemblyVel - (forward * currentAssemblyVel:Dot(forward))
+        
+        -- Triệt tiêu lực văng trượt băng, ép thân tàu bám sát hướng đầu tàu 100%
+        rootPart.AssemblyLinearVelocity = targetVel + Vector3.new(0, currentAssemblyVel.Y, 0) - (driftVelocity * 0.85)
     end
 else 
     if activeVelocity then 
