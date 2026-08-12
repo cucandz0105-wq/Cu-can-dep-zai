@@ -928,36 +928,61 @@ RunService.PreSimulation:Connect(function()
         end
     end
 
-    if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
-        if not activeAttachment or activeAttachment.Parent ~= activeSeat then 
-            if activeAttachment then activeAttachment:Destroy() end 
-            activeAttachment = Instance.new("Attachment") 
-            activeAttachment.Parent = activeSeat 
-        end
-        if not activeVelocity or activeVelocity.Parent ~= activeSeat then 
-            if activeVelocity then activeVelocity:Destroy() end 
-            activeVelocity = Instance.new("LinearVelocity") 
-            activeVelocity.Attachment0 = activeAttachment 
-            activeVelocity.MaxForce = math.huge -- Chân ái math.huge bất tử
-            activeVelocity.VelocityConstraintMode = Enum.VelocityConstraintMode.Vector 
-            activeVelocity.Parent = activeSeat 
-        end
-        
-        local forward = activeSeat.CFrame.LookVector 
-        local targetVel = Vector3.new(forward.X, 0, forward.Z).Unit * (_G.BoostMultiplier or 200) 
-        
-        if not _G.CurrentVectorVelocity then 
-            _G.CurrentVectorVelocity = targetVel 
-        end
-        _G.CurrentVectorVelocity = _G.CurrentVectorVelocity:Lerp(targetVel, 0.2) -- Lerp 0.2 mượt mà chống trượt văng
-        activeVelocity.VectorVelocity = _G.CurrentVectorVelocity 
-    else 
-        if activeVelocity then 
-            activeVelocity:Destroy() 
-            activeVelocity = nil 
-        end 
-        _G.CurrentVectorVelocity = nil 
+if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
+    if not activeAttachment or activeAttachment.Parent ~= activeSeat then
+        if activeAttachment then activeAttachment:Destroy() end
+        activeAttachment = Instance.new("Attachment")
+        activeAttachment.Parent = activeSeat
     end
+    
+    if not activeVelocity or activeVelocity.Parent ~= activeSeat then
+        if activeVelocity then activeVelocity:Destroy() end
+        activeVelocity = Instance.new("LinearVelocity")
+        activeVelocity.Attachment0 = activeAttachment
+        activeVelocity.VelocityConstraintMode = Enum.VelocityConstraintMode.Vector
+        activeVelocity.Parent = activeSeat
+    end
+    
+    local forward = activeSeat.CFrame.LookVector
+    local moveDir = Vector3.new(forward.X, 0, forward.Z)
+    
+    if moveDir.Magnitude < 0.1 then
+        _G.CurrentVectorVelocity = Vector3.new(0, 0, 0)
+        activeVelocity.VectorVelocity = Vector3.new(0, 0, 0)
+        activeVelocity.MaxForce = 0
+        _G.ResetTimer = 0
+    else
+        local targetVel = moveDir.Unit * (_G.BoostMultiplier or 200)
+        
+        if not _G.CurrentVectorVelocity then
+            _G.CurrentVectorVelocity = targetVel
+        end
+        
+        -- 🔥 BỘ ĐẾM RESET NGẦM CHỐNG TRƯỢT (~3 giây / 180 frame)
+        _G.ResetTimer = (_G.ResetTimer or 0) + 1
+        if _G.ResetTimer > 180 then
+            -- Chớp mắt thả MaxForce về 0 trong 1 frame để xóa sạch sai số trượt
+            activeVelocity.MaxForce = 0
+            _G.ResetTimer = 0
+            -- Vẫn giữ vector vận tốc trôi theo hướng cũ để không bị khựng ngắt quãng
+            activeVelocity.VectorVelocity = _G.CurrentVectorVelocity
+        else
+            -- Hoạt động bình thường với lực kéo tối ưu 50000
+            activeVelocity.MaxForce = 50000 
+            _G.CurrentVectorVelocity = _G.CurrentVectorVelocity:Lerp(targetVel, 0.2)
+            activeVelocity.VectorVelocity = _G.CurrentVectorVelocity
+        end
+    end
+    
+    pcall(function()
+        local root = activeSeat.AssemblyRootPart or activeSeat
+        root.AssemblyAngularVelocity = Vector3.new(0, root.AssemblyAngularVelocity.Y, 0)
+    end)
+else
+    if activeVelocity then activeVelocity:Destroy() activeVelocity = nil end
+    _G.CurrentVectorVelocity = nil
+    _G.ResetTimer = nil
+end
 end)
 
 local Players = game:GetService("Players")
