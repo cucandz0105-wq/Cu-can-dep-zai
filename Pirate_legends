@@ -929,7 +929,7 @@ RunService.PreSimulation:Connect(function()
     end
 
 if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
-    -- Tiêu diệt tận gốc mọi thế lực vật lý cũ đời cổ đang ẩn nấp phá hoại
+    -- Triệt tiêu mấy cục vật lý cổ lỗ sĩ gây nhiễu
     for _, child in ipairs(activeSeat:GetDescendants()) do
         if child:IsA("BodyVelocity") or child:IsA("BodyForce") or child:IsA("BodyGyro") or child:IsA("BodyAngularVelocity") then
             child:Destroy()
@@ -938,45 +938,42 @@ if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
 
     local rootPart = activeSeat.AssemblyRootPart or activeSeat.Parent:FindFirstChild("HumanoidRootPart") or activeSeat.Parent:FindFirstChild("Part")
 
-    if not activeAttachment or activeAttachment.Parent ~= activeSeat then 
+    if not activeAttachment or activeAttachment.Parent ~= rootPart then 
         if activeAttachment then activeAttachment:Destroy() end 
         activeAttachment = Instance.new("Attachment") 
-        activeAttachment.Parent = activeSeat 
+        -- Đổi parent sang rootPart để nó xoay theo đúng hướng mũi tàu chứ không bám cứng vào ghế nữa!
+        activeAttachment.Parent = rootPart or activeSeat 
     end
     
-    if not activeVelocity or activeVelocity.Parent ~= activeSeat then 
+    if not activeVelocity or activeVelocity.Parent ~= (rootPart or activeSeat) then 
         if activeVelocity then activeVelocity:Destroy() end 
         activeVelocity = Instance.new("LinearVelocity") 
         activeVelocity.Attachment0 = activeAttachment 
         activeVelocity.MaxForce = math.huge 
         activeVelocity.VelocityConstraintMode = Enum.VelocityConstraintMode.Vector 
-        activeVelocity.Parent = activeSeat 
+        activeVelocity.Parent = rootPart or activeSeat 
     end
     
-    local cf = activeSeat.CFrame
-    local forward = Vector3.new(cf.LookVector.X, 0, cf.LookVector.Z)
     local currentSpeed = tonumber(_G.SpeedInput and _G.SpeedInput.Text) or (_G.BoostMultiplier or 200)
 
-    if rootPart and forward.Magnitude > 0.001 then
-        local forwardDir = forward.Unit
+    if rootPart then
+        -- Lấy hướng LookVector trực tiếp từ RootPart của tàu để khi bẻ cua là hướng lực đổi theo tức thì!
+        local lookDir = rootPart.CFrame.LookVector
+        local forwardDir = Vector3.new(lookDir.X, 0, lookDir.Z).Unit
         
-        -- Lực đẩy chạy độc tôn, mượt mà không tì vết
-        activeVelocity.VectorVelocity = forwardDir * currentSpeed
+        if forwardDir.Magnitude > 0.001 then
+            activeVelocity.VectorVelocity = forwardDir * currentSpeed
+        end
 
-        -- Khóa góc quay chống lật tàu
-        rootPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+        -- Khóa góc quay ly tâm chống lật
+        rootPart.AssemblyAngularVelocity = Vector3.new(0, rootPart.AssemblyAngularVelocity.Y, 0) -- Giữ lại trục quay Y để bẻ lái mượt, khóa X và Z chống lật ngửa
     end
 else 
-    -- Tắt speed: Hãm phanh mượt mà trước khi hủy LinearVelocity
+    -- 🔴 TẮT SPEED: Hủy ngay lập tức và dọn sạch sẽ, không dùng task.wait gây kẹt lệnh
     if activeVelocity then 
         activeVelocity.VectorVelocity = Vector3.new(0, 0, 0)
-        task.spawn(function()
-            task.wait(0.05)
-            if activeVelocity then 
-                activeVelocity:Destroy() 
-                activeVelocity = nil 
-            end 
-        end)
+        activeVelocity:Destroy() 
+        activeVelocity = nil 
     end 
     if activeAttachment then 
         activeAttachment:Destroy() 
