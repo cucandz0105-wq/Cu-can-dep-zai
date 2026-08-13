@@ -946,32 +946,32 @@ if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
         activeVelocity.Parent = activeSeat 
     end
     
-    -- 1. Lấy hướng nhìn gốc từ Seat (Nghi phạm 🥇)
-    local rawLook = activeSeat.CFrame.LookVector
-    local flatLook = Vector3.new(rawLook.X, 0, rawLook.Z)
+    local cf = activeSeat.CFrame
+    local forward = Vector3.new(cf.LookVector.X, 0, cf.LookVector.Z)
     local currentSpeed = tonumber(_G.SpeedInput and _G.SpeedInput.Text) or (_G.BoostMultiplier or 200)
 
-    if rootPart and flatLook.Magnitude > 0.001 then
-        local targetDir = flatLook.Unit
+    if rootPart and forward.Magnitude > 0.001 then
+        local forwardDir = forward.Unit
         
-        -- 2. TargetVelocity (Đích đến mà code ép vào)
-        local targetVel = targetDir * currentSpeed
+        -- Áp dụng lực đẩy chuẩn
+        activeVelocity.VectorVelocity = forwardDir * currentSpeed
 
-        -- 3. Real Velocity (Vận tốc thực tế mà Roblox Physics đang gánh)
-        local realVel = rootPart.AssemblyLinearVelocity
-        local realVelFlat = Vector3.new(realVel.X, 0, realVel.Z)
+        -- Lấy vector vận tốc vật lý toàn cục hiện tại của gốc tàu
+        local v = rootPart.AssemblyLinearVelocity
+        local rightDir = Vector3.new(cf.RightVector.X, 0, cf.RightVector.Z).Unit
 
-        -- 4. In 3 thông số cùng một thời điểm ra F9 để so kè
-        print(string.format("[BẮT TANG] Look(X:%.2f, Z:%.2f) | TargetVel(X:%.1f, Z:%.1f) | RealVel(X:%.1f, Z:%.1f) | RealMag:%.1f", 
-            targetDir.X, targetDir.Z, 
-            targetVel.X, targetVel.Z, 
-            realVelFlat.X, realVelFlat.Z, 
-            realVelFlat.Magnitude))
+        -- Phân rã vận tốc thành 2 thành phần: Tiến (Forward) và Trượt ngang (Side)
+        local forwardSpeed = v:Dot(forwardDir)
+        local sideSpeed = v:Dot(rightDir)
 
-        -- Áp dụng lực đẩy và ép đồng bộ
-        activeVelocity.VectorVelocity = targetVel
+        -- In log bắt tận tay day tận trán xem SIDE có vọt lên 300+ hay không
+        print(string.format("[BẮT HUNG THỦ] FORWARD: %d | SIDE: %d | TOTAL MAG: %d", 
+            math.round(forwardSpeed), 
+            math.round(sideSpeed), 
+            math.round(v.Magnitude)))
+
+        -- Khóa góc quay ly tâm để chống lật
         rootPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
-        rootPart.AssemblyLinearVelocity = Vector3.new(targetVel.X, realVel.Y, targetVel.Z)
     end
 else 
     if activeVelocity then activeVelocity:Destroy() activeVelocity = nil end 
