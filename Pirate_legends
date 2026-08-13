@@ -928,14 +928,17 @@ RunService.PreSimulation:Connect(function()
         end
     end
 
-if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
+-- =========================================
+-- SUPER SAIL - SINGLE LINEARVELOCITY CONTROLLER
+-- =========================================
 
-    -- =========================================
-    -- 1. DỌN TOÀN BỘ PHYSICS LEGACY TRÊN TÀU
-    -- =========================================
+if _G.SuperSailActive
+and activeSeat
+and activeSeat:IsA("VehicleSeat") then
 
     local ship = workspace.Ships:FindFirstChild("ActiveShip")
 
+    -- Dọn physics legacy trên toàn bộ tàu
     if ship then
         for _, obj in ipairs(ship:GetDescendants()) do
             if obj:IsA("BodyVelocity")
@@ -943,16 +946,12 @@ if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
             or obj:IsA("BodyGyro")
             or obj:IsA("BodyAngularVelocity") then
 
-                print("[SuperSail] Remove legacy:", obj:GetFullName())
                 obj:Destroy()
             end
         end
     end
 
-    -- =========================================
-    -- 2. TẠO ATTACHMENT
-    -- =========================================
-
+    -- Attachment
     if not activeAttachment
     or activeAttachment.Parent ~= activeSeat then
 
@@ -965,10 +964,7 @@ if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
         activeAttachment.Parent = activeSeat
     end
 
-    -- =========================================
-    -- 3. TẠO LINEARVELOCITY
-    -- =========================================
-
+    -- LinearVelocity duy nhất
     if not activeVelocity
     or activeVelocity.Parent ~= activeSeat then
 
@@ -978,45 +974,33 @@ if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
 
         activeVelocity = Instance.new("LinearVelocity")
         activeVelocity.Name = "SuperSailVelocity"
-
         activeVelocity.Attachment0 = activeAttachment
         activeVelocity.VelocityConstraintMode =
             Enum.VelocityConstraintMode.Vector
-
         activeVelocity.MaxForce = math.huge
-
         activeVelocity.Parent = activeSeat
     end
 
-    -- =========================================
-    -- 4. TÍNH HƯỚNG + SPEED
-    -- =========================================
+    -- Hướng mũi tàu
+    local look = activeSeat.CFrame.LookVector
 
-    local forward = activeSeat.CFrame.LookVector
-
-    local flatForward = Vector3.new(
-        forward.X,
+    local flatLook = Vector3.new(
+        look.X,
         0,
-        forward.Z
+        look.Z
     )
 
-    local currentSpeed =
+    local speed =
         tonumber(
             _G.SpeedInput
             and _G.SpeedInput.Text
         )
         or (_G.BoostMultiplier or 200)
 
-    -- =========================================
-    -- 5. CHỈ ĐẨY THEO HƯỚNG MŨI TÀU
-    -- =========================================
-
-    if flatForward.Magnitude > 0.001 then
-
-        local forwardDir = flatForward.Unit
+    if flatLook.Magnitude > 0.001 then
 
         activeVelocity.VectorVelocity =
-            forwardDir * currentSpeed
+            flatLook.Unit * speed
 
     else
 
@@ -1027,27 +1011,17 @@ if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
 
 else
 
-    -- =========================================
-    -- SPEED OFF → PHANH ÊM
-    -- =========================================
-
+    -- Speed OFF
     if activeVelocity then
-
-        activeVelocity.VectorVelocity =
-            Vector3.zero
-
+        activeVelocity.VectorVelocity = Vector3.zero
         activeVelocity:Destroy()
         activeVelocity = nil
-
     end
 
     if activeAttachment then
-
         activeAttachment:Destroy()
         activeAttachment = nil
-
     end
-
 end
 end)
 
