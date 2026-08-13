@@ -953,24 +953,10 @@ if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
     if rootPart and forward.Magnitude > 0.001 then
         local forwardDir = forward.Unit
         
-        -- Áp dụng lực đẩy chuẩn
+        -- Áp dụng lực đẩy mượt mà không tì vết
         activeVelocity.VectorVelocity = forwardDir * currentSpeed
 
-        -- Lấy vector vận tốc vật lý toàn cục hiện tại của gốc tàu
-        local v = rootPart.AssemblyLinearVelocity
-        local rightDir = Vector3.new(cf.RightVector.X, 0, cf.RightVector.Z).Unit
-
-        -- Phân rã vận tốc thành 2 thành phần: Tiến (Forward) và Trượt ngang (Side)
-        local forwardSpeed = v:Dot(forwardDir)
-        local sideSpeed = v:Dot(rightDir)
-
-        -- In log bắt tận tay day tận trán xem SIDE có vọt lên 300+ hay không
-        print(string.format("[BẮT HUNG THỦ] FORWARD: %d | SIDE: %d | TOTAL MAG: %d", 
-            math.round(forwardSpeed), 
-            math.round(sideSpeed), 
-            math.round(v.Magnitude)))
-
-        -- Khóa góc quay ly tâm để chống lật
+        -- Khóa góc quay ly tâm để chống lật tàu
         rootPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
     end
 else 
