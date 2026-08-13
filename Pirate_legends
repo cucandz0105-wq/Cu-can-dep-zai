@@ -1,0 +1,1734 @@
+local blacklist = {}
+local whitelist = { ["caceone"] = true, }
+local Players = game:GetService("Players")
+
+if blacklist[Players.LocalPlayer.Name] or blacklist[Players.LocalPlayer.UserId] then
+    pcall(function()
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "CHECKING",
+            Text = "MÀY ĐÃ BỊ CẤM",
+            Duration = 5,
+        })
+    end)
+    return
+end
+
+if not whitelist[Players.LocalPlayer.Name] and not whitelist[Players.LocalPlayer.UserId] then
+    pcall(function()
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "CHECKING",
+            Text = "MÀY KHÔNG CÓ QUYỀN",
+            Duration = 5,
+        })
+    end)
+    return
+end
+
+pcall(function()
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "CHECKING",
+        Text = "KHỞI CHẠY THÀNH CÔNG",
+        Duration = 5,
+    })
+end)
+
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local PhysicsService = game:GetService("PhysicsService")
+local Workspace = game:GetService("Workspace")
+local TweenService = game:GetService("TweenService")
+local ProximityPromptService = game:GetService("ProximityPromptService")
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+local Camera = Workspace.CurrentCamera
+
+_G.AutoDigAndPick, _G.AutoChestOnly, _G.IsDigging, _G.FakeFallSpeed = false, false, false, 0
+_G.CurrentTarget, _G.StuckTime = nil, 0
+
+-- DỌN DẸP UI CŨ
+local oldGuis = {"SyncDropGui", "BoatMenuMobileGui", "PirateGodGui"}
+for _, guiName in ipairs(oldGuis) do
+    if PlayerGui:FindFirstChild(guiName) then 
+        pcall(function() PlayerGui[guiName]:Destroy() end) 
+    end
+end
+
+if _G.BotConnection then _G.BotConnection:Disconnect() _G.BotConnection = nil end
+if _G.NoclipConnection then _G.NoclipConnection:Disconnect() _G.NoclipConnection = nil end
+if _G.PromptLoopActive then _G.PromptLoopActive = false end
+
+_G.MainGui = Instance.new("ScreenGui")
+_G.MainGui.Name = "BoatMenuMobileGui"
+_G.MainGui.ResetOnSpawn = false
+_G.MainGui.Parent = PlayerGui
+
+local function makeDraggable(guiObject)
+    local dragging = false
+    local dragInput, dragStart, startPos
+    local function update(input)
+        local delta = input.Position - dragStart
+        guiObject.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+    guiObject.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = guiObject.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then dragging = false end
+            end)
+        end
+    end)
+    guiObject.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then update(input) end
+    end)
+end
+
+local MenuButton = Instance.new("TextButton")
+MenuButton.Size = UDim2.new(0, 50, 0, 50)
+MenuButton.Position = UDim2.new(0.02, 0, 0.28, 0)
+MenuButton.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+MenuButton.Text = "🏴‍☠️"
+MenuButton.TextSize = 25
+MenuButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+MenuButton.ZIndex = 20
+MenuButton.Parent = _G.MainGui
+Instance.new("UICorner", MenuButton).CornerRadius = UDim.new(1, 0)
+
+local MainPanel = Instance.new("Frame")
+MainPanel.Size = UDim2.new(0, 215, 0, 260)
+MainPanel.Position = UDim2.new(0.02, 0, 0.48, 0)
+MainPanel.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+MainPanel.Visible = false
+MainPanel.ZIndex = 15
+MainPanel.Parent = _G.MainGui
+Instance.new("UICorner", MainPanel).CornerRadius = UDim.new(0, 10)
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 0, 25)
+Title.BackgroundTransparency = 1
+Title.Text = "HẢI TẶC CÔNG NGHỆ CAO 😎"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.Font = Enum.Font.SourceSansBold
+Title.TextSize = 14
+Title.ZIndex = 16
+Title.Parent = MainPanel
+
+local TabBar = Instance.new("Frame")
+TabBar.Size = UDim2.new(1, -20, 0, 25)
+TabBar.Position = UDim2.new(0, 10, 0, 25)
+TabBar.BackgroundTransparency = 1
+TabBar.ZIndex = 16
+TabBar.Parent = MainPanel
+
+local Tab1Btn = Instance.new("TextButton")
+Tab1Btn.Size = UDim2.new(0.5, -4, 1, 0)
+Tab1Btn.Position = UDim2.new(0, 0, 0, 0)
+Tab1Btn.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+Tab1Btn.Text = "Chức Năng"
+Tab1Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+Tab1Btn.Font = Enum.Font.SourceSansBold
+Tab1Btn.TextSize = 12
+Tab1Btn.ZIndex = 17
+Tab1Btn.Parent = TabBar
+Instance.new("UICorner", Tab1Btn).CornerRadius = UDim.new(0, 4)
+
+local Tab2Btn = Instance.new("TextButton")
+Tab2Btn.Size = UDim2.new(0.5, -4, 1, 0)
+Tab2Btn.Position = UDim2.new(0.5, 4, 0, 0)
+Tab2Btn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+Tab2Btn.Text = "Auto Farm"
+Tab2Btn.TextColor3 = Color3.fromRGB(180, 180, 180)
+Tab2Btn.Font = Enum.Font.SourceSansBold
+Tab2Btn.TextSize = 12
+Tab2Btn.ZIndex = 17
+Tab2Btn.Parent = TabBar
+Instance.new("UICorner", Tab2Btn).CornerRadius = UDim.new(0, 4)
+
+local Container = Instance.new("ScrollingFrame")
+Container.Size = UDim2.new(1, 0, 1, -75)
+Container.Position = UDim2.new(0, 0, 0, 55)
+Container.BackgroundTransparency = 1
+Container.BorderSizePixel = 0
+Container.CanvasSize = UDim2.new(0, 0, 0, 285) 
+Container.ScrollBarThickness = 4
+Container.ZIndex = 16
+Container.Visible = true
+Container.Parent = MainPanel
+
+local UIListLayout = Instance.new("UIListLayout")
+UIListLayout.Parent = Container
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+UIListLayout.Padding = UDim.new(0, 8)
+UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+local FarmContainer = Instance.new("ScrollingFrame")
+FarmContainer.Size = UDim2.new(1, 0, 1, -75)
+FarmContainer.Position = UDim2.new(0, 0, 0, 55)
+FarmContainer.BackgroundTransparency = 1
+FarmContainer.BorderSizePixel = 0
+FarmContainer.CanvasSize = UDim2.new(0, 0, 0, 150) 
+FarmContainer.ScrollBarThickness = 4
+FarmContainer.ZIndex = 16
+FarmContainer.Visible = false
+FarmContainer.Parent = MainPanel
+
+local UIFarmListLayout = Instance.new("UIListLayout")
+UIFarmListLayout.Parent = FarmContainer
+UIFarmListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+UIFarmListLayout.Padding = UDim.new(0, 8)
+UIFarmListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+Tab1Btn.MouseButton1Click:Connect(function()
+    Container.Visible = true
+    FarmContainer.Visible = false
+    Tab1Btn.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+    Tab1Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Tab2Btn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    Tab2Btn.TextColor3 = Color3.fromRGB(180, 180, 180)
+end)
+
+Tab2Btn.MouseButton1Click:Connect(function()
+    Container.Visible = false
+    FarmContainer.Visible = true
+    Tab2Btn.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+    Tab2Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Tab1Btn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    Tab1Btn.TextColor3 = Color3.fromRGB(180, 180, 180)
+end)
+
+_G.SpeedInput = Instance.new("TextBox")
+_G.SpeedInput.Size = UDim2.new(1, -20, 0, 35)
+_G.SpeedInput.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+_G.SpeedInput.Text = "200"
+_G.SpeedInput.PlaceholderText = "Nhập tốc độ vật lý (50-300)..."
+_G.SpeedInput.TextColor3 = Color3.fromRGB(0, 255, 255)
+_G.SpeedInput.Font = Enum.Font.SourceSansBold
+_G.SpeedInput.TextSize = 14
+_G.SpeedInput.ZIndex = 17
+_G.SpeedInput.Parent = Container
+Instance.new("UICorner", _G.SpeedInput).CornerRadius = UDim.new(0, 6)
+
+_G.BoatBoostBtn = Instance.new("TextButton")
+_G.BoatBoostBtn.Size = UDim2.new(1, -20, 0, 45)
+_G.BoatBoostBtn.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+_G.BoatBoostBtn.Text = "Tốc Độ Thuyền: OFF"
+_G.BoatBoostBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+_G.BoatBoostBtn.Font = Enum.Font.SourceSansBold
+_G.BoatBoostBtn.TextSize = 14
+_G.BoatBoostBtn.ZIndex = 17
+_G.BoatBoostBtn.Parent = Container
+Instance.new("UICorner", _G.BoatBoostBtn).CornerRadius = UDim.new(0, 8)
+
+_G.HeightLabel = Instance.new("TextLabel")
+_G.HeightLabel.Size = UDim2.new(1, -20, 0, 30)
+_G.HeightLabel.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+_G.HeightLabel.Text = "Độ Cao Thảm: Tắt"
+_G.HeightLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
+_G.HeightLabel.Font = Enum.Font.SourceSansBold
+_G.HeightLabel.TextSize = 14
+_G.HeightLabel.ZIndex = 17
+_G.HeightLabel.Parent = Container
+Instance.new("UICorner", _G.HeightLabel).CornerRadius = UDim.new(0, 6)
+
+local FlyGroup = Instance.new("Frame")
+FlyGroup.Size = UDim2.new(1, -20, 0, 45)
+FlyGroup.BackgroundTransparency = 1
+FlyGroup.ZIndex = 17
+FlyGroup.Parent = Container
+
+_G.BoatFlyBtn = Instance.new("TextButton")
+_G.BoatFlyBtn.Size = UDim2.new(0, 115, 0, 45)
+_G.BoatFlyBtn.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+_G.BoatFlyBtn.Text = "Thảm Nước: OFF"
+_G.BoatFlyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+_G.BoatFlyBtn.Font = Enum.Font.SourceSansBold
+_G.BoatFlyBtn.TextSize = 13
+_G.BoatFlyBtn.ZIndex = 17
+_G.BoatFlyBtn.Parent = FlyGroup
+Instance.new("UICorner", _G.BoatFlyBtn).CornerRadius = UDim.new(0, 8)
+
+_G.UpBtn = Instance.new("TextButton")
+_G.UpBtn.Size = UDim2.new(0, 35, 0, 45)
+_G.UpBtn.Position = UDim2.new(0, 122, 0, 0)
+_G.UpBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+_G.UpBtn.Text = "🔼"
+_G.UpBtn.TextSize = 14
+_G.UpBtn.ZIndex = 17
+_G.UpBtn.Parent = FlyGroup
+Instance.new("UICorner", _G.UpBtn).CornerRadius = UDim.new(0, 6)
+
+_G.DownBtn = Instance.new("TextButton")
+_G.DownBtn.Size = UDim2.new(0, 35, 0, 45)
+_G.DownBtn.Position = UDim2.new(0, 160, 0, 0)
+_G.DownBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+_G.DownBtn.Text = "🔽"
+_G.DownBtn.TextSize = 14
+_G.DownBtn.ZIndex = 17
+_G.DownBtn.Parent = FlyGroup
+Instance.new("UICorner", _G.DownBtn).CornerRadius = UDim.new(0, 6)
+
+_G.ToggleAimVisibleBtn = Instance.new("TextButton")
+_G.ToggleAimVisibleBtn.Size = UDim2.new(1, -20, 0, 45)
+_G.ToggleAimVisibleBtn.BackgroundColor3 = Color3.fromRGB(0, 128, 0)
+_G.ToggleAimVisibleBtn.Text = "🎯 Tâm Bắn: ON"
+_G.ToggleAimVisibleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+_G.ToggleAimVisibleBtn.Font = Enum.Font.SourceSansBold
+_G.ToggleAimVisibleBtn.TextSize = 14
+_G.ToggleAimVisibleBtn.ZIndex = 17
+_G.ToggleAimVisibleBtn.Parent = Container
+Instance.new("UICorner", _G.ToggleAimVisibleBtn).CornerRadius = UDim.new(0, 8)
+
+local BtnDig = Instance.new("TextButton")
+BtnDig.Size = UDim2.new(1, -20, 0, 45)
+BtnDig.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+BtnDig.Text = "DIG HOLE [OFF]"
+BtnDig.TextColor3 = Color3.fromRGB(255, 255, 255)
+BtnDig.Font = Enum.Font.SourceSansBold
+BtnDig.TextSize = 14
+BtnDig.ZIndex = 17
+BtnDig.Parent = FarmContainer
+Instance.new("UICorner", BtnDig).CornerRadius = UDim.new(0, 8)
+
+local BtnPick = Instance.new("TextButton")
+BtnPick.Size = UDim2.new(1, -20, 0, 45)
+BtnPick.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+BtnPick.Text = "CHEST ONLY [OFF]"
+BtnPick.TextColor3 = Color3.fromRGB(255, 255, 255)
+BtnPick.Font = Enum.Font.SourceSansBold
+BtnPick.TextSize = 14
+BtnPick.ZIndex = 17
+BtnPick.Parent = FarmContainer
+Instance.new("UICorner", BtnPick).CornerRadius = UDim.new(0, 8)
+
+local CreditsLabel = Instance.new("TextLabel")
+CreditsLabel.Size = UDim2.new(1, 0, 0, 20)
+CreditsLabel.Position = UDim2.new(0, 0, 1, -20)
+CreditsLabel.BackgroundTransparency = 1
+CreditsLabel.Text = "SÚC VẬT CƯỚP BIỂN ☠️"
+CreditsLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+CreditsLabel.Font = Enum.Font.SourceSansItalic
+CreditsLabel.TextSize = 10
+CreditsLabel.ZIndex = 16
+CreditsLabel.Parent = MainPanel
+
+makeDraggable(MenuButton)
+makeDraggable(MainPanel)
+
+MenuButton.MouseButton1Click:Connect(function()
+    MainPanel.Visible = not MainPanel.Visible
+end)
+local AimBtn = Instance.new("TextButton")
+AimBtn.Size = UDim2.new(0, 85, 0, 85)
+AimBtn.Position = UDim2.new(0.82, 0, 0.45, 0)
+AimBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+AimBtn.BorderSizePixel = 3
+AimBtn.BorderColor3 = Color3.fromRGB(255, 255, 255)
+AimBtn.Text = "🎯\nHYPER AIM\nv12.1"
+AimBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+AimBtn.Font = Enum.Font.SourceSansBold
+AimBtn.TextSize = 11
+AimBtn.ZIndex = 10 
+AimBtn.Active = true
+AimBtn.Parent = _G.MainGui
+Instance.new("UICorner", AimBtn).CornerRadius = UDim.new(0, 42)
+
+local ToggleMenuBtn = Instance.new("TextButton")
+ToggleMenuBtn.Size = UDim2.new(0, 40, 0, 40)
+ToggleMenuBtn.Position = UDim2.new(0.82, -45, 0.45, 22) 
+ToggleMenuBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+ToggleMenuBtn.BorderSizePixel = 2
+ToggleMenuBtn.BorderColor3 = Color3.fromRGB(255, 255, 255)
+ToggleMenuBtn.Text = "⚙️"
+ToggleMenuBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleMenuBtn.Font = Enum.Font.SourceSansBold
+ToggleMenuBtn.TextSize = 18
+ToggleMenuBtn.ZIndex = 11 
+ToggleMenuBtn.Active = true
+ToggleMenuBtn.Parent = _G.MainGui
+Instance.new("UICorner", ToggleMenuBtn).CornerRadius = UDim.new(0, 8)
+
+pcall(function()
+    makeDraggable(AimBtn)
+    AimBtn:GetPropertyChangedSignal("Position"):Connect(function()
+        ToggleMenuBtn.Position = AimBtn.Position + UDim2.new(0, -45, 0, 22)
+    end)
+end)
+
+local MenuFrame = Instance.new("Frame")
+MenuFrame.Size = UDim2.new(0, 200, 0, 155)
+MenuFrame.Position = UDim2.new(0.82, -250, 0.45, -35)
+MenuFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+MenuFrame.BackgroundTransparency = 0.05
+MenuFrame.BorderSizePixel = 2
+MenuFrame.BorderColor3 = Color3.fromRGB(255, 255, 255)
+MenuFrame.Visible = false
+MenuFrame.ZIndex = 100 
+MenuFrame.Active = true
+MenuFrame.Parent = _G.MainGui
+Instance.new("UICorner", MenuFrame).CornerRadius = UDim.new(0, 8)
+
+local MenuTitle = Instance.new("TextLabel")
+MenuTitle.Size = UDim2.new(1, 0, 0, 25)
+MenuTitle.Text = "🎯 SMART HYPER AIM v12.1"
+MenuTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+MenuTitle.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+MenuTitle.Font = Enum.Font.SourceSansBold
+MenuTitle.TextSize = 10
+MenuTitle.ZIndex = 101
+MenuTitle.Parent = MenuFrame
+
+local TextBox = Instance.new("TextBox")
+TextBox.Size = UDim2.new(0.9, 0, 0, 40)
+TextBox.Position = UDim2.new(0.05, 0, 0.22, 0)
+TextBox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+TextBox.Text = "" 
+TextBox.PlaceholderText = "Nhập ID để khóa cứng mục tiêu..."
+TextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+TextBox.TextWrapped = true
+TextBox.Font = Enum.Font.SourceSans
+TextBox.TextSize = 11
+TextBox.ZIndex = 102
+TextBox.Active = true
+TextBox.Parent = MenuFrame
+Instance.new("UICorner", TextBox).CornerRadius = UDim.new(0, 5)
+
+local NpcToggleBtn = Instance.new("TextButton")
+NpcToggleBtn.Size = UDim2.new(0, 90, 0, 25)
+NpcToggleBtn.Position = UDim2.new(0.05, 0, 0.54, 0)
+NpcToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 10, 10)
+NpcToggleBtn.BorderSizePixel = 1
+NpcToggleBtn.BorderColor3 = Color3.fromRGB(255, 50, 50)
+NpcToggleBtn.Text = "👾 NPC QUÉT: TẮT"
+NpcToggleBtn.TextColor3 = Color3.fromRGB(255, 80, 80)
+NpcToggleBtn.Font = Enum.Font.SourceSansBold
+NpcToggleBtn.TextSize = 10
+NpcToggleBtn.ZIndex = 102
+NpcToggleBtn.Active = true
+NpcToggleBtn.Parent = MenuFrame
+Instance.new("UICorner", NpcToggleBtn).CornerRadius = UDim.new(0, 4)
+
+local ClearBtn = Instance.new("TextButton")
+ClearBtn.Size = UDim2.new(0, 90, 0, 25)
+ClearBtn.Position = UDim2.new(0.52, 0, 0.54, 0)
+ClearBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+ClearBtn.Text = "🧹 XÓA TRỐNG BOX"
+ClearBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+ClearBtn.Font = Enum.Font.SourceSansBold
+ClearBtn.TextSize = 10
+ClearBtn.ZIndex = 102
+ClearBtn.Active = true
+ClearBtn.Parent = MenuFrame
+Instance.new("UICorner", ClearBtn).CornerRadius = UDim.new(0, 4)
+
+local StatusLabel = Instance.new("TextLabel")
+StatusLabel.Size = UDim2.new(0.9, 0, 0, 20)
+StatusLabel.Position = UDim2.new(0.05, 0, 0.78, 0)
+StatusLabel.Text = "Trạng thái: Đã kích hoạt bộ chống kẹt nút Aim"
+StatusLabel.TextColor3 = Color3.fromRGB(0, 255, 255)
+StatusLabel.BackgroundTransparency = 1
+StatusLabel.Font = Enum.Font.SourceSansItalic
+StatusLabel.TextSize = 9
+StatusLabel.ZIndex = 101
+StatusLabel.Parent = MenuFrame
+
+local menuOpen = false
+ToggleMenuBtn.MouseButton1Click:Connect(function()
+    menuOpen = not menuOpen
+    MenuFrame.Visible = menuOpen
+    ToggleMenuBtn.BackgroundColor3 = menuOpen and Color3.fromRGB(0, 0, 0) or Color3.fromRGB(30, 30, 30)
+end)
+
+if _G.ToggleAimVisibleBtn then
+    _G.ToggleAimVisibleBtn.MouseButton1Click:Connect(function()
+        AimBtn.Visible = not AimBtn.Visible
+        ToggleMenuBtn.Visible = AimBtn.Visible
+        if AimBtn.Visible then
+            _G.ToggleAimVisibleBtn.Text = "🎯 Tâm Bắn: ON"
+            _G.ToggleAimVisibleBtn.BackgroundColor3 = Color3.fromRGB(0, 128, 0)
+        else
+            _G.ToggleAimVisibleBtn.Text = "🎯 Tâm Bắn: OFF"
+            _G.ToggleAimVisibleBtn.BackgroundColor3 = Color3.fromRGB(150, 40, 40)
+            MenuFrame.Visible = false 
+            menuOpen = false
+            ToggleMenuBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+        end
+    end)
+end
+
+local TargetKeywords = {}
+local NpcScanningEnabled = false
+local lastPositions = {}
+
+local function updateStatusText()
+    if #TargetKeywords > 0 then StatusLabel.Text = "🔒 Đang ép đạn đón đầu mục tiêu chỉ định!" StatusLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
+    elseif NpcScanningEnabled then StatusLabel.Text = "⚡ Quét tự do: Bắn mọi thứ gần tâm" StatusLabel.TextColor3 = Color3.fromRGB(0, 255, 100)
+    else StatusLabel.Text = "👤 Quét tự do: Chỉ nhắm mục tiêu Người" StatusLabel.TextColor3 = Color3.fromRGB(100, 200, 255) end
+end
+
+local function updateTargets()
+    TargetKeywords = {}
+    for segment in string.gmatch(TextBox.Text, "([^,]+)") do
+        local clean = string.gsub(segment, "^%s*(.-)%s*$", "%1")
+        if clean ~= "" then table.insert(TargetKeywords, string.lower(clean)) end
+    end
+    updateStatusText()
+end
+
+TextBox:GetPropertyChangedSignal("Text"):Connect(updateTargets)
+ClearBtn.MouseButton1Click:Connect(function() TextBox.Text = "" updateTargets() end)
+
+NpcToggleBtn.MouseButton1Click:Connect(function()
+    NpcScanningEnabled = not NpcScanningEnabled
+    NpcToggleBtn.Text = NpcScanningEnabled and "👾 NPC QUÉT: BẬT" or "👾 NPC QUÉT: TẮT"
+    NpcToggleBtn.BackgroundColor3 = NpcScanningEnabled and Color3.fromRGB(10, 40, 10) or Color3.fromRGB(40, 10, 10)
+    NpcToggleBtn.BorderColor3 = NpcScanningEnabled and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(255, 50, 50)
+    NpcToggleBtn.TextColor3 = NpcScanningEnabled and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(255, 80, 80)
+    updateStatusText()
+end)
+
+local function isTargetInList(player)
+    if not player or #TargetKeywords == 0 then return false end
+    local name, displayName, id = string.lower(player.Name), string.lower(player.DisplayName), tostring(player.UserId)
+    for _, keyword in ipairs(TargetKeywords) do
+        if keyword ~= "" and (string.find(name, keyword, 1, true) or string.find(displayName, keyword, 1, true) or id == keyword) then return true end
+    end
+    return false
+end
+
+local function isPartVisible(part, character)
+    local origin = Camera.CFrame.Position
+    local direction = (part.Position - origin).Unit * (part.Position - origin).Magnitude
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+    raycastParams.FilterDescendantsInstances = {LocalPlayer.Character, character, Workspace.CurrentCamera}
+    raycastParams.IgnoreWater = true
+    return Workspace:Raycast(origin, direction, raycastParams) == nil
+end
+
+local function getVisiblePartFromModel(model, isCloseRange)
+    if not model then return nil end
+    if isCloseRange then return model:FindFirstChild("HumanoidRootPart") or model:FindFirstChild("Torso") end
+    for _, partName in ipairs({"HumanoidRootPart", "UpperTorso", "Torso", "Head"}) do
+        local part = model:FindFirstChild(partName)
+        if part and isPartVisible(part, model) then return part end
+    end
+    return nil
+end
+
+local function getClosestTargetModel()
+    local character = LocalPlayer.Character if not character then return nil end
+    local closestModel = nil local minMouseDist = math.huge
+    if #TargetKeywords > 0 then
+        for _, p in pairs(Players:GetPlayers()) do
+            if p ~= LocalPlayer and isTargetInList(p) and p.Character and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
+                local root = p.Character:FindFirstChild("HumanoidRootPart")
+                if root then
+                    local screenPos, onScreen = Camera:WorldToViewportPoint(root.Position)
+                    if onScreen then
+                        local dist = (Vector2.new(screenPos.X, screenPos.Y) - (Camera.ViewportSize / 2)).Magnitude
+                        if dist < minMouseDist then minMouseDist = dist closestModel = p.Character end
+                    end
+                end
+            end
+        end
+        return closestModel
+    end
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if obj:IsA("Model") and obj ~= character and obj:FindFirstChild("Humanoid") and obj.Humanoid.Health > 0 then
+            local p = Players:GetPlayerFromCharacter(obj)
+            if (p and p ~= LocalPlayer) or (not p and NpcScanningEnabled) then
+                local root = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Torso")
+                if root then
+                    local screenPos, onScreen = Camera:WorldToViewportPoint(root.Position)
+                    if onScreen then
+                        local dist = (Vector2.new(screenPos.X, screenPos.Y) - (Camera.ViewportSize / 2)).Magnitude
+                        if dist < minMouseDist then minMouseDist = dist closestModel = obj end
+                    end
+                end
+            end
+        end
+    end
+    return closestModel
+end
+
+local function findRangedTool()
+    local char = LocalPlayer.Character if not char then return nil end
+    for _, name in ipairs({"Từ xa", "Ranged", "Súng", "Gun"}) do
+        local tool = char:FindFirstChild(name) or LocalPlayer.Backpack:FindFirstChild(name)
+        if tool and tool:IsA("Tool") and tool:FindFirstChild("ToolFolder") then return tool end
+    end
+    return nil
+end
+
+task.spawn(function()
+    while task.wait(0.05) do
+        for _, p in pairs(Players:GetPlayers()) do
+            if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                local root = p.Character.HumanoidRootPart
+                if not lastPositions[p.UserId] then lastPositions[p.UserId] = {Pos = root.Position, Time = os.clock()}
+                else
+                    local oldData = lastPositions[p.UserId] local dt = os.clock() - oldData.Time
+                    if dt > 0 then lastPositions[p.UserId] = {Pos = root.Position, Time = os.clock(), Vel = (root.Position - oldData.Pos) / dt} end
+                end
+            end
+        end
+    end
+end)
+
+AimBtn.MouseButton1Click:Connect(function()
+    local char = LocalPlayer.Character local root = char and char:FindFirstChild("HumanoidRootPart") if not char or not root then return end
+    local rangedTool = findRangedTool() if not rangedTool then AimBtn.Text = "❌\nNO GUN" task.wait(0.2) AimBtn.Text = "🎯\nHYPER AIM\nv12.1" return end
+    local remotes = rangedTool.ToolFolder.Remotes local aimRemote, fireRemote = remotes:FindFirstChild("Aim"), remotes:FindFirstChild("Fire")
+    if not aimRemote or not fireRemote then return end
+    local targetModel = getClosestTargetModel()
+    if targetModel then
+        local tRoot = targetModel:FindFirstChild("HumanoidRootPart") or targetModel:FindFirstChild("Torso")
+        local distance = tRoot and (tRoot.Position - root.Position).Magnitude or 999
+        local targetPart = getVisiblePartFromModel(targetModel, (distance <= 15))
+        if targetPart then
+            local targetPosition = targetPart.Position local pTarget = Players:GetPlayerFromCharacter(targetModel)
+            if pTarget and lastPositions[pTarget.UserId] and lastPositions[pTarget.UserId].Vel then
+                local realVel = lastPositions[pTarget.UserId].Vel local pFactor = math.clamp(0.075 + (distance * 0.0018), 0.075, 0.25)
+                targetPosition = targetPosition + (realVel * pFactor)
+            end
+            aimRemote:FireServer() fireRemote:FireServer(targetPosition)
+            AimBtn.TextColor3 = Color3.fromRGB(0, 255, 0) task.wait(0.01) AimBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        else AimBtn.Text = "🧱\nWALL BLOCKED" task.wait(0.2) AimBtn.Text = "🎯\nHYPER AIM\nv12.1" end
+    else AimBtn.Text = "🔍\nNO TARGET" task.wait(0.15) AimBtn.Text = "🎯\nHYPER AIM\nv12.1" end
+end)
+
+--  Biến quản lý danh sách weld động và trạng thái
+local RunService = game:GetService("RunService")
+local activeWelds = {}
+local cannonConnections = {} -- Lưu lại vòng lặp khóa cứng góc quay pháo
+
+local function ClearBoatWelds()
+    for _, weld in pairs(activeWelds) do
+        if weld and weld.Parent then weld:Destroy() end
+    end
+    activeWelds = {}
+    
+    -- Ngắt kết nối khóa cứng pháo khi rời ghế hoặc reset tàu
+    for _, conn in pairs(cannonConnections) do
+        if conn then conn:Disconnect() end
+    end
+    cannonConnections = {}
+end
+
+local function WeldBoatParts(model)
+    if model:GetAttribute("IsWelded") then return end
+    model:SetAttribute("IsWelded", true)
+    
+    local mainPart = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChildWhichIsA("BasePart")
+    if not mainPart then return end
+    
+    -- 1. Hàn thân tàu chính chống văng
+    for _, part in pairs(model:GetDescendants()) do
+        if part:IsA("BasePart") and part ~= mainPart then
+            local hasWeld = false
+            for _, child in pairs(part:GetChildren()) do
+                if child:IsA("WeldConstraint") or child:IsA("Weld") or child:IsA("RigidJoint") then
+                    hasWeld = true
+                    break
+                end
+            end
+            
+            if not hasWeld then
+                local weld = Instance.new("WeldConstraint")
+                weld.Part0 = mainPart
+                weld.Part1 = part
+                weld.Parent = part
+                table.insert(activeWelds, weld)
+            end
+        end
+    end
+    
+    -- 2. Khóa chết cứng ngắc thư mục Cannons, tiêu diệt hoàn toàn hiện tượng tự quay khi bẻ lái
+    local cannonsFolder = model:FindFirstChild("Cannons", true)
+    if cannonsFolder then
+        -- Triệt tiêu toàn bộ động cơ, motor, lực xoay ngầm của pháo
+        for _, obj in pairs(cannonsFolder:GetDescendants()) do
+            if obj:IsA("HingeConstraint") or obj:IsA("CylindricalConstraint") or obj:IsA("SpringConstraint") then
+                obj.Enabled = false
+                obj.ActuatorType = Enum.ActuatorType.None -- Tắt hoàn toàn cơ chế tự động xoay
+            elseif obj:IsA("BodyMover") or obj:IsA("VectorForce") or obj:IsA("AlignPosition") or obj:IsA("Torque") or obj:IsA("AngularVelocity") then
+                obj:Destroy()
+            end
+        end
+        
+        -- Lưu lại vị trí ban đầu tương đối giữa từng phần pháo và thân tàu để bắt chúng dính chặt
+        local cannonData = {}
+        for _, cannonPart in pairs(cannonsFolder:GetDescendants()) do
+            if cannonPart:IsA("BasePart") then
+                cannonPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                cannonPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+                
+                -- Tạo WeldConstraint cố định
+                local cannonWeld = Instance.new("WeldConstraint")
+                cannonWeld.Part0 = mainPart
+                cannonWeld.Part1 = cannonPart
+                cannonWeld.Parent = cannonPart
+                table.insert(activeWelds, cannonWeld)
+                
+                -- Ghi nhớ khoảng cách gốc để ép chặt không cho lệch pha khi bẻ lái gấp
+                table.insert(cannonData, {Part = cannonPart, Offset = mainPart.CFrame:ToObjectSpace(cannonPart.CFrame)})
+            end
+        end
+        
+        -- Dùng RenderStepped ép thẳng góc quay của pháo đi theo thân tàu từng mili-giây, chống bẻ lái xé pháo
+        local conn = RunService.RenderStepped:Connect(function()
+            if not mainPart or not mainPart.Parent then return end
+            for _, data in ipairs(cannonData) do
+                if data.Part and data.Part.Parent then
+                    data.Part.CFrame = mainPart.CFrame:ToWorldSpace(data.Offset)
+                end
+            end
+        end)
+        table.insert(cannonConnections, conn)
+    end
+end
+
+-- 3. Hàm xóa sạch dữ liệu và gỡ weld khi rời ghế
+local function ClearBoatWelds()
+    for _, weld in ipairs(activeWelds) do
+        if weld and weld.Parent then
+            weld:Destroy()
+        end
+    end
+    activeWelds = {}
+    
+    for _, obj in ipairs(Workspace:GetDescendants()) do
+        if obj:IsA("Model") then
+            obj:SetAttribute("IsWelded", nil)
+        end
+    end
+end
+
+_G.SuperSailActive, _G.BoatFlyActive, _G.BoostMultiplier, _G.ManualOffset, _G.BaseFloatLevel = false, false, 200, 0, nil
+local activeVelocity, activeAttachment, MastAnchorPart, mastWeld, mastVelocity, currentBoatCache, lastCachedSeat = nil, nil, nil, nil, nil, {}, nil
+
+if _G.SpeedInput then
+    _G.SpeedInput.FocusLost:Connect(function()
+        local num = tonumber(_G.SpeedInput.Text)
+        if num then _G.BoostMultiplier = num else _G.SpeedInput.Text = tostring(_G.BoostMultiplier) end
+    end)
+end
+
+local function getDrivenSeat()
+    local char = LocalPlayer.Character if not char then return nil end
+    local humanoid = char:FindFirstChildWhichIsA("Humanoid")
+    if humanoid and humanoid.SeatPart and humanoid.SeatPart:IsA("VehicleSeat") then return humanoid.SeatPart end
+    return nil
+end
+
+-- Hàm tìm đỉnh chóp cao nhất của tàu (Tính cả chiều cao part: tâm Y + nửa chiều cao)
+local function findHighestPart(shipModel)
+    local highestPart = nil
+    local maxY = -math.huge
+    for _, desc in pairs(shipModel:GetDescendants()) do
+        if desc:IsA("BasePart") and desc.Name ~= "MastAnchorPart" then
+            local topY = desc.Position.Y + (desc.Size.Y / 2)
+            if topY > maxY then
+                maxY = topY
+                highestPart = desc
+            end
+        end
+    end
+    return highestPart, maxY
+end
+
+-- Hàm tạo cục xanh neon độc lập bám chuẩn xác tận đỉnh chóp cột buồm
+local function createMastAnchor(seat)
+    if MastAnchorPart then MastAnchorPart:Destroy() end
+    local boat = seat.Parent
+    if not boat then return end
+    
+    local topPart, maxY = findHighestPart(boat)
+    if not topPart then topPart = seat end
+    
+    -- Cập nhật trực tiếp giá trị maxY (đỉnh chóp thực sự) làm mốc cơ sở
+    _G.BaseFloatLevel = maxY 
+    
+    MastAnchorPart = Instance.new("Part")
+    MastAnchorPart.Name = "MastAnchorPart"
+    MastAnchorPart.Size = Vector3.new(4, 4, 4)
+    -- Dùng trực tiếp maxY thay vì topPart.Position.Y để cục xanh nằm đúng ngọn chóp
+    MastAnchorPart.CFrame = CFrame.new(topPart.Position.X, maxY, topPart.Position.Z)
+    MastAnchorPart.Anchored = false
+    MastAnchorPart.CanCollide = true
+    MastAnchorPart.Transparency = 1 -- Giữ 0.3 để dễ kiểm tra xem đã lên đỉnh chưa
+    MastAnchorPart.Color = Color3.fromRGB(0, 255, 128)
+    MastAnchorPart.Material = Enum.Material.Neon
+    
+    pcall(function()
+        PhysicsService:RegisterCollisionGroup("IndependentGreenBoxGroup")
+        MastAnchorPart.CollisionGroup = "IndependentGreenBoxGroup"
+    end)
+    
+    MastAnchorPart.Parent = Workspace
+    
+    -- Gắn BodyVelocity riêng cho cục xanh
+    mastVelocity = Instance.new("BodyVelocity")
+    mastVelocity.MaxForce = Vector3.new(0, math.huge, 0)
+    mastVelocity.Velocity = Vector3.new(0, 0, 0)
+    mastVelocity.Parent = MastAnchorPart
+    
+    -- Hàn cố định vào đỉnh tàu để kéo toàn bộ thuyền bay lên
+    mastWeld = Instance.new("WeldConstraint")
+    mastWeld.Part0 = MastAnchorPart
+    mastWeld.Part1 = topPart
+    mastWeld.Parent = MastAnchorPart
+end
+
+local function cleanUpForces()
+    if activeVelocity then activeVelocity:Destroy() activeVelocity = nil end
+    if activeAttachment then activeAttachment:Destroy() activeAttachment = nil end
+    if MastAnchorPart then MastAnchorPart:Destroy() MastAnchorPart = nil end
+    mastVelocity, mastWeld = nil, nil
+    currentBoatCache, lastCachedSeat = {}, nil
+end
+
+local holdingUp, holdingDown, changeInterval, changeAmount = false, false, 0.01, 2.5     
+if _G.UpBtn then
+    _G.UpBtn.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            holdingUp = true 
+            task.spawn(function() 
+                while holdingUp and _G.BoatFlyActive do 
+                    _G.ManualOffset = _G.ManualOffset + changeAmount 
+                    task.wait(changeInterval) 
+                end 
+            end)
+        end
+    end)
+    _G.UpBtn.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then holdingUp = false end end)
+end
+
+if _G.DownBtn then
+    _G.DownBtn.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            holdingDown = true 
+            task.spawn(function() 
+                while holdingDown and _G.BoatFlyActive do 
+                    _G.ManualOffset = _G.ManualOffset - changeAmount 
+                    task.wait(changeInterval) 
+                end 
+            end)
+        end
+    end)
+    _G.DownBtn.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then holdingDown = false end end)
+end
+-- Hàm tự động hàn gắn đại bác và các part rời vào tàu chống giật
+local function WeldBoatParts(model)
+    local mainPart = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChildWhichIsA("BasePart")
+    if not mainPart then return end
+    
+    for _, part in pairs(model:GetDescendants()) do
+        if part:IsA("BasePart") and part ~= mainPart then
+            local hasWeld = false
+            for _, child in pairs(part:GetChildren()) do
+                if child:IsA("WeldConstraint") or child:IsA("Weld") then
+                    hasWeld = true
+                    break
+                end
+            end
+            
+            if not hasWeld then
+                local weld = Instance.new("WeldConstraint")
+                weld.Part0 = mainPart
+                weld.Part1 = part
+                weld.Parent = part
+            end
+        end
+    end
+end
+
+-- Vòng lặp PreSimulation hoàn chỉnh: Cache ghế + Chống rơi + Siêu tốc math.huge + Giảm chấn chống văng + Hàn gắn động
+RunService.PreSimulation:Connect(function()
+    local char = LocalPlayer.Character
+    local humanoid = char and char:FindFirstChildOfClass("Humanoid")
+    local seat = humanoid and humanoid.SeatPart
+    
+    if seat and seat:IsA("VehicleSeat") then
+        -- 🛑 KIỂM TRA ĐƯỜNG DẪN XEM ĐÂY LÀ GHẾ LÁI HAY GHẾ PHÁO
+        local seatPath = seat:GetFullName()
+        
+        -- Nếu là ghế pháo (có chữ Cannons hoặc Cannon trong đường dẫn) -> BỎ QUA KHÔNG WELD
+        if string.find(string.lower(seatPath), "cannon") or string.find(string.lower(seatPath), "phao") then
+            if lastCachedSeat ~= nil then
+                ClearBoatWelds()
+                lastCachedSeat = nil
+                currentBoatCache = {}
+            end
+            return
+        end
+        
+        -- Ngược lại, nếu là ghế lái chính (thuộc PartsModels hoặc thân tàu) -> KÍCH HOẠT WELD CHỐNG VĂNG
+        lastCachedSeat = seat
+        local model = seat:FindFirstAncestorOfClass("Model")
+        if model then
+            WeldBoatParts(model)
+            
+            currentBoatCache = {}
+            for _, p in pairs(model:GetDescendants()) do
+                if p:IsA("BasePart") then
+                    table.insert(currentBoatCache, p)
+                end
+            end
+        end
+    else
+        -- Rời ghế hoặc ngồi ghế thường -> Dọn sạch weld
+        if lastCachedSeat ~= nil then
+            ClearBoatWelds()
+            lastCachedSeat = nil
+            currentBoatCache = {}
+        end
+    end
+
+    local activeSeat = seat or lastCachedSeat
+    
+    if _G.BoatFlyActive and activeSeat and activeSeat.Parent then
+        if not MastAnchorPart or not MastAnchorPart.Parent then 
+            createMastAnchor(activeSeat) 
+        end
+        
+        local targetY = (_G.BaseFloatLevel or activeSeat.Position.Y) + _G.ManualOffset
+        if _G.HeightLabel then 
+            _G.HeightLabel.Text = "Cao độ Đỉnh Thuyền Y: " .. tostring(math.floor(targetY)) 
+        end
+        
+        if MastAnchorPart and mastVelocity then 
+            local currentY = MastAnchorPart.Position.Y 
+            local diff = targetY - currentY 
+            mastVelocity.Velocity = Vector3.new(0, diff * 10, 0) -- Đệm lò xo chống văng
+        end
+        
+        if #currentBoatCache > 0 then
+            pcall(function()
+                for _, part in pairs(currentBoatCache) do
+                    if part and part.Parent then
+                        part:SetNetworkOwner(LocalPlayer)
+                    end
+                end
+            end)
+        end
+    else
+        if not _G.BoatFlyActive then
+            if MastAnchorPart then MastAnchorPart:Destroy() MastAnchorPart = nil end
+            if _G.BaseFloatLevel then 
+                if _G.HeightLabel then _G.HeightLabel.Text = "Độ Cao Thảm: Tắt" end 
+                _G.BaseFloatLevel = nil 
+            end
+            currentBoatCache = {}
+            lastCachedSeat = nil
+        end
+    end
+
+if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
+    local rootPart = activeSeat.AssemblyRootPart or activeSeat.Parent:FindFirstChild("HumanoidRootPart") or activeSeat.Parent:FindFirstChild("Part")
+
+    -- 1. Quản lý "nhân viên phanh" BodyVelocity
+    local bodyVelocity = activeSeat:FindFirstChild("BrakeBodyVelocity")
+    if not bodyVelocity then
+        bodyVelocity = Instance.new("BodyVelocity")
+        bodyVelocity.Name = "BrakeBodyVelocity"
+        bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+        bodyVelocity.MaxForce = Vector3.new(50000, 0, 50000)
+        bodyVelocity.Parent = activeSeat
+    end
+
+    -- 2. Quản lý hệ thống LinearVelocity chính
+    if not activeAttachment or activeAttachment.Parent ~= activeSeat then 
+        if activeAttachment then activeAttachment:Destroy() end 
+        activeAttachment = Instance.new("Attachment") 
+        activeAttachment.Parent = activeSeat 
+    end
+    
+    if not activeVelocity or activeVelocity.Parent ~= activeSeat then 
+        if activeVelocity then activeVelocity:Destroy() end 
+        activeVelocity = Instance.new("LinearVelocity") 
+        activeVelocity.Attachment0 = activeAttachment 
+        activeVelocity.MaxForce = math.huge 
+        activeVelocity.VelocityConstraintMode = Enum.VelocityConstraintMode.Vector 
+        activeVelocity.Parent = activeSeat 
+    end
+    
+    -- 🟢 SPEED ON: Tắt phanh, bật LinearVelocity, giữ nguyên logic Lerp/Orientation gốc của bro
+    bodyVelocity.Enabled = false
+    activeVelocity.Enabled = true
+
+    local cf = activeSeat.CFrame
+    local forward = Vector3.new(cf.LookVector.X, 0, cf.LookVector.Z)
+    local currentSpeed = tonumber(_G.SpeedInput and _G.SpeedInput.Text) or (_G.BoostMultiplier or 200)
+
+    if rootPart and forward.Magnitude > 0.001 then
+        local forwardDir = forward.Unit
+        activeVelocity.VectorVelocity = forwardDir * currentSpeed
+        rootPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+    end
+else 
+    -- 🔴 SPEED OFF: Tắt LinearVelocity, bật phanh BodyVelocity
+    local bodyVelocity = activeSeat and activeSeat:FindFirstChild("BrakeBodyVelocity")
+    if bodyVelocity then
+        bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+        bodyVelocity.Enabled = true
+    end
+
+    if activeVelocity then 
+        activeVelocity.Enabled = false 
+    end 
+end
+
+end)
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local PhysicsService = game:GetService("PhysicsService")
+local LocalPlayer = Players.LocalPlayer
+
+pcall(function()
+    PhysicsService:RegisterCollisionGroup("PlayerBoatGroup") PhysicsService:RegisterCollisionGroup("GhostCarpetGroup")
+    PhysicsService:CollisionGroupSetCollidable("PlayerBoatGroup", "GhostCarpetGroup", true)
+    PhysicsService:CollisionGroupSetCollidable("Default", "GhostCarpetGroup", false)
+end)
+
+local holdingUp, holdingDown, changeInterval, changeAmount = false, false, 0.01, 2.5     
+if _G.UpBtn then
+    _G.UpBtn.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            holdingUp = true task.spawn(function() while holdingUp and _G.BoatFlyActive do _G.ManualOffset = _G.ManualOffset + changeAmount task.wait(changeInterval) end end)
+        end
+    end)
+    _G.UpBtn.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then holdingUp = false end end)
+end
+if _G.DownBtn then
+    _G.DownBtn.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            holdingDown = true task.spawn(function() while holdingDown and _G.BoatFlyActive do _G.ManualOffset = _G.ManualOffset - changeAmount task.wait(changeInterval) end end)
+        end
+    end)
+    _G.DownBtn.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then holdingDown = false end end)
+end
+
+local lastCachedSeat, currentBoatCache = nil, {}
+local function assignBoatToGroup(seat)
+    local boat = seat.Parent if not boat then return end
+    if lastCachedSeat ~= boat then
+        currentBoatCache, lastCachedSeat = {}, boat
+        for _, part in pairs(boat:GetDescendants()) do
+            if part:IsA("BasePart") and part.Name ~= "RealNeonBottomCarpet" then
+                table.insert(currentBoatCache, part)
+                pcall(function() part.CollisionGroup = "PlayerBoatGroup" if part:CanSetNetworkOwnership() then part:SetNetworkOwner(LocalPlayer) end end)
+            end
+        end
+    end
+end
+
+RunService.PreSimulation:Connect(function()
+    local seat = getDrivenSeat and getDrivenSeat()
+    if seat then
+        assignBoatToGroup(seat)
+        pcall(function() seat:CanSetNetworkOwnership() seat:SetNetworkOwner(LocalPlayer) for _, part in ipairs(currentBoatCache) do if part and part:CanSetNetworkOwnership() then part:SetNetworkOwner(LocalPlayer) end end end)
+        pcall(function() seat.MaxTorque = Vector3.new(math.huge, 0, math.huge) seat.AngularVelocity = Vector3.new(0, seat.AngularVelocity.Y, 0) end)
+        if _G.BoatFlyActive then
+            local currentBottomY = getAbsoluteBoatBottom and getAbsoluteBoatBottom(seat) or seat.Position.Y
+            if not _G.BaseFloatLevel then _G.BaseFloatLevel = currentBottomY - 2 end
+            local targetCarpetY = _G.BaseFloatLevel + _G.ManualOffset if targetCarpetY > (currentBottomY - 1.2) then targetCarpetY = currentBottomY - 1.2 end
+            if _G.HeightLabel then _G.HeightLabel.Text = "Cao độ thảm Y: " .. tostring(math.floor(targetCarpetY)) end
+            if not RealCarpet and createRealCarpet then createRealCarpet() end
+            if RealCarpet then
+                local _, rotY, _ = seat.CFrame:ToEulerAnglesYXZ() local targetCFrame = CFrame.new(seat.Position.X, targetCarpetY, seat.Position.Z) * CFrame.fromEulerAnglesYXZ(0, rotY, 0)
+                RealCarpet.CFrame = RealCarpet.CFrame:Lerp(targetCFrame, 0.85)
+            end
+        else if RealCarpet then RealCarpet:Destroy() RealCarpet = nil end if _G.BaseFloatLevel then if _G.HeightLabel then _G.HeightLabel.Text = "Độ Cao Thảm: Tắt" end _G.BaseFloatLevel = nil end end
+        if _G.SuperSailActive then
+            if not activeAttachment or activeAttachment.Parent ~= seat then if activeAttachment then activeAttachment:Destroy() end activeAttachment = Instance.new("Attachment") activeAttachment.Parent = seat end
+            if not activeVelocity or activeVelocity.Parent ~= seat then if activeVelocity then activeVelocity:Destroy() end activeVelocity = Instance.new("LinearVelocity") activeVelocity.Attachment0 = activeAttachment activeVelocity.MaxForce = math.huge activeVelocity.VelocityConstraintMode = Enum.VelocityConstraintMode.Vector activeVelocity.Parent = seat end
+            local forward = seat.CFrame.LookVector activeVelocity.VectorVelocity = Vector3.new(forward.X, 0, forward.Z).Unit * (_G.BoostMultiplier or 100)
+        else if activeVelocity then activeVelocity:Destroy() activeVelocity = nil end end
+    else if cleanUpForces then cleanUpForces() end _G.BaseFloatLevel = nil if _G.HeightLabel then _G.HeightLabel.Text = "Độ Cao Thảm: Tắt" end end
+end)
+
+if _G.BoatBoostBtn then
+    _G.BoatBoostBtn.MouseButton1Click:Connect(function()
+        _G.SuperSailActive = not _G.SuperSailActive _G.BoatBoostBtn.Text = _G.SuperSailActive and "Tốc Độ Thuyền: ON 🚀" or "Tốc Độ Thuyền: OFF"
+        _G.BoatBoostBtn.BackgroundColor3 = _G.SuperSailActive and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(55, 55, 55)
+    end)
+end
+if _G.BoatFlyBtn then
+    _G.BoatFlyBtn.MouseButton1Click:Connect(function()
+        _G.BoatFlyActive = not _G.BoatFlyActive _G.BoatFlyBtn.Text = _G.BoatFlyActive and "Thảm Nước: ON 🌊" or "Thảm Nước: OFF"
+        _G.BoatFlyBtn.BackgroundColor3 = _G.BoatFlyActive and Color3.fromRGB(0, 120, 255) or Color3.fromRGB(55, 55, 55)
+        if not _G.BoatFlyActive then _G.ManualOffset = 0 end
+    end)
+end
+local Workspace = game:GetService("Workspace")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local ProximityPromptService = game:GetService("ProximityPromptService")
+local TweenService = game:GetService("TweenService")
+local LocalPlayer = Players.LocalPlayer
+local Camera = Workspace.CurrentCamera
+
+local function GetNearestSeller()
+    local char = LocalPlayer.Character local hrp = char and char:FindFirstChild("HumanoidRootPart") if not hrp then return nil end
+    local nearNPC, minDist = nil, math.huge local mdl = Workspace:FindFirstChild("IslandsModel") local folder = mdl and mdl:FindFirstChild("NPCs")
+    if folder then for _, npc in pairs(folder:GetChildren()) do if npc.Name == "GoldenPioneerNPC" then local dist = (hrp.Position - npc:GetPivot().Position).Magnitude if dist < minDist then minDist, nearNPC = dist, npc end end end end
+    return nearNPC
+end
+
+local function IsHoldingChest()
+    local char = LocalPlayer.Character if not char then return false end
+    for _, o in pairs(char:GetChildren()) do if o:IsA("Tool") and (string.find(string.lower(o.Name), "chest") or string.find(string.lower(o.Name), "ruong")) then return true end end
+    local bp = LocalPlayer:FindFirstChild("Backpack") if bp then for _, o in pairs(bp:GetChildren()) do if string.find(string.lower(o.Name), "chest") or string.find(string.lower(o.Name), "ruong") then return true end end end
+    local rArm = char:FindFirstChild("RightHand") or char:FindFirstChild("Right Arm")
+    if rArm then for _, w in pairs(rArm:GetChildren()) do if w:IsA("Weld") or w:IsA("WeldConstraint") then local p = w.Part0 == rArm and w.Part1 or w.Part0 if p and (string.find(string.lower(p.Name), "chest") or string.find(string.lower(p.Name), "ruong")) then return true end end end end
+    return false
+end
+
+local function GetNearestBuriedChest()
+    local char = LocalPlayer.Character local hrp = char and char:FindFirstChild("HumanoidRootPart") if not hrp then return nil end
+    local nearHole, minDist = nil, math.huge local folder = Workspace:FindFirstChild("ChestsFolder")
+    if folder then for _, isl in pairs(folder:GetChildren()) do for _, cst in pairs(isl:GetChildren()) do if cst.Name == "BuriedChest" then local pmt = cst:FindFirstChildWhichIsA("ProximityPrompt", true) local spn = cst:FindFirstChild("Spawn") if pmt and pmt.Enabled and spn then local dist = (hrp.Position - spn.Position).Magnitude if dist < minDist then minDist, nearHole = dist, spn end end end end end end
+    return nearHole
+end
+
+local function GetNearestDroppedChest()
+    local char = LocalPlayer.Character local hrp = char and char:FindFirstChild("HumanoidRootPart") if not hrp then return nil end
+    local nearChest, minDist = nil, math.huge
+    for _, o in pairs(Workspace:GetChildren()) do 
+        if o:IsA("Tool") or o:IsA("Model") then 
+            local name = string.lower(o.Name) 
+            if string.find(name, "chest") or string.find(name, "ruong") or string.find(name, "thuyen") then 
+                local hdl = o:IsA("Model") and (o:FindFirstChild("Handle") or o:FindFirstChildWhichIsA("BasePart", true)) or o:FindFirstChildWhichIsA("BasePart") or o 
+                if hdl and hdl:IsA("BasePart") then local dist = (hrp.Position - hdl.Position).Magnitude if dist < minDist then minDist, nearChest = dist, hdl end end 
+            end 
+        end 
+    end
+    return nearChest
+end
+
+local function GetChestAtFeet()
+    local char = LocalPlayer.Character local hrp = char and char:FindFirstChild("HumanoidRootPart") if not hrp then return nil end
+    for _, o in pairs(Workspace:GetChildren()) do 
+        if o:IsA("Tool") or o:IsA("Model") then 
+            local name = string.lower(o.Name) 
+            if string.find(name, "chest") or string.find(name, "ruong") or string.find(name, "thuyen") then 
+                local hdl = o:IsA("Model") and (o:FindFirstChild("Handle") or o:FindFirstChildWhichIsA("BasePart", true)) or o:FindFirstChildWhichIsA("BasePart") or o 
+                if hdl and hdl:IsA("BasePart") then if (hrp.Position - hdl.Position).Magnitude <= 15 then return hdl end end 
+            end 
+        end 
+    end
+    return nil
+end
+
+local function HasHolesOnMap() return (_G.AutoDigAndPick and GetNearestBuriedChest()) and true or false end
+
+local function AutoBuyQuestFromStore()
+    if not (_G.AutoDigAndPick or _G.AutoChestOnly) then return end if HasHolesOnMap() or IsHoldingChest() then return end
+    task.wait(0.4)
+    pcall(function()
+        local gp = LocalPlayer:FindFirstChild("QuestStore") and LocalPlayer.QuestStore:FindFirstChild("GoldenPioneer")
+        if gp then for _, v in ipairs(gp:GetChildren()) do if v.Name ~= "LastNPC" then game.ReplicatedStorage.Remotes.Quest.BuyQuest:FireServer({TreasureQuestObj = v}) task.wait(0.15) end end end
+    end)
+    task.wait(0.2)
+    pcall(function() local gui = LocalPlayer.PlayerGui:FindFirstChild("QuestShopUI") if gui and gui:FindFirstChild("QuestShopClient") and getsenv then local env = getsenv(gui.QuestShopClient) if env and env.close_button then env.close_button() end end end)
+end
+
+local function FirePrompt(pmt)
+    local act = string.lower(pmt.ActionText) local isDig = string.find(act, "dig") or string.find(act, "dao") if isDig then _G.IsDigging = true end
+    task.spawn(function() task.wait(0.01) if fireproximityprompt then fireproximityprompt(pmt) else pmt:InputHoldBegin() task.wait(pmt.HoldDuration > 0 and pmt.HoldDuration or 0.02) pmt:InputHoldEnd() end if isDig then task.wait(0.5) _G.IsDigging = false end end)
+end
+
+local function CheckPromptLogic(pmt)
+    if not pmt.Enabled then return end local char, pObj = LocalPlayer.Character, pmt.Parent local hrp = char and char:FindFirstChild("HumanoidRootPart") if not hrp or not pObj then return end
+    local act, name = string.lower(pmt.ActionText), string.lower(pObj.Name)
+    local isBaseTeleport = false
+    pcall(function()
+        if string.find(name, "tobase") or string.find(act, "căn cứ") or string.find(act, "can cu") then
+            if pObj:FindFirstAncestor("SpiritTeleport") or pObj:FindFirstAncestor("Ferryman's Galleon") then isBaseTeleport = true end
+        end
+    end)
+    if isBaseTeleport then FirePrompt(pmt) return end
+    local isDig = string.find(act, "dig") or string.find(act, "dao") if isDig and (IsHoldingChest() or _G.IsDigging) then return end
+    local isQuestPrompt = string.find(act, "nhiem vu") or string.find(act, "quest") or string.find(act, "tham hiem") or string.find(act, "chuyen")
+    if _G.AutoChestOnly and isQuestPrompt then return end
+    local valid = false local pPos = pObj:IsA("Model") and pObj:GetPivot().Position or (pObj:IsA("BasePart") and pObj.Position) if pPos and (hrp.Position - pPos).Magnitude <= 14 then valid = true end
+    if not valid then
+        if pObj.Name == "Sell" or (pObj.Parent and pObj.Parent.Name == "GoldenPioneerNPC") or string.find(act, "sell") or string.find(act, "ban") then valid = true
+        elseif isQuestPrompt then if not HasHolesOnMap() then valid = true end end
+        if string.find(name, "chest") or string.find(name, "ruong") or string.find(name, "buried") or isDig or string.find(act, "open") or string.find(act, "nhat") or string.find(act, "claim") or string.find(act, "collect") or string.find(act, "mang theo") or string.find(act, "carry") then valid = true end
+    end
+    if valid then FirePrompt(pmt) if isQuestPrompt or pObj.Name == "GoldenPioneerNPC" or (pObj.Parent and pObj.Parent.Name == "GoldenPioneerNPC") then task.spawn(AutoBuyQuestFromStore) end end
+end
+
+ProximityPromptService.PromptShown:Connect(function(pmt) if _G.AutoDigAndPick or _G.AutoChestOnly then CheckPromptLogic(pmt) end end)
+_G.PromptLoopActive = true
+task.spawn(function() 
+    while task.wait(0.15) do 
+        if not _G.PromptLoopActive then break end
+        if _G.AutoDigAndPick or _G.AutoChestOnly then 
+            local char = LocalPlayer.Character local hrp = char and char:FindFirstChild("HumanoidRootPart") local hum = char and char:FindFirstChildWhichIsA("Humanoid")
+            if hrp and hum and hum.Health > 0 then
+                local galleon = Workspace:FindFirstChild("Ferryman's Galleon") if galleon then for _, pmt in pairs(galleon:GetDescendants()) do if pmt:IsA("ProximityPrompt") and pmt.Enabled then CheckPromptLogic(pmt) end end end
+                local cFolder = Workspace:FindFirstChild("ChestsFolder") if cFolder then for _, pmt in pairs(cFolder:GetDescendants()) do if pmt:IsA("ProximityPrompt") and pmt.Enabled and pmt.Parent then local pPos = pmt.Parent:IsA("Model") and pmt.Parent:GetPivot().Position or (pmt.Parent:IsA("BasePart") and pmt.Parent.Position) if pPos and (hrp.Position - pPos).Magnitude <= 14 then CheckPromptLogic(pmt) end end end end
+                for _, o in pairs(Workspace:GetChildren()) do if o:IsA("Tool") or o:IsA("Model") then local n = string.lower(o.Name) if string.find(n, "chest") or string.find(n, "ruong") then local pmt = o:FindFirstChildWhichIsA("ProximityPrompt", true) if pmt and pmt.Enabled then local pPos = o:IsA("Model") and o:GetPivot().Position or o.Position if pPos and (hrp.Position - pPos).Magnitude <= 14 then CheckPromptLogic(pmt) end end end end end
+                local npc = GetNearestSeller() if npc then for _, pmt in pairs(npc:GetDescendants()) do if pmt:IsA("ProximityPrompt") and pmt.Enabled then CheckPromptLogic(pmt) end end end 
+            end
+        end 
+    end 
+end)
+-- =======================================================
+-- ANTI-AFK & ANTI-KICK SYSTEM (TREO MÁY XUYÊN MÀN ĐÊM 24/7)
+-- =======================================================
+local VirtualUser = game:GetService("VirtualUser")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local Workspace = game:GetService("Workspace")
+local Players = game:GetService("Players")
+local GuiService = game:GetService("GuiService")
+
+local LocalPlayer = Players.LocalPlayer
+local Camera = Workspace.CurrentCamera
+
+if _G.AntiAFKConnection then _G.AntiAFKConnection:Disconnect() end
+_G.AntiAFKConnection = LocalPlayer.Idled:Connect(function()
+    VirtualUser:CaptureController()
+    VirtualUser:ClickButton2(Vector2.new(0, 0))
+end)
+
+if _G.AntiKickConnection then _G.AntiKickConnection:Disconnect() end
+_G.AntiKickConnection = GuiService.ErrorMessageChanged:Connect(function()
+    task.spawn(function()
+        GuiService:ClearError()
+    end)
+end)
+-- =======================================================
+
+local FLY_SPEED, FALL_LIMIT, CLIMB_LIMIT, OFFSET_DIST, LERP_SMOOTH, MAX_HEIGHT, SEA_LEVEL = 62, 62, 42, 3.5, 0.25, 8.0, 9.0
+
+local isInteracting = false 
+local function AutoTriggerPrompt(target)
+    if not target or isInteracting then return end
+    local prompt = target:IsA("ProximityPrompt") and target or target:FindFirstChildOfClass("ProximityPrompt", true)
+    
+    if prompt and prompt.Enabled then
+        isInteracting = true
+        task.spawn(function()
+            prompt.RequiresLineOfSight = false
+            prompt.MaxActivationDistance = 30
+            
+            -- TỐI ƯU: Không chờ đợi, bấm ngay lập tức khi vừa chạm vùng
+            if fireproximityprompt then
+                fireproximityprompt(prompt)
+                fireproximityprompt(prompt) -- Gửi liên tiếp 2 phát đảm bảo server nhận ngay
+                task.wait(0.01) -- Reset hàng chờ cực nhanh
+            else
+                prompt:InputHoldBegin()
+                task.wait(prompt.HoldDuration + 0.02)
+                prompt:InputHoldEnd()
+            end
+            isInteracting = false
+        end)
+    end
+end
+-- =======================================================
+
+local function StartBot()
+    if _G.BotConnection then _G.BotConnection:Disconnect() _G.BotConnection = nil end 
+    if _G.NoclipConnection then _G.NoclipConnection:Disconnect() _G.NoclipConnection = nil end
+    
+    _G.NoclipConnection = RunService.Stepped:Connect(function() 
+        local char = LocalPlayer.Character 
+        local hum = char and char:FindFirstChildWhichIsA("Humanoid") 
+        if hum and hum.Health > 0 and (_G.AutoDigAndPick or _G.AutoChestOnly) then 
+            hum:ChangeState(Enum.HumanoidStateType.Physics) 
+            hum:SetStateEnabled(Enum.HumanoidStateType.Seated, false)
+            if hum.Sit then hum.Sit = false end 
+            
+            for _, child in ipairs(char:GetChildren()) do 
+                if child:IsA("BasePart") then child.CanCollide = false end 
+            end 
+        end 
+    end)
+    
+    _G.BotConnection = RunService.Heartbeat:Connect(function(dt)
+        local char = LocalPlayer.Character local hrp, hum = char and char:FindFirstChild("HumanoidRootPart"), char and char:FindFirstChildWhichIsA("Humanoid")
+        if not hrp or not hum then 
+            _G.CurrentTarget = nil _G.FakeFallSpeed = 0 
+            if hrp then hrp.Anchored = false end
+            return 
+        end
+        if (_G.AutoDigAndPick or _G.AutoChestOnly) then
+            local tPos, tPart, toSeller, npc, ghostDoor = nil, nil, false, nil, nil
+            local galleon = Workspace:FindFirstChild("Ferryman's Galleon") local gd = galleon and galleon:FindFirstChild("SpiritTeleport") and galleon["SpiritTeleport"]:FindFirstChild("Main")
+            
+            local distToDoor = math.huge
+            if gd then
+                distToDoor = (hrp.Position - gd:GetPivot().Position).Magnitude
+            end
+
+            if hum.Health <= 0 or distToDoor < 150 then
+                _G.IsTeleportingHome = true
+            end
+            
+            if hum.Health > 0 and distToDoor > 200 then
+                _G.IsTeleportingHome = false
+            end
+            
+            if _G.IsTeleportingHome then
+                if gd then 
+                    ghostDoor = gd tPos = gd:GetPivot().Position tPart = gd 
+                else
+                    _G.CurrentTarget = nil hrp.AssemblyLinearVelocity = Vector3.new(0,0,0) hrp.Anchored = false return
+                end
+            end
+            
+            if not _G.IsTeleportingHome and not tPos then
+                if IsHoldingChest() then npc = GetNearestSeller() if npc then tPos, toSeller = npc:GetPivot().Position, true tPart = npc end
+                else tPart = _G.AutoChestOnly and GetNearestDroppedChest() or (_G.AutoDigAndPick and (GetChestAtFeet() or GetNearestBuriedChest())) if tPart then tPos = tPart.Position else npc = GetNearestSeller() if npc then tPos, toSeller = npc:GetPivot().Position, true tPart = npc elseif gd and distToDoor > 200 then ghostDoor = gd tPos = gd:GetPivot().Position tPart = gd end end end
+            end
+            
+            if not tPos then 
+                _G.CurrentTarget = nil _G.FakeFallSpeed = 0 
+                hrp.AssemblyLinearVelocity, hrp.AssemblyAngularVelocity = Vector3.new(0,0,0), Vector3.new(0,0,0) 
+                hrp.Anchored = false 
+                return 
+            end
+            hrp.AssemblyLinearVelocity, hrp.AssemblyAngularVelocity = Vector3.new(0,0,0), Vector3.new(0,0,0)
+            
+            -- ĐIỀU KIỆN NHẢ ANCHOR KHI MỤC TIÊU ĐÃ ĐƯỢC THAY ĐỔI / BIẾN MẤT
+            if _G.CurrentTarget ~= tPart then 
+                hrp.Anchored = false -- Nhả Neo ngay lập tức để bay sang mục tiêu mới
+                _G.CurrentTarget = tPart 
+                _G.StuckTime = os.clock() 
+                _G.SellerStuckTime = nil 
+                _G.DaDenDich = false
+                _G.IsEscapingStuck = false 
+                _G.TimeAfterTP = nil 
+                _G.TimeAtTarget = nil 
+                isInteracting = false
+            end
+            -- =======================================================
+            -- THẢM TÀNG HÌNH BẢO HỘ (BỆ ĐỠ RAYCAST Y = 6.2)
+            -- =======================================================
+            local fakeSeaFloor = workspace:FindFirstChild("FakeSeaFloor")
+         if not fakeSeaFloor then
+            fakeSeaFloor = Instance.new("Part")
+            fakeSeaFloor.Name = "FakeSeaFloor"
+            fakeSeaFloor.Size = Vector3.new(300, 1, 300)
+            fakeSeaFloor.Transparency = 1
+            fakeSeaFloor.Anchored = true
+            fakeSeaFloor.CanCollide = true
+            fakeSeaFloor.Material = Enum.Material.SmoothPlastic
+            fakeSeaFloor.Parent = workspace
+         end
+
+           if hrp then
+        fakeSeaFloor.CFrame = CFrame.new(hrp.Position.X, 6.2, hrp.Position.Z)
+     end
+            -- =======================================================
+            -- ANTI-RUBBERBAND SYSTEM (CỬA SỔ THỜI GIAN THÔNG MINH)
+            -- =======================================================
+            if not _G.LastHrpPosition then 
+                _G.LastHrpPosition = hrp.Position
+                _G.RubberbandCount = 0
+                _G.LastRubberbandTime = os.clock()
+                _G.PauseStartTime = nil
+                _G.IsPausedForAntiCheat = false
+            end
+
+            -- Nếu đang trong 1 giây ngắt bay thì tạm dừng tính toán di chuyển
+            if _G.IsPausedForAntiCheat then
+                _G.LastHrpPosition = hrp.Position
+                return
+            end
+
+            -- Tự động reset bộ đếm giật nếu quá 6s không bị giật nữa
+            if os.clock() - _G.LastRubberbandTime > 6.0 then
+                _G.RubberbandCount = 0
+            end
+
+            -- Tự động hủy "Chế độ chờ" nếu sau 6s không bị dính giật lại
+            if _G.PauseStartTime and (os.clock() - _G.PauseStartTime > 6.0) then
+                _G.PauseStartTime = nil
+            end
+
+            local currentDistToTarget = (hrp.Position - tPos).Magnitude
+            local lastDistToTarget = (_G.LastHrpPosition - tPos).Magnitude
+
+            if (currentDistToTarget - lastDistToTarget) > 10.0 then
+                _G.RubberbandCount = _G.RubberbandCount + 1
+                _G.LastRubberbandTime = os.clock()
+                
+                -- BỊ GIẬT ĐỦ 8 LẦN
+                if _G.RubberbandCount >= 8 then 
+                    -- TRƯỜNG HỢP 1: Vẫn bị giật tiếp TRONG CỬA SỔ 10 GIÂY -> ĐỘT TỬ
+                    if _G.PauseStartTime and (os.clock() - _G.PauseStartTime <= 6.0) then
+                        if char and hum and hum.Health > 0 then 
+                            _G.CurrentTarget = nil
+                            _G.IsEscapingStuck = false
+                            _G.TimeAfterTP = nil
+                            _G.TimeAtTarget = nil
+                            _G.DaDenDich = false
+                            _G.SellerStuckTime = nil
+                            _G.RubberbandCount = 0
+                            _G.LastHrpPosition = nil
+                            _G.PauseStartTime = nil
+                            _G.IsPausedForAntiCheat = false
+
+                            hrp.Anchored = false
+                            hum.Health = 0 
+                        end
+                        return
+                    else
+                        -- TRƯỜNG HỢP 2: Lần đầu chạm mốc 8 lần -> Ngắt bay 1s + Bấm giờ 10s
+                        _G.PauseStartTime = os.clock() -- Bắt đầu tính cửa sổ 10s
+                        _G.RubberbandCount = 0 -- Reset đếm giật để chờ lần giật tiếp theo
+                        _G.IsPausedForAntiCheat = true
+                        
+                        hrp.Anchored = false
+                        hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0) -- Hãm gia tốc giật
+                        
+                        task.delay(1.0, function()
+                            _G.IsPausedForAntiCheat = false
+                            if hrp then _G.LastHrpPosition = hrp.Position end
+                        end)
+                        return
+                    end
+                end
+            end
+            _G.LastHrpPosition = hrp.Position
+            -- =======================================================
+            
+            local dist = (hrp.Position - tPos).Magnitude if toSeller and dist < 18 then Camera.CFrame = CFrame.new(Camera.CFrame.Position, tPos) end
+            local dir = (tPos - hrp.Position).Unit local stopPos, sellerY_Chuan = tPos - (dir * OFFSET_DIST), tPos.Y
+            if toSeller and npc then local sHrp = npc:FindFirstChild("HumanoidRootPart") or npc:FindFirstChildWhichIsA("BasePart") if sHrp then local lVec = sHrp.CFrame.LookVector sellerY_Chuan = sHrp.Position.Y stopPos = Vector3.new(tPos.X + (lVec.X * OFFSET_DIST), sellerY_Chuan, tPos.Z + (lVec.Z * OFFSET_DIST)) dist = (hrp.Position - stopPos).Magnitude + OFFSET_DIST end 
+            elseif ghostDoor then sellerY_Chuan = tPos.Y stopPos = tPos - (dir * OFFSET_DIST) end
+            local stopLimit = (toSeller or ghostDoor) and (OFFSET_DIST + 1.2) or (OFFSET_DIST + 0.5)
+            
+            -- =======================================================================
+            -- CHU KỲ ĐỘT TỬ ĐỘC LẬP TỰ DO (Giữ nguyên)
+            -- =======================================================================
+            local notNpcOrDoor = (not toSeller) and (not ghostDoor)
+            local pGui = LocalPlayer:FindFirstChildWhichIsA("PlayerGui")
+            local isQuestMenuOpen = false
+
+            if pGui then
+                local shopUI = pGui:FindFirstChild("QuestShopUI")
+                local pickUI = pGui:FindFirstChild("PickQuestUI")
+                if (shopUI and (shopUI:GetAttribute("Enabled") or shopUI.Enabled)) or 
+                   (pickUI and (pickUI:GetAttribute("Enabled") or pickUI.Enabled)) then
+                    isQuestMenuOpen = true
+                end
+            end
+
+            if notNpcOrDoor and not isQuestMenuOpen and _G.IsEscapingStuck and _G.TimeAfterTP then
+                local elapsedAfterTP = os.clock() - _G.TimeAfterTP
+                if elapsedAfterTP >= 2.0 then
+                    if char and hum and hum.Health > 0 then 
+                        hrp.Anchored = false
+                        hum.Health = 0 
+                    end
+                    _G.IsEscapingStuck = false 
+                    _G.TimeAfterTP = nil
+                    _G.TimeAtTarget = nil
+                    return 
+                end
+            end
+
+            if toSeller then
+                local shouldCheckStuck = false
+                if _G.AutoDigAndPick then
+                    shouldCheckStuck = IsHoldingChest() or (not isQuestMenuOpen)
+                elseif _G.AutoChestOnly then
+                    shouldCheckStuck = IsHoldingChest()
+                end
+
+                if shouldCheckStuck then
+                    if dist < 15 then
+                        if not _G.SellerStuckTime then
+                            _G.SellerStuckTime = os.clock()
+                        elseif (os.clock() - _G.SellerStuckTime) >= 3.0 then
+                            if char and hum and hum.Health > 0 then 
+                                hrp.Anchored = false
+                                hum.Health = 0 
+                            end
+                            _G.SellerStuckTime = nil
+                            return
+                        end
+                    end
+                else
+                    _G.SellerStuckTime = nil
+                end
+            else
+                _G.SellerStuckTime = nil
+            end
+            -- =======================================================================
+
+            if dist <= stopLimit then
+                _G.DaDenDich = true
+                if not _G.TimeAtTarget then _G.TimeAtTarget = os.clock() end
+                local elapsedAtTarget = os.clock() - _G.TimeAtTarget
+
+                if notNpcOrDoor and not isQuestMenuOpen and not _G.IsEscapingStuck then
+                    if elapsedAtTarget < 0.01 then 
+                        hrp.Anchored = true
+                    else
+                        hrp.Anchored = false 
+                    end
+                end
+
+                AutoTriggerPrompt(tPart)
+
+                local safeY = tPos.Y + (hrp.Size.Y / 2) + 2.5
+
+                if notNpcOrDoor and not isQuestMenuOpen then
+                    if elapsedAtTarget >= 2.0 and not _G.IsEscapingStuck and hrp.Position.Y < safeY - 0.1 then 
+                        _G.IsEscapingStuck = true
+                        _G.TimeAfterTP = os.clock() 
+                    end
+                end
+
+                if _G.IsEscapingStuck then
+                    if hrp.Position.Y < safeY then
+                        local newY = hrp.Position.Y + (60 * dt)
+                        if newY > safeY then newY = safeY end
+                        hrp.CFrame = CFrame.new(Vector3.new(hrp.Position.X, newY, hrp.Position.Z), Vector3.new(tPos.X, newY, tPos.Z))
+                    else
+                        hrp.CFrame = CFrame.new(Vector3.new(hrp.Position.X, safeY, hrp.Position.Z), Vector3.new(tPos.X, safeY, tPos.Z))
+                    end
+                else
+                    if elapsedAtTarget < 2.0 or toSeller or ghostDoor then
+                        local finalStopPos = Vector3.new(stopPos.X, (toSeller or ghostDoor) and stopPos.Y or (tPos.Y + (hrp.Size.Y / 2) + 1.8), stopPos.Z)
+                        hrp.CFrame = CFrame.new(finalStopPos, Vector3.new(tPos.X, finalStopPos.Y, tPos.Z)) 
+                    end
+                end
+            else
+                hrp.Anchored = false
+                _G.TimeAtTarget = nil 
+                
+                if _G.IsEscapingStuck and dist > 15 then
+                    _G.IsEscapingStuck = false
+                    _G.TimeAfterTP = nil
+                end
+                
+                local moveDir = (toSeller or ghostDoor) and (stopPos - hrp.Position).Unit or dir 
+                local clampledSpeed = math.min(FLY_SPEED * dt, 3.3) 
+                
+                local nextPos
+                if _G.IsEscapingStuck then
+                    nextPos = hrp.Position 
+                else
+                    nextPos = hrp.Position + (moveDir * clampledSpeed)
+                end
+                 
+                local targetY, groundY, trenBien = hrp.Position.Y, nil, false 
+                local ganMucTieu = dist < 1
+                
+                -- BẬT LẠI RAYCAST 100% ĐỂ BÁM ĐỊA HÌNH CHO AN TOÀN
+                if ganMucTieu then 
+                    if _G.IsEscapingStuck then
+                        targetY = tPos.Y + (hrp.Size.Y / 2) + 2.5
+                    else
+                        targetY = (toSeller or ghostDoor) and sellerY_Chuan or (tPos.Y + (hrp.Size.Y / 2) + 1.8) 
+                    end
+                    nextPos = Vector3.new(nextPos.X, hrp.Position.Y, nextPos.Z)
+                elseif not inCave then
+                    local params = RaycastParams.new() params.FilterType = Enum.RaycastFilterType.Exclude local ignore = {char}for _, item in pairs(char:GetChildren()) do if item:IsA("Tool") or item:IsA("Model") then table.insert(ignore, item) end end
+
+                    if Workspace:FindFirstChild("IslandsModel") and Workspace["IslandsModel"]:FindFirstChild("NPCs") then table.insert(ignore, Workspace["IslandsModel"]["NPCs"]) end
+                    if Workspace:FindFirstChild("Trees") then table.insert(ignore, Workspace["Trees"]) end if Workspace:FindFirstChild("TreeFolder") then table.insert(ignore, Workspace["TreeFolder"]) end
+                    if Workspace:FindFirstChild("Ships") then table.insert(ignore, Workspace["Ships"]) end
+
+                    params.FilterDescendantsInstances = ignore 
+                    params.RespectCanCollide = true
+
+                    local lookAheadDistance = 10
+                    local scanOrigin = Vector3.new(nextPos.X, nextPos.Y + 300, nextPos.Z) + (moveDir * lookAheadDistance)
+                    local ray = Workspace:Raycast(scanOrigin, Vector3.new(0, -700, 0), params)
+
+                    if ray and ray.Instance then 
+                        groundY = ray.Position.Y 
+                        targetY = groundY + (hrp.Size.Y / 2) + 0.01 
+                        if tPos.Y < hrp.Position.Y - 5 and targetY > tPos.Y + 10 then 
+                            targetY = tPos.Y + (hrp.Size.Y / 2) + 0.01 
+                        end 
+                    else 
+                        -- Nếu ở giữa biển, hạ sát xuống mặt nước lướt đi chứ không lơ lửng trên trời
+                        targetY, trenBien = SEA_LEVEL, true 
+                    end
+                else 
+                    targetY = math.max(tPos.Y + (hrp.Size.Y / 2) + 0.01, -30) 
+                end
+                
+                local finalY = hrp.Position.Y
+                if trenBien and not ganMucTieu then 
+                    if hrp.Position.Y > SEA_LEVEL then 
+                        _G.FakeFallSpeed = _G.FakeFallSpeed + (workspace.Gravity * dt) 
+                        if _G.FakeFallSpeed > 110 then _G.FakeFallSpeed = 110 end 
+                        local deltaY = _G.FakeFallSpeed * dt
+                        if deltaY > 1.0 then deltaY = 1.0 end
+                        finalY = hrp.Position.Y - deltaY
+                        if finalY < SEA_LEVEL then finalY, _G.FakeFallSpeed = SEA_LEVEL, 0 end 
+                    else 
+                        finalY, _G.FakeFallSpeed = SEA_LEVEL, 0 
+                    end
+                else 
+                    _G.FakeFallSpeed = 0 
+                    if targetY < hrp.Position.Y - 2 then 
+                        local duKienY = hrp.Position.Y - (FALL_LIMIT * dt)
+                        if duKienY < targetY then duKienY = targetY end
+                        local doLechY = hrp.Position.Y - duKienY
+                        if doLechY > 1.0 then duKienY = hrp.Position.Y - 1.0 end
+                        finalY = duKienY
+                        if finalY <= targetY then finalY = targetY end 
+                    elseif targetY > hrp.Position.Y + 2 then 
+                        local tocDoClimb = ganMucTieu and 110 or (CLIMB_LIMIT + 20)
+                        local duKienLenY = hrp.Position.Y + (tocDoClimb * dt)
+                        
+                        local limitFrameY = 3.3
+                        if ganMucTieu or (targetY - hrp.Position.Y) > 15 then
+                            limitFrameY = 6.0
+                        end
+                        
+                        if (duKienLenY - hrp.Position.Y) > limitFrameY then 
+                            duKienLenY = hrp.Position.Y + limitFrameY 
+                        end 
+                        
+                        finalY = duKienLenY
+                        if finalY > targetY then finalY = targetY end 
+                    else 
+                        finalY = hrp.Position.Y + (targetY - hrp.Position.Y) * LERP_SMOOTH
+                    end 
+                end
+
+                if not inCave and finalY < SEA_LEVEL then
+                    finalY = SEA_LEVEL
+                end
+
+                if groundY and (finalY - groundY > MAX_HEIGHT) and not ganMucTieu then finalY = groundY + MAX_HEIGHT end
+                finalY = math.max(finalY, -30)
+                if (Vector3.new(tPos.X, finalY, tPos.Z) - Vector3.new(nextPos.X, finalY, nextPos.Z)).Magnitude > 0.1 then 
+                    hrp.CFrame = CFrame.new(Vector3.new(nextPos.X, finalY, nextPos.Z), Vector3.new(tPos.X, finalY, tPos.Z))
+                else 
+                    hrp.CFrame = CFrame.new(Vector3.new(nextPos.X, finalY, nextPos.Z), nextPos.X + hrp.CFrame.LookVector) 
+                end
+            end
+        end
+    end)
+end
+
+local function StopBot()
+    -- RESET SẠCH CỜ TRẠNG THÁI (Đã chuyển lên đầu để luôn luôn chạy dọn dẹp Y khi đổi nút)
+    _G.IsDigging, _G.FakeFallSpeed, _G.CurrentTarget, _G.StuckTime, _G.IsTeleportingHome = false, 0, nil, 0, false
+    _G.DaDenDich = false
+    _G.SellerStuckTime = nil
+    _G.LastHrpPosition = nil
+    _G.RubberbandCount = 0
+    _G.IsEscapingStuck = false
+    _G.TimeAfterTP = nil
+    _G.TimeAtTarget = nil
+    _G.PauseStartTime = nil
+    _G.IsPausedForAntiCheat = false
+
+    isInteracting = false
+
+    -- Chỉ gỡ Connection và nhún Character khi TẮT HẲN cả 2 nút
+    if not _G.AutoDigAndPick and not _G.AutoChestOnly then
+        if _G.BotConnection then _G.BotConnection:Disconnect() _G.BotConnection = nil end 
+        if _G.NoclipConnection then _G.NoclipConnection:Disconnect() _G.NoclipConnection = nil end
+        if LocalPlayer.Character then 
+            local hum = LocalPlayer.Character:FindFirstChildWhichIsA("Humanoid") 
+            if hum then 
+                hum:ChangeState(Enum.HumanoidStateType.GettingUp) 
+                hum:SetStateEnabled(Enum.HumanoidStateType.Seated, true) 
+            end 
+            local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart") 
+            if hrp then 
+                hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                hrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+                task.wait(0.05)
+                hrp.Anchored = false 
+                hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+            end 
+        end
+    end
+end
+
+-- =======================================================
+-- KẾT NỐI UI VÀ KHỞI ĐỘNG CÔNG TÁC FARM
+-- =======================================================
+if BtnDig then BtnDig.Text = "AUTO FARM [OFF]" end
+if BtnDig then
+    BtnDig.MouseButton1Click:Connect(function()
+        _G.AutoDigAndPick = not _G.AutoDigAndPick
+        if _G.AutoDigAndPick then
+            _G.AutoChestOnly = false 
+            _G.CurrentTarget = nil
+            
+            -- 🎯 3. THÊM DỌN CỜ KHI BẬT NÚT NÀY
+            _G.IsEscapingStuck = false
+            _G.TimeAtTarget = nil
+            _G.TimeAfterTP = nil
+            _G.SellerStuckTime = nil
+            _G.DaDenDich = false
+            _G.LastTargetPos = nil
+            
+            if BtnPick then BtnPick.Text = "CHEST ONLY [OFF]" BtnPick.BackgroundColor3 = Color3.fromRGB(45, 45, 45) end 
+            BtnDig.Text = "AUTO FARM [RUNNING]"
+            TweenService:Create(BtnDig, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255, 0, 128)}):Play() 
+            StartBot()
+        else 
+            BtnDig.Text = "AUTO FARM [OFF]" 
+            TweenService:Create(BtnDig, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(45, 45, 45)}):Play() 
+            StopBot() 
+        end
+    end)
+end
+
+if BtnPick then
+    BtnPick.MouseButton1Click:Connect(function()
+        _G.AutoChestOnly = not _G.AutoChestOnly
+        if _G.AutoChestOnly then
+            _G.AutoDigAndPick = false 
+            _G.CurrentTarget = nil
+            
+            -- 🎯 3. THÊM DỌN CỜ KHI BẬT NÚT NÀY
+            _G.IsEscapingStuck = false
+            _G.TimeAtTarget = nil
+            _G.TimeAfterTP = nil
+            _G.SellerStuckTime = nil
+            _G.DaDenDich = false
+            _G.LastTargetPos = nil
+            
+            if BtnDig then BtnDig.Text = "AUTO FARM [OFF]" BtnDig.BackgroundColor3 = Color3.fromRGB(45, 45, 45) end 
+            BtnPick.Text = "CHEST ONLY [RUNNING]"
+            TweenService:Create(BtnPick, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(0, 170, 255)}):Play() 
+            StartBot()
+        else 
+            BtnPick.Text = "CHEST ONLY [OFF]" 
+            TweenService:Create(BtnPick, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(45, 45, 45)}):Play() 
+            StopBot() 
+        end
+    end)
+end
+-- RESET SẠCH CỜ TRẠNG THÁI MỖI KHI HỒI SINH (CHARACTER RE-SPAWN)
+LocalPlayer.CharacterAdded:Connect(function(newChar)
+    _G.IsDigging, _G.FakeFallSpeed, _G.CurrentTarget, _G.StuckTime, _G.IsTeleportingHome = false, 0, nil, 0, false
+    _G.DaDenDich = false
+    _G.SellerStuckTime = nil
+    _G.LastHrpPosition = nil
+    _G.RubberbandCount = 0
+    _G.IsEscapingStuck = false
+    _G.TimeAfterTP = nil
+    _G.TimeAtTarget = nil
+    _G.PauseStartTime = nil
+    _G.IsPausedForAntiCheat = false
+
+    isInteracting = false
+end)
