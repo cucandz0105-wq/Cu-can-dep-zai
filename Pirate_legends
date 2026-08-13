@@ -928,99 +928,47 @@ RunService.PreSimulation:Connect(function()
         end
     end
 
--- =========================================
--- SUPER SAIL - SINGLE LINEARVELOCITY CONTROLLER
--- =========================================
-
-if _G.SuperSailActive
-and activeSeat
-and activeSeat:IsA("VehicleSeat") then
-
+if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
+    -- Dọn BodyVelocity/physics legacy trên toàn bộ tàu
     local ship = workspace.Ships:FindFirstChild("ActiveShip")
-
-    -- Dọn physics legacy trên toàn bộ tàu
     if ship then
-        for _, obj in ipairs(ship:GetDescendants()) do
-            if obj:IsA("BodyVelocity")
-            or obj:IsA("BodyForce")
-            or obj:IsA("BodyGyro")
-            or obj:IsA("BodyAngularVelocity") then
-
-                obj:Destroy()
+        for _, child in ipairs(ship:GetDescendants()) do
+            if child:IsA("BodyVelocity") or child:IsA("BodyForce") or child:IsA("BodyGyro") or child:IsA("BodyAngularVelocity") then
+                child:Destroy()
             end
         end
     end
 
-    -- Attachment
-    if not activeAttachment
-    or activeAttachment.Parent ~= activeSeat then
-
-        if activeAttachment then
-            activeAttachment:Destroy()
-        end
-
+    if not activeAttachment or activeAttachment.Parent ~= activeSeat then
+        if activeAttachment then activeAttachment:Destroy() end
         activeAttachment = Instance.new("Attachment")
-        activeAttachment.Name = "SuperSailAttachment"
         activeAttachment.Parent = activeSeat
     end
 
-    -- LinearVelocity duy nhất
-    if not activeVelocity
-    or activeVelocity.Parent ~= activeSeat then
-
-        if activeVelocity then
-            activeVelocity:Destroy()
-        end
-
+    if not activeVelocity or activeVelocity.Parent ~= activeSeat then
+        if activeVelocity then activeVelocity:Destroy() end
         activeVelocity = Instance.new("LinearVelocity")
-        activeVelocity.Name = "SuperSailVelocity"
         activeVelocity.Attachment0 = activeAttachment
-        activeVelocity.VelocityConstraintMode =
-            Enum.VelocityConstraintMode.Vector
         activeVelocity.MaxForce = math.huge
+        activeVelocity.VelocityConstraintMode = Enum.VelocityConstraintMode.Vector
         activeVelocity.Parent = activeSeat
     end
 
-    -- Hướng mũi tàu
     local look = activeSeat.CFrame.LookVector
+    local forward = Vector3.new(look.X, 0, look.Z)
 
-    local flatLook = Vector3.new(
-        look.X,
-        0,
-        look.Z
-    )
+    local currentSpeed = tonumber(_G.SpeedInput and _G.SpeedInput.Text) or (_G.BoostMultiplier or 200)
 
-    local speed =
-        tonumber(
-            _G.SpeedInput
-            and _G.SpeedInput.Text
-        )
-        or (_G.BoostMultiplier or 200)
-
-    if flatLook.Magnitude > 0.001 then
-
-        activeVelocity.VectorVelocity =
-            flatLook.Unit * speed
-
+    if forward.Magnitude > 0.001 then
+        activeVelocity.VectorVelocity = forward.Unit * currentSpeed
     else
-
-        activeVelocity.VectorVelocity =
-            Vector3.zero
-
+        activeVelocity.VectorVelocity = Vector3.zero
     end
 
 else
-
-    -- Speed OFF
+    -- SPEED OFF: bắt LinearVelocity đưa vận tốc về 0 trước
     if activeVelocity then
         activeVelocity.VectorVelocity = Vector3.zero
-        activeVelocity:Destroy()
-        activeVelocity = nil
-    end
-
-    if activeAttachment then
-        activeAttachment:Destroy()
-        activeAttachment = nil
     end
 end
 end)
