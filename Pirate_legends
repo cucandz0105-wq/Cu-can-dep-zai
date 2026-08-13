@@ -929,6 +929,13 @@ RunService.PreSimulation:Connect(function()
     end
 
 if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
+    -- 1. Tiêu diệt tận gốc BodyVelocity hoặc các lực cũ đời cổ đang ẩn nấp trong xe
+    for _, child in ipairs(activeSeat:GetDescendants()) do
+        if child:IsA("BodyVelocity") or child:IsA("BodyForce") or child:IsA("BodyGyro") or child:IsA("BodyAngularVelocity") then
+            child:Destroy()
+        end
+    end
+
     local rootPart = activeSeat.AssemblyRootPart or activeSeat.Parent:FindFirstChild("HumanoidRootPart") or activeSeat.Parent:FindFirstChild("Part")
 
     if not activeAttachment or activeAttachment.Parent ~= activeSeat then 
@@ -940,6 +947,7 @@ if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
     if not activeVelocity or activeVelocity.Parent ~= activeSeat then 
         if activeVelocity then activeVelocity:Destroy() end 
         activeVelocity = Instance.new("LinearVelocity") 
+        activeAttachment = activeAttachment -- Gán lại cho chuẩn
         activeVelocity.Attachment0 = activeAttachment 
         activeVelocity.MaxForce = math.huge 
         activeVelocity.VelocityConstraintMode = Enum.VelocityConstraintMode.Vector 
@@ -953,10 +961,10 @@ if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
     if rootPart and forward.Magnitude > 0.001 then
         local forwardDir = forward.Unit
         
-        -- Áp dụng lực đẩy mượt mà không tì vết
+        -- Lực đẩy chính thức chạy độc tôn, không bị ai tranh chấp
         activeVelocity.VectorVelocity = forwardDir * currentSpeed
 
-        -- Khóa góc quay ly tâm để chống lật tàu
+        -- Khóa sạch góc quay ly tâm, chống lật ngửa
         rootPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
     end
 else 
