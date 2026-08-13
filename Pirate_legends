@@ -931,17 +931,6 @@ RunService.PreSimulation:Connect(function()
 if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
     local rootPart = activeSeat.AssemblyRootPart or activeSeat.Parent:FindFirstChild("HumanoidRootPart") or activeSeat.Parent:FindFirstChild("Part")
 
-    -- 1. Quản lý "nhân viên phanh" BodyVelocity
-    local bodyVelocity = activeSeat:FindFirstChild("BrakeBodyVelocity")
-    if not bodyVelocity then
-        bodyVelocity = Instance.new("BodyVelocity")
-        bodyVelocity.Name = "BrakeBodyVelocity"
-        bodyVelocity.Velocity = Vector3.new(0, 0, 0)
-        bodyVelocity.MaxForce = Vector3.new(50000, 0, 50000)
-        bodyVelocity.Parent = activeSeat
-    end
-
-    -- 2. Quản lý hệ thống LinearVelocity chính
     if not activeAttachment or activeAttachment.Parent ~= activeSeat then 
         if activeAttachment then activeAttachment:Destroy() end 
         activeAttachment = Instance.new("Attachment") 
@@ -957,10 +946,6 @@ if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
         activeVelocity.Parent = activeSeat 
     end
     
-    -- 🟢 SPEED ON: Tắt phanh, bật LinearVelocity, giữ nguyên logic Lerp/Orientation gốc của bro
-    bodyVelocity.Enabled = false
-    activeVelocity.Enabled = true
-
     local cf = activeSeat.CFrame
     local forward = Vector3.new(cf.LookVector.X, 0, cf.LookVector.Z)
     local currentSpeed = tonumber(_G.SpeedInput and _G.SpeedInput.Text) or (_G.BoostMultiplier or 200)
@@ -971,16 +956,21 @@ if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
         rootPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
     end
 else 
-    -- 🔴 SPEED OFF: Tắt LinearVelocity, bật phanh BodyVelocity
-    local bodyVelocity = activeSeat and activeSeat:FindFirstChild("BrakeBodyVelocity")
-    if bodyVelocity then
-        bodyVelocity.Velocity = Vector3.new(0, 0, 0)
-        bodyVelocity.Enabled = true
-    end
-
+    -- Tắt speed: Hãm phanh khựng lại trước khi tiêu hủy LinearVelocity
     if activeVelocity then 
-        activeVelocity.Enabled = false 
+        activeVelocity.VectorVelocity = Vector3.new(0, 0, 0)
+        task.spawn(function()
+            task.wait(0.05)
+            if activeVelocity then 
+                activeVelocity:Destroy() 
+                activeVelocity = nil 
+            end 
+        end)
     end 
+    if activeAttachment then 
+        activeAttachment:Destroy() 
+        activeAttachment = nil 
+    end
 end
 
 end)
