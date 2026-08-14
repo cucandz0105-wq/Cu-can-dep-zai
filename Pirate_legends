@@ -741,42 +741,21 @@ if _G.DownBtn then
     end)
     _G.DownBtn.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then holdingDown = false end end)
 end
--- Hàm tự động hàn gắn đại bác và các part rời vào tàu chống giật
+
+-- Hàm tự động hàn gắn đại bác (Đã vô hiệu hóa weld rác)
 local function WeldBoatParts(model)
-    local mainPart = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChildWhichIsA("BasePart")
-    if not mainPart then return end
-    
-    for _, part in pairs(model:GetDescendants()) do
-        if part:IsA("BasePart") and part ~= mainPart then
-            local hasWeld = false
-            for _, child in pairs(part:GetChildren()) do
-                if child:IsA("WeldConstraint") or child:IsA("Weld") then
-                    hasWeld = true
-                    break
-                end
-            end
-            
-            if not hasWeld then
-                local weld = Instance.new("WeldConstraint")
-                weld.Part0 = mainPart
-                weld.Part1 = part
-                weld.Parent = part
-            end
-        end
-    end
+    -- Không tạo weld constraint nữa để tránh kẹt, giật và lệch pha server!
 end
 
--- Vòng lặp PreSimulation hoàn chỉnh: Cache ghế + Chống rơi + Siêu tốc math.huge + Giảm chấn chống văng + Hàn gắn động
+-- Vòng lặp PreSimulation hoàn chỉnh: Cache ghế + Chống rơi + Siêu tốc math.huge + Giảm chấn chống văng (Đã gỡ bỏ gọi WeldBoatParts)
 RunService.PreSimulation:Connect(function()
     local char = LocalPlayer.Character
     local humanoid = char and char:FindFirstChildOfClass("Humanoid")
     local seat = humanoid and humanoid.SeatPart
     
     if seat and seat:IsA("VehicleSeat") then
-        -- 🛑 KIỂM TRA ĐƯỜNG DẪN XEM ĐÂY LÀ GHẾ LÁI HAY GHẾ PHÁO
         local seatPath = seat:GetFullName()
         
-        -- Nếu là ghế pháo (có chữ Cannons hoặc Cannon trong đường dẫn) -> BỎ QUA KHÔNG WELD
         if string.find(string.lower(seatPath), "cannon") or string.find(string.lower(seatPath), "phao") then
             if lastCachedSeat ~= nil then
                 ClearBoatWelds()
@@ -786,11 +765,11 @@ RunService.PreSimulation:Connect(function()
             return
         end
         
-        -- Ngược lại, nếu là ghế lái chính (thuộc PartsModels hoặc thân tàu) -> KÍCH HOẠT WELD CHỐNG VĂNG
+        -- Kích hoạt cache bộ phận để nhận Network Owner mà không cần Weld rác
         lastCachedSeat = seat
         local model = seat:FindFirstAncestorOfClass("Model")
         if model then
-            WeldBoatParts(model)
+            -- 🛑 Đã xóa sạch lệnh WeldBoatParts(model) ở đây!
             
             currentBoatCache = {}
             for _, p in pairs(model:GetDescendants()) do
@@ -800,7 +779,6 @@ RunService.PreSimulation:Connect(function()
             end
         end
     else
-        -- Rời ghế hoặc ngồi ghế thường -> Dọn sạch weld
         if lastCachedSeat ~= nil then
             ClearBoatWelds()
             lastCachedSeat = nil
@@ -823,7 +801,7 @@ RunService.PreSimulation:Connect(function()
         if MastAnchorPart and mastVelocity then 
             local currentY = MastAnchorPart.Position.Y 
             local diff = targetY - currentY 
-            mastVelocity.Velocity = Vector3.new(0, diff * 10, 0) -- Đệm lò xo chống văng
+            mastVelocity.Velocity = Vector3.new(0, diff * 10, 0)
         end
         
         if #currentBoatCache > 0 then
@@ -846,6 +824,7 @@ RunService.PreSimulation:Connect(function()
             lastCachedSeat = nil
         end
     end
+end)
 
 if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
     local rootPart = activeSeat.AssemblyRootPart or activeSeat.Parent:FindFirstChild("HumanoidRootPart") or activeSeat.Parent:FindFirstChild("Part")
