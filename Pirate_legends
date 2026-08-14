@@ -928,61 +928,69 @@ RunService.PreSimulation:Connect(function()
         end
     end
 
-if _G.SuperSailActive and not _G.SpeedDisabled and activeSeat and activeSeat:IsA("VehicleSeat") then
-    local rootPart = activeSeat.AssemblyRootPart
-        or activeSeat.Parent:FindFirstChild("HumanoidRootPart")
-        or activeSeat.Parent:FindFirstChild("Part")
-
-    for _, child in ipairs(activeSeat:GetDescendants()) do
-        if child:IsA("BodyVelocity")
-            or child:IsA("BodyForce")
-            or child:IsA("BodyGyro")
-            or child:IsA("BodyAngularVelocity") then
-            child:Destroy()
+if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
+    -- 1. Tiêu diệt tận gốc BodyVelocity trên toàn bộ mô hình con tàu
+    local modelParent = activeSeat.Parent
+    if modelParent then
+        for _, child in ipairs(modelParent:GetDescendants()) do
+            if child:IsA("BodyVelocity") or child:IsA("BodyForce") or child:IsA("BodyGyro") or child:IsA("BodyAngularVelocity") then
+                child:Destroy()
+            end
         end
     end
 
-    if not activeAttachment or activeAttachment.Parent ~= activeSeat then
-        if activeAttachment then
-            activeAttachment:Destroy()
-        end
+    local rootPart = activeSeat.AssemblyRootPart or activeSeat.Parent:FindFirstChild("HumanoidRootPart") or activeSeat.Parent:FindFirstChild("Part")
 
-        activeAttachment = Instance.new("Attachment")
-        activeAttachment.Parent = activeSeat
+    if not activeAttachment or activeAttachment.Parent ~= activeSeat then 
+        if activeAttachment then activeAttachment:Destroy() end 
+        activeAttachment = Instance.new("Attachment") 
+        activeAttachment.Parent = activeSeat 
     end
-
-    if not activeVelocity or activeVelocity.Parent ~= activeSeat then
-        if activeVelocity then
-            activeVelocity:Destroy()
-        end
-
-        activeVelocity = Instance.new("LinearVelocity")
-        activeVelocity.Attachment0 = activeAttachment
-        activeVelocity.MaxForce = math.huge
-        activeVelocity.VelocityConstraintMode = Enum.VelocityConstraintMode.Vector
-        activeVelocity.Parent = activeSeat
+    
+    if not activeVelocity or activeVelocity.Parent ~= activeSeat then 
+        if activeVelocity then activeVelocity:Destroy() end 
+        activeVelocity = Instance.new("LinearVelocity") 
+        activeVelocity.Attachment0 = activeAttachment 
+        activeVelocity.MaxForce = math.huge 
+        activeVelocity.VelocityConstraintMode = Enum.VelocityConstraintMode.Vector 
+        activeVelocity.Parent = activeSeat 
     end
-
-    local look = activeSeat.CFrame.LookVector
-    local forward = Vector3.new(look.X, 0, look.Z)
-    local currentSpeed =
-        tonumber(_G.SpeedInput and _G.SpeedInput.Text)
-        or (_G.BoostMultiplier or 200)
+    
+    local cf = activeSeat.CFrame
+    local forward = Vector3.new(cf.LookVector.X, 0, cf.LookVector.Z)
+    local currentSpeed = tonumber(_G.SpeedInput and _G.SpeedInput.Text) or (_G.BoostMultiplier or 200)
 
     if rootPart and forward.Magnitude > 0.001 then
-        activeVelocity.VectorVelocity = forward.Unit * currentSpeed
-    else
-        activeVelocity.VectorVelocity = Vector3.zero
+        local forwardDir = forward.Unit
+        activeVelocity.VectorVelocity = forwardDir * currentSpeed
+        rootPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
     end
-
-else
-    -- SPEED OFF:
-    -- Không destroy LinearVelocity.
-    -- Chỉ đưa target velocity về 0.
-    if activeVelocity and activeVelocity.Parent then
-        activeVelocity.VectorVelocity = Vector3.zero
+else 
+    -- 🛑 KHI TẮT SPEED (HẠ Cánh MỀM - CHỐNG GIẬT RƠI)
+    if activeVelocity then 
+        -- Cho VectorVelocity về 0 trước để hãm quán tính trượt
+        activeVelocity.VectorVelocity = Vector3.new(0, 0, 0)
+        
+        -- Đợi một nhịp cực ngắn (0.05s) cho physics ổn định rồi mới dọn rác
+        task.spawn(function()
+            task.wait(0.05)
+            if activeVelocity then 
+                activeVelocity:Destroy() 
+                activeVelocity = nil 
+            end 
+            if activeAttachment then 
+                activeAttachment:Destroy() 
+                activeAttachment = nil 
+            end
+        end)
+    else
+        if activeAttachment then 
+            activeAttachment:Destroy() 
+            activeAttachment = nil 
+        end
     end
 end
+
 end)
 
 local Players = game:GetService("Players")
