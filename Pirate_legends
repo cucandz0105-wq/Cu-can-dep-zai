@@ -928,7 +928,7 @@ RunService.PreSimulation:Connect(function()
         end
     end
 
-if activeSeat and activeSeat:IsA("VehicleSeat") then
+if _G.SuperSailActive and not _G.SpeedDisabled and activeSeat and activeSeat:IsA("VehicleSeat") then
     local rootPart = activeSeat.AssemblyRootPart
         or activeSeat.Parent:FindFirstChild("HumanoidRootPart")
         or activeSeat.Parent:FindFirstChild("Part")
@@ -963,34 +963,24 @@ if activeSeat and activeSeat:IsA("VehicleSeat") then
         activeVelocity.Parent = activeSeat
     end
 
-    if _G.SuperSailActive then
-        local look = activeSeat.CFrame.LookVector
-        local forward = Vector3.new(look.X, 0, look.Z)
-        local currentSpeed =
-            tonumber(_G.SpeedInput and _G.SpeedInput.Text)
-            or (_G.BoostMultiplier or 200)
+    local look = activeSeat.CFrame.LookVector
+    local forward = Vector3.new(look.X, 0, look.Z)
+    local currentSpeed =
+        tonumber(_G.SpeedInput and _G.SpeedInput.Text)
+        or (_G.BoostMultiplier or 200)
 
-        if rootPart and forward.Magnitude > 0.001 then
-            activeVelocity.VectorVelocity = forward.Unit * currentSpeed
-        else
-            activeVelocity.VectorVelocity = Vector3.zero
-        end
+    if rootPart and forward.Magnitude > 0.001 then
+        activeVelocity.VectorVelocity = forward.Unit * currentSpeed
     else
-        -- SPEED OFF:
-        -- Giữ LinearVelocity, chỉ đưa tốc độ mục tiêu về 0.
-        -- Không Destroy controller và không reset AssemblyLinearVelocity.
         activeVelocity.VectorVelocity = Vector3.zero
     end
 
 else
-    if activeVelocity then
-        activeVelocity:Destroy()
-        activeVelocity = nil
-    end
-
-    if activeAttachment then
-        activeAttachment:Destroy()
-        activeAttachment = nil
+    -- SPEED OFF:
+    -- Không destroy LinearVelocity.
+    -- Chỉ đưa target velocity về 0.
+    if activeVelocity and activeVelocity.Parent then
+        activeVelocity.VectorVelocity = Vector3.zero
     end
 end
 end)
