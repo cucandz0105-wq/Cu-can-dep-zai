@@ -929,7 +929,7 @@ RunService.PreSimulation:Connect(function()
     end
 
 if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
-    -- 1. Tiêu diệt tận gốc BodyVelocity trên toàn bộ mô hình con tàu
+    -- 1. Tiêu diệt tận gốc BodyVelocity / BodyForce / BodyGyro phản tặc trên toàn bộ mô hình tàu
     local modelParent = activeSeat.Parent
     if modelParent then
         for _, child in ipairs(modelParent:GetDescendants()) do
@@ -966,29 +966,33 @@ if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
         rootPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
     end
 else 
-    -- 🛑 KHI TẮT SPEED (HẠ Cánh MỀM - CHỐNG GIẬT RƠI)
+    -- 🛑 KHI TẤT CẢ TẮT (SPEED OFF / TẮT TÍNH NĂNG TÀU)
+    local rootPart = activeSeat and (activeSeat.AssemblyRootPart or activeSeat.Parent:FindFirstChild("HumanoidRootPart") or activeSeat.Parent:FindFirstChild("Part"))
+
+    -- Bước 1: Ép LinearVelocity về 0 để triệt tiêu lực đẩy tức thì
     if activeVelocity then 
-        -- Cho VectorVelocity về 0 trước để hãm quán tính trượt
         activeVelocity.VectorVelocity = Vector3.new(0, 0, 0)
-        
-        -- Đợi một nhịp cực ngắn (0.05s) cho physics ổn định rồi mới dọn rác
-        task.spawn(function()
-            task.wait(0.05)
-            if activeVelocity then 
-                activeVelocity:Destroy() 
-                activeVelocity = nil 
-            end 
-            if activeAttachment then 
-                activeAttachment:Destroy() 
-                activeAttachment = nil 
-            end
-        end)
-    else
+    end
+    
+    -- Bước 2: Khóa chết vận tốc quán tính của thân tàu (AssemblyLinearVelocity & AngularVelocity) 
+    -- để nó đứng im tắp lự, không bị trượt băng hay trôi láo nháo nữa.
+    if rootPart then
+        rootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+        rootPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+    end
+
+    -- Bước 3: Đợi một nhịp cực ngắn (0.05s) cho physics chốt hạ ổn định rồi mới dọn dẹp đối tượng
+    task.spawn(function()
+        task.wait(0.05)
+        if activeVelocity then 
+            activeVelocity:Destroy() 
+            activeVelocity = nil 
+        end 
         if activeAttachment then 
             activeAttachment:Destroy() 
             activeAttachment = nil 
         end
-    end
+    end)
 end
 
 end)
