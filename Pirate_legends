@@ -929,7 +929,7 @@ RunService.PreSimulation:Connect(function()
     end
 
 if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
-    -- 1. Tiêu diệt tận gốc BodyVelocity / BodyForce / BodyGyro phản tặc trên toàn bộ mô hình tàu
+    -- 1. Tiêu diệt tận gốc BodyVelocity / BodyForce / BodyGyro phản tặc
     local modelParent = activeSeat.Parent
     if modelParent then
         for _, child in ipairs(modelParent:GetDescendants()) do
@@ -960,28 +960,33 @@ if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
     local forward = Vector3.new(cf.LookVector.X, 0, cf.LookVector.Z)
     local currentSpeed = tonumber(_G.SpeedInput and _G.SpeedInput.Text) or (_G.BoostMultiplier or 200)
 
-    if rootPart and forward.Magnitude > 0.001 then
-        local forwardDir = forward.Unit
-        activeVelocity.VectorVelocity = forwardDir * currentSpeed
-        rootPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+    if rootPart then
+        if forward.Magnitude > 0.001 then
+            -- Đang di chuyển: Đẩy tàu theo hướng nhìn
+            local forwardDir = forward.Unit
+            activeVelocity.VectorVelocity = forwardDir * currentSpeed
+            rootPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+        else
+            -- 🛑 ĐANG ĐỨNG IM TRÊN TRỜI: Giữ vector velocity về 0 nhưng KHÔNG CHO HỦY/NGỦ ĐÔNG
+            -- Giúp engine vật lý luôn tỉnh táo, tránh cú giật hẫng kinh điển
+            activeVelocity.VectorVelocity = Vector3.new(0, 0, 0)
+            rootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+            rootPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+        end
     end
 else 
-    -- 🛑 KHI TẤT CẢ TẮT (SPEED OFF / TẮT TÍNH NĂNG TÀU)
+    -- 🛑 KHI TẮT TÍNH NĂNG (SPEED OFF)
     local rootPart = activeSeat and (activeSeat.AssemblyRootPart or activeSeat.Parent:FindFirstChild("HumanoidRootPart") or activeSeat.Parent:FindFirstChild("Part"))
 
-    -- Bước 1: Ép LinearVelocity về 0 để triệt tiêu lực đẩy tức thì
     if activeVelocity then 
         activeVelocity.VectorVelocity = Vector3.new(0, 0, 0)
     end
     
-    -- Bước 2: Khóa chết vận tốc quán tính của thân tàu (AssemblyLinearVelocity & AngularVelocity) 
-    -- để nó đứng im tắp lự, không bị trượt băng hay trôi láo nháo nữa.
     if rootPart then
         rootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
         rootPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
     end
 
-    -- Bước 3: Đợi một nhịp cực ngắn (0.05s) cho physics chốt hạ ổn định rồi mới dọn dẹp đối tượng
     task.spawn(function()
         task.wait(0.05)
         if activeVelocity then 
