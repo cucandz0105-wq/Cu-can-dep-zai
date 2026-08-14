@@ -928,82 +928,68 @@ RunService.PreSimulation:Connect(function()
         end
     end
 
-if _G.SuperSailActive then
-    -- Nếu đang ngồi trên ghế hợp lệ -> Cập nhật lưu lại "siêu chiến hạm" của bro
-    local currentSeat = LocalPlayer.Character and LocalPlayer.Character.HumanoidRootPart and workspace:FindFirstChild("CurrentSeat") -- (Hoặc cách nhận diện ghế của bro)
-    -- Tùy theo cách bro check ghế hiện tại, ta ưu tiên check VehicleSeat mà nhân vật đang ngồi:
-    local charHumanoid = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-    local sittingSeat = charHumanoid and charHumanoid.SeatPart
-    
-    if sittingSeat and sittingSeat:IsA("VehicleSeat") then
-        _G.SavedShipSeat = sittingSeat
-        _G.SavedRootPart = sittingSeat.AssemblyRootPart or sittingSeat.Parent:FindFirstChild("HumanoidRootPart") or sittingSeat.Parent:FindFirstChild("Part")
-    end
-
-    -- Sử dụng con tàu đã được lưu trong bộ nhớ (dù đang ngồi hay đã nhảy ra ngoài)
-    local targetSeat = _G.SavedShipSeat
-    local targetPart = _G.SavedRootPart
-
-    if targetPart and targetSeat then
-        -- 1. Tiêu diệt rác BodyVelocity trên tàu
-        local modelParent = targetSeat.Parent
-        if modelParent then
-            for _, child in ipairs(modelParent:GetDescendants()) do
-                if child:IsA("BodyVelocity") or child:IsA("BodyForce") or child:IsA("BodyGyro") or child:IsA("BodyAngularVelocity") then
-                    child:Destroy()
-                end
+if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
+    -- 1. Tiêu diệt sạch sẽ BodyVelocity / BodyForce / BodyGyro phản tặc
+    local modelParent = activeSeat.Parent
+    if modelParent then
+        for _, child in ipairs(modelParent:GetDescendants()) do
+            if child:IsA("BodyVelocity") or child:IsA("BodyForce") or child:IsA("BodyGyro") or child:IsA("BodyAngularVelocity") then
+                child:Destroy()
             end
         end
+    end
 
-        -- 2. Khởi tạo Attachment và LinearVelocity bám chặt vào tàu (Bất chấp đã rời ghế)
-        if not activeAttachment or activeAttachment.Parent ~= targetPart then 
-            if activeAttachment then activeAttachment:Destroy() end 
-            activeAttachment = Instance.new("Attachment") 
-            activeAttachment.Parent = targetPart 
-        end
-        
-        if not activeVelocity or activeVelocity.Parent ~= targetPart then 
-            if activeVelocity then activeVelocity:Destroy() end 
-            activeVelocity = Instance.new("LinearVelocity") 
-            activeVelocity.Attachment0 = activeAttachment 
-            activeVelocity.MaxForce = math.huge 
-            activeVelocity.VelocityConstraintMode = Enum.VelocityConstraintMode.Vector 
-            activeVelocity.Parent = targetPart 
-        end
-        
-        -- Ép Network Owner về máy bro để kiểm soát hoàn toàn vật lý
+    local rootPart = activeSeat.AssemblyRootPart or activeSeat.Parent:FindFirstChild("HumanoidRootPart") or activeSeat.Parent:FindFirstChild("Part")
+
+    if not activeAttachment or activeAttachment.Parent ~= activeSeat then 
+        if activeAttachment then activeAttachment:Destroy() end 
+        activeAttachment = Instance.new("Attachment") 
+        activeAttachment.Parent = activeSeat 
+    end
+    
+    if not activeVelocity or activeVelocity.Parent ~= activeSeat then 
+        if activeVelocity then activeVelocity:Destroy() end 
+        activeVelocity = Instance.new("LinearVelocity") 
+        activeVelocity.Attachment0 = activeAttachment 
+        activeVelocity.MaxForce = math.huge 
+        activeVelocity.VelocityConstraintMode = Enum.VelocityConstraintMode.Vector 
+        activeVelocity.Parent = activeSeat 
+    end
+    
+    -- 🛡️ Ép Network Ownership về máy người chơi để chống server tước quyền gây giật lag
+    if rootPart then
         pcall(function()
-            targetPart:SetNetworkOwner(LocalPlayer)
+            rootPart:SetNetworkOwner(LocalPlayer)
         end)
+    end
+    
+    local cf = activeSeat.CFrame
+    local forward = Vector3.new(cf.LookVector.X, 0, cf.LookVector.Z)
+    local currentSpeed = tonumber(_G.SpeedInput and _G.SpeedInput.Text) or (_G.BoostMultiplier or 200)
 
-        -- 3. Xử lý hướng bay (Dựa vào hướng nhìn Camera/Nhân vật hoặc hướng ghế cũ)
-        local cf = (LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")) and LocalPlayer.Character.HumanoidRootPart.CFrame or targetSeat.CFrame
-        local forward = Vector3.new(cf.LookVector.X, 0, cf.LookVector.Z)
-        local currentSpeed = tonumber(_G.SpeedInput and _G.SpeedInput.Text) or (_G.BoostMultiplier or 200)
-
+    if rootPart then
         if forward.Magnitude > 0.001 then
             local forwardDir = forward.Unit
             activeVelocity.VectorVelocity = forwardDir * currentSpeed
-            targetPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+            rootPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
         else
+            -- Giữ vật lý tỉnh táo khi đứng yên trên trời (chống ngủ đông physics engine)
             activeVelocity.VectorVelocity = Vector3.new(0, 0, 0)
-            targetPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-            targetPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+            rootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+            rootPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
         end
-        
-        -- 💡 (Đoạn này bro gộp thêm logic Float của bro vào đây để nó luôn duy trì lực nổi/chống rơi ngay cả khi không ngồi ghế)
     end
 else 
     -- 🛑 KHI TẮT TÍNH NĂNG (SPEED OFF)
-    local targetPart = _G.SavedRootPart
+    local rootPart = activeSeat and (activeSeat.AssemblyRootPart or activeSeat.Parent:FindFirstChild("HumanoidRootPart") or activeSeat.Parent:FindFirstChild("Part"))
 
     if activeVelocity then 
         activeVelocity.VectorVelocity = Vector3.new(0, 0, 0)
     end
     
-    if targetPart then
-        targetPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-        targetPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+    if rootPart then
+        rootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+        rootPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
     end
 
     task.spawn(function()
@@ -1017,10 +1003,6 @@ else
             activeAttachment = nil 
         end
     end)
-    
-    -- Xóa sạch bộ nhớ khi tắt hẳn tính năng
-    _G.SavedShipSeat = nil
-    _G.SavedRootPart = nil
 end
 
 end)
