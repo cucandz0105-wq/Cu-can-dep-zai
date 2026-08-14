@@ -961,8 +961,13 @@ if activeSeat and activeSeat:IsA("VehicleSeat") then
             activeVelocity.VectorVelocity = Vector3.zero
         end
     else
-        -- OFF = giữ LinearVelocity nhưng đặt tốc độ về 0
+        -- 🔴 SPEED OFF: giữ LinearVelocity + triệt vận tốc ngang dư
         activeVelocity.VectorVelocity = Vector3.zero
+
+        if rootPart then
+            local v = rootPart.AssemblyLinearVelocity
+            rootPart.AssemblyLinearVelocity = Vector3.new(0, v.Y, 0)
+        end
     end
 
 else
