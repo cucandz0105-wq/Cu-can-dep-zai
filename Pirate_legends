@@ -928,23 +928,34 @@ RunService.PreSimulation:Connect(function()
         end
     end
 
-if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
-    local rootPart = activeSeat.AssemblyRootPart or activeSeat.Parent:FindFirstChild("HumanoidRootPart") or activeSeat.Parent:FindFirstChild("Part")
+if activeSeat and activeSeat:IsA("VehicleSeat") then
+    local rootPart = activeSeat.AssemblyRootPart
+        or activeSeat.Parent:FindFirstChild("HumanoidRootPart")
+        or activeSeat.Parent:FindFirstChild("Part")
 
     for _, child in ipairs(activeSeat:GetDescendants()) do
-        if child:IsA("BodyVelocity") or child:IsA("BodyForce") or child:IsA("BodyGyro") or child:IsA("BodyAngularVelocity") then
+        if child:IsA("BodyVelocity")
+            or child:IsA("BodyForce")
+            or child:IsA("BodyGyro")
+            or child:IsA("BodyAngularVelocity") then
             child:Destroy()
         end
     end
 
     if not activeAttachment or activeAttachment.Parent ~= activeSeat then
-        if activeAttachment then activeAttachment:Destroy() end
+        if activeAttachment then
+            activeAttachment:Destroy()
+        end
+
         activeAttachment = Instance.new("Attachment")
         activeAttachment.Parent = activeSeat
     end
 
     if not activeVelocity or activeVelocity.Parent ~= activeSeat then
-        if activeVelocity then activeVelocity:Destroy() end
+        if activeVelocity then
+            activeVelocity:Destroy()
+        end
+
         activeVelocity = Instance.new("LinearVelocity")
         activeVelocity.Attachment0 = activeAttachment
         activeVelocity.MaxForce = math.huge
@@ -952,19 +963,27 @@ if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
         activeVelocity.Parent = activeSeat
     end
 
-    local look = activeSeat.CFrame.LookVector
-    local forward = Vector3.new(look.X, 0, look.Z)
-    local currentSpeed = tonumber(_G.SpeedInput and _G.SpeedInput.Text) or (_G.BoostMultiplier or 200)
+    if _G.SuperSailActive then
+        local look = activeSeat.CFrame.LookVector
+        local forward = Vector3.new(look.X, 0, look.Z)
+        local currentSpeed =
+            tonumber(_G.SpeedInput and _G.SpeedInput.Text)
+            or (_G.BoostMultiplier or 200)
 
-    if rootPart and forward.Magnitude > 0.001 then
-        activeVelocity.VectorVelocity = forward.Unit * currentSpeed
+        if rootPart and forward.Magnitude > 0.001 then
+            activeVelocity.VectorVelocity = forward.Unit * currentSpeed
+        else
+            activeVelocity.VectorVelocity = Vector3.zero
+        end
     else
+        -- SPEED OFF:
+        -- Giữ LinearVelocity, chỉ đưa tốc độ mục tiêu về 0.
+        -- Không Destroy controller và không reset AssemblyLinearVelocity.
         activeVelocity.VectorVelocity = Vector3.zero
     end
 
 else
     if activeVelocity then
-        activeVelocity.VectorVelocity = Vector3.zero
         activeVelocity:Destroy()
         activeVelocity = nil
     end
@@ -972,14 +991,6 @@ else
     if activeAttachment then
         activeAttachment:Destroy()
         activeAttachment = nil
-    end
-
-    if activeSeat and activeSeat:IsA("VehicleSeat") then
-        local rootPart = activeSeat.AssemblyRootPart
-        if rootPart then
-            rootPart.AssemblyLinearVelocity = Vector3.zero
-            rootPart.AssemblyAngularVelocity = Vector3.zero
-        end
     end
 end
 end)
