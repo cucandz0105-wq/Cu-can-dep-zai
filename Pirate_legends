@@ -824,7 +824,6 @@ RunService.PreSimulation:Connect(function()
             lastCachedSeat = nil
         end
     end
-end)
 
 if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
     local rootPart = activeSeat.AssemblyRootPart or activeSeat.Parent:FindFirstChild("HumanoidRootPart") or activeSeat.Parent:FindFirstChild("Part")
