@@ -932,24 +932,17 @@ if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
     local rootPart = activeSeat.AssemblyRootPart or activeSeat.Parent:FindFirstChild("HumanoidRootPart") or activeSeat.Parent:FindFirstChild("Part")
 
     for _, child in ipairs(activeSeat:GetDescendants()) do
-        if child:IsA("BodyVelocity") or child:IsA("BodyForce") or child:IsA("BodyGyro") or child:IsA("BodyAngularVelocity") then
-            child:Destroy()
-        end
+        if child:IsA("BodyVelocity") or child:IsA("BodyForce") or child:IsA("BodyGyro") or child:IsA("BodyAngularVelocity") then child:Destroy() end
     end
 
     if not activeAttachment or activeAttachment.Parent ~= activeSeat then
         if activeAttachment then activeAttachment:Destroy() end
-        activeAttachment = Instance.new("Attachment")
-        activeAttachment.Parent = activeSeat
+        activeAttachment = Instance.new("Attachment"); activeAttachment.Parent = activeSeat
     end
 
     if not activeVelocity or activeVelocity.Parent ~= activeSeat then
         if activeVelocity then activeVelocity:Destroy() end
-        activeVelocity = Instance.new("LinearVelocity")
-        activeVelocity.Attachment0 = activeAttachment
-        activeVelocity.MaxForce = math.huge
-        activeVelocity.VelocityConstraintMode = Enum.VelocityConstraintMode.Vector
-        activeVelocity.Parent = activeSeat
+        activeVelocity = Instance.new("LinearVelocity"); activeVelocity.Attachment0 = activeAttachment; activeVelocity.MaxForce = math.huge; activeVelocity.VelocityConstraintMode = Enum.VelocityConstraintMode.Vector; activeVelocity.Parent = activeSeat
     end
 
     local look = activeSeat.CFrame.LookVector
@@ -963,23 +956,36 @@ if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
     end
 
 else
-    if activeVelocity then
-        activeVelocity.VectorVelocity = Vector3.zero
-        activeVelocity:Destroy()
-        activeVelocity = nil
-    end
+    if activeVelocity and activeVelocity.Parent then
+        local rootPart = activeSeat and activeSeat.AssemblyRootPart
 
-    if activeAttachment then
-        activeAttachment:Destroy()
-        activeAttachment = nil
-    end
-
-    if activeSeat and activeSeat:IsA("VehicleSeat") then
-        local rootPart = activeSeat.AssemblyRootPart
         if rootPart then
-            rootPart.AssemblyLinearVelocity = Vector3.zero
-            rootPart.AssemblyAngularVelocity = Vector3.zero
+            local v = rootPart.AssemblyLinearVelocity
+            local horizontal = Vector3.new(v.X, 0, v.Z)
+            local brakeSpeed = horizontal.Magnitude * 0.75
+            activeVelocity.VectorVelocity = brakeSpeed > 1 and horizontal.Unit * brakeSpeed or Vector3.zero
+        else
+            activeVelocity.VectorVelocity = Vector3.zero
         end
+
+        task.spawn(function()
+            for i = 1, 12 do
+                if not activeVelocity or not activeVelocity.Parent then return end
+
+                local root = activeSeat and activeSeat.AssemblyRootPart
+                if not root then break end
+
+                local v = root.AssemblyLinearVelocity
+                local horizontal = Vector3.new(v.X, 0, v.Z)
+                if horizontal.Magnitude < 1 then break end
+
+                activeVelocity.VectorVelocity = horizontal * 0.65
+                task.wait(0.05)
+            end
+
+            if activeVelocity and activeVelocity.Parent then activeVelocity.VectorVelocity = Vector3.zero; activeVelocity:Destroy(); activeVelocity = nil end
+            if activeAttachment and activeAttachment.Parent then activeAttachment:Destroy(); activeAttachment = nil end
+        end)
     end
 end
 end)
