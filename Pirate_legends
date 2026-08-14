@@ -928,7 +928,7 @@ RunService.PreSimulation:Connect(function()
         end
     end
 
-if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
+if activeSeat and activeSeat:IsA("VehicleSeat") then
     local rootPart = activeSeat.AssemblyRootPart or activeSeat.Parent:FindFirstChild("HumanoidRootPart") or activeSeat.Parent:FindFirstChild("Part")
 
     for _, child in ipairs(activeSeat:GetDescendants()) do
@@ -950,49 +950,24 @@ if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
         activeVelocity.Parent = activeSeat
     end
 
-    local look = activeSeat.CFrame.LookVector
-    local forward = Vector3.new(look.X, 0, look.Z)
-    local currentSpeed = tonumber(_G.SpeedInput and _G.SpeedInput.Text) or (_G.BoostMultiplier or 200)
+    if _G.SuperSailActive then
+        local look = activeSeat.CFrame.LookVector
+        local forward = Vector3.new(look.X, 0, look.Z)
+        local currentSpeed = tonumber(_G.SpeedInput and _G.SpeedInput.Text) or (_G.BoostMultiplier or 200)
 
-    if rootPart and forward.Magnitude > 0.001 then
-        activeVelocity.VectorVelocity = forward.Unit * currentSpeed
+        if rootPart and forward.Magnitude > 0.001 then
+            activeVelocity.VectorVelocity = forward.Unit * currentSpeed
+        else
+            activeVelocity.VectorVelocity = Vector3.zero
+        end
     else
+        -- OFF = giữ LinearVelocity nhưng đặt tốc độ về 0
         activeVelocity.VectorVelocity = Vector3.zero
     end
 
 else
-    -- 🔴 SPEED OFF: đưa LinearVelocity về 0 trước, không buông lực đột ngột
-    if activeVelocity and activeVelocity.Parent then
-        activeVelocity.VectorVelocity = Vector3.zero
-
-        -- Cho physics ổn định ở trạng thái đứng yên trước khi cleanup
-        task.spawn(function()
-            local velocity = activeVelocity
-            local attachment = activeAttachment
-
-            task.wait(0.15)
-
-            if velocity and velocity.Parent then
-                velocity.VectorVelocity = Vector3.zero
-                velocity:Destroy()
-            end
-
-            if activeVelocity == velocity then
-                activeVelocity = nil
-            end
-
-            if attachment and attachment.Parent then
-                attachment:Destroy()
-            end
-
-            if activeAttachment == attachment then
-                activeAttachment = nil
-            end
-        end)
-    elseif activeAttachment then
-        activeAttachment:Destroy()
-        activeAttachment = nil
-    end
+    if activeVelocity then activeVelocity:Destroy(); activeVelocity = nil end
+    if activeAttachment then activeAttachment:Destroy(); activeAttachment = nil end
 end
 end)
 
