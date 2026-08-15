@@ -803,16 +803,7 @@ RunService.PreSimulation:Connect(function()
             local diff = targetY - currentY 
             mastVelocity.Velocity = Vector3.new(0, diff * 10, 0)
         end
-        
-        if #currentBoatCache > 0 then
-            pcall(function()
-                for _, part in pairs(currentBoatCache) do
-                    if part and part.Parent then
-                        part:SetNetworkOwner(LocalPlayer)
-                    end
-                end
-            end)
-        end
+
     else
         if not _G.BoatFlyActive then
             if MastAnchorPart then MastAnchorPart:Destroy() MastAnchorPart = nil end
