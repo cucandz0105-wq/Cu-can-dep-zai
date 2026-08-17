@@ -828,32 +828,36 @@ RunService.PreSimulation:Connect(function()
 if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
     _G.SavedOriginalBV = _G.SavedOriginalBV or {}
 
-    local rootPart = activeSeat.AssemblyRootPart or activeSeat.Parent:FindFirstChild("HumanoidRootPart") or activeSeat.Parent:FindFirstChild("Part")
+    local rootPart = activeSeat.AssemblyRootPart
+        or activeSeat.Parent:FindFirstChild("HumanoidRootPart")
+        or activeSeat.Parent:FindFirstChild("Part")
 
     if not _G.SavedOriginalBV[activeSeat] then
         _G.SavedOriginalBV[activeSeat] = {}
 
         for _, child in ipairs(activeSeat:GetDescendants()) do
             if child:IsA("BodyVelocity") then
-                table.insert(_G.SavedOriginalBV[activeSeat], {
-                    parent = child.Parent,
-                    velocity = child.Velocity,
-                    maxForce = child.MaxForce,
+                _G.SavedOriginalBV[activeSeat][child] = {
+                    Velocity = child.Velocity,
+                    MaxForce = child.MaxForce,
                     P = child.P
-                })
-                child:Destroy()
+                }
+
+                child.MaxForce = Vector3.zero
             end
         end
     else
-        for _, child in ipairs(activeSeat:GetDescendants()) do
-            if child:IsA("BodyVelocity") then
-                child:Destroy()
+        for child in pairs(_G.SavedOriginalBV[activeSeat]) do
+            if child and child.Parent then
+                child.MaxForce = Vector3.zero
             end
         end
     end
 
     for _, child in ipairs(activeSeat:GetDescendants()) do
-        if child:IsA("BodyForce") or child:IsA("BodyGyro") or child:IsA("BodyAngularVelocity") then
+        if child:IsA("BodyForce")
+            or child:IsA("BodyGyro")
+            or child:IsA("BodyAngularVelocity") then
             child:Destroy()
         end
     end
@@ -866,6 +870,7 @@ if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
 
     if not activeVelocity or activeVelocity.Parent ~= activeSeat then
         if activeVelocity then activeVelocity:Destroy() end
+
         activeVelocity = Instance.new("LinearVelocity")
         activeVelocity.Attachment0 = activeAttachment
         activeVelocity.MaxForce = 1
@@ -875,14 +880,16 @@ if _G.SuperSailActive and activeSeat and activeSeat:IsA("VehicleSeat") then
 
     local look = activeSeat.CFrame.LookVector
     local forward = Vector3.new(look.X, 0, look.Z)
-    local currentSpeed = tonumber(_G.SpeedInput and _G.SpeedInput.Text) or (_G.BoostMultiplier or 200)
+
+    local currentSpeed =
+        tonumber(_G.SpeedInput and _G.SpeedInput.Text)
+        or (_G.BoostMultiplier or 200)
 
     if rootPart and forward.Magnitude > 0.001 then
         activeVelocity.VectorVelocity = forward.Unit * currentSpeed
     else
         activeVelocity.VectorVelocity = Vector3.zero
     end
-
 else
     if activeVelocity then
         activeVelocity.VectorVelocity = Vector3.zero
@@ -895,20 +902,20 @@ else
         activeAttachment = nil
     end
 
-    local saved = _G.SavedOriginalBV and activeSeat and _G.SavedOriginalBV[activeSeat]
+    if _G.SavedOriginalBV and activeSeat then
+        local saved = _G.SavedOriginalBV[activeSeat]
 
-    if saved then
-        for _, data in ipairs(saved) do
-            if data.parent and data.parent.Parent then
-                local bv = Instance.new("BodyVelocity")
-                bv.Velocity = data.velocity
-                bv.MaxForce = data.maxForce
-                bv.P = data.P
-                bv.Parent = data.parent
+        if saved then
+            for child, state in pairs(saved) do
+                if child and child.Parent then
+                    child.Velocity = state.Velocity
+                    child.MaxForce = state.MaxForce
+                    child.P = state.P
+                end
             end
-        end
 
-        _G.SavedOriginalBV[activeSeat] = nil
+            _G.SavedOriginalBV[activeSeat] = nil
+        end
     end
 end
 end)
