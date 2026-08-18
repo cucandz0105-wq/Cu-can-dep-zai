@@ -1,5 +1,5 @@
 -- ====================================================================
--- SCRIPT XOẠC CHUẨN CHỈ + COOLDOWN CHỐNG LÚN ĐẤT (0.5 GIÂY)
+-- SCRIPT XOẠC CHUẨN CHỈ + COOLDOWN + KHÓA/MỞ KHÓA KHÔNG ĐỔI CHỮ (ĐÃ FIX)
 -- ====================================================================
 
 -- Xóa giao diện cũ nếu có để tránh trùng lặp
@@ -24,29 +24,44 @@ SlideButton.TextSize = 16
 SlideButton.Font = Enum.Font.SourceSansBold
 SlideButton.Active = true
 
+-- Bo tròn thành hình tròn hoàn toàn
 local ButtonCorner = Instance.new("UICorner")
-ButtonCorner.CornerRadius = UDim.new(0, 15)
+ButtonCorner.CornerRadius = UDim.new(1, 0)
 ButtonCorner.Parent = SlideButton
+
+-- Trạng thái khóa vị trí nút và trạng thái đang kéo
+local isLocked = false
+local isDragging = false
 
 -- Hàm kéo thả nút di động cho điện thoại
 local function makeDraggable(frame)
     local UserInputService = game:GetService("UserInputService")
-    local dragging, dragInput, dragStart, startPos
+    local dragInput, dragStart, startPos
+    
     frame.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
+        if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
+            if isLocked then return end
+            
+            isDragging = true
             dragStart = input.Position
             startPos = frame.Position
+            
             input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then dragging = false end
+                if input.UserInputState == Enum.UserInputState.End then 
+                    isDragging = false 
+                end
             end)
         end
     end)
+    
     frame.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then 
+            dragInput = input 
+        end
     end)
+    
     UserInputService.InputChanged:Connect(function(input)
-        if input == dragInput and dragging then
+        if input == dragInput and isDragging and not isLocked then
             local delta = input.Position - dragStart
             frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         end
@@ -55,12 +70,70 @@ end
 makeDraggable(SlideButton)
 
 ----------------------------------------------------
+-- CƠ CHẾ NHẤN GIỮ ĐỂ KHÓA / MỞ KHÓA VỊ TRÍ (GIỮ 1 GIÂY) - ĐÃ FIX CHUẨN
+----------------------------------------------------
+local holdTime = 1
+local holding = false
+local holdTimer = 0
+local holdCoroutine = nil
+
+SlideButton.MouseButton1Down:Connect(function()
+    if isDragging then return end
+    
+    holding = true
+    holdTimer = 0
+    
+    if holdCoroutine then
+        task.cancel(holdCoroutine)
+    end
+    
+    holdCoroutine = task.spawn(function()
+        local currentTimer = 0
+        while holding do
+            task.wait(0.1)
+            if not holding then break end
+            
+            currentTimer = currentTimer + 0.1
+            holdTimer = currentTimer
+            
+            if currentTimer >= holdTime then
+                isLocked = not isLocked
+                if isLocked then
+                    SlideButton.BackgroundColor3 = Color3.fromRGB(60, 255, 60) -- Xanh lá: Khóa vị trí
+                else
+                    SlideButton.BackgroundColor3 = Color3.fromRGB(255, 60, 60) -- Đỏ: Mở khóa di chuyển
+                end
+                
+                holding = false
+                break
+            end
+        end
+    end)
+end)
+
+local function cancelHold()
+    holding = false
+    if holdCoroutine then
+        task.cancel(holdCoroutine)
+        holdCoroutine = nil
+    end
+end
+
+SlideButton.MouseButton1Up:Connect(cancelHold)
+SlideButton.MouseLeave:Connect(cancelHold)
+
+----------------------------------------------------
 -- LOGIC XOẠC AN TOÀN TUYỆT ĐỐI (COOLDOWN >= 0.5S)
 ----------------------------------------------------
-local isCooldown = false -- Biến trạng thái chờ
+local isCooldown = false
 
 SlideButton.MouseButton1Click:Connect(function()
-    -- Nếu đang trong thời gian hồi chiêu của cú xoạc trước thì chặn luôn
+    -- Nếu vừa thực hiện thao tác giữ để khóa/mở thì bỏ qua sự kiện click xoạc này
+    if holdTimer >= holdTime then 
+        holdTimer = 0
+        return 
+    end
+
     if isCooldown then return end
 
     local ballsInPlay = workspace:FindFirstChild("BallsInPlay")
@@ -72,26 +145,21 @@ SlideButton.MouseButton1Click:Connect(function()
     local hrp = character and character:FindFirstChild("HumanoidRootPart")
     
     if ball then
-        isCooldown = true -- Bắt đầu kích hoạt trạng thái chờ
+        isCooldown = true
         
-        -- 1. Gửi lệnh xoạc lên server
         local args = {ball, 0.5, false}
         game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("Slide"):FireServer(unpack(args))
         
-        -- 2. Đợi 0.15 giây cho hành động xoạc bắt đầu mượt mà
         task.wait(0.15)
         
-        -- 3. Ép Client reset trạng thái vật lý để sửa dáng chạy
         if humanoid and hrp then
             hrp.Velocity = Vector3.new(0, 0, 0)
             humanoid:ChangeState(Enum.HumanoidStateType.Running)
             hrp.CFrame = hrp.CFrame + Vector3.new(0, 0.1, 0)
         end
         
-        -- 4. Bù nốt thời gian chờ còn lại để tổng thời gian hồi chiêu đúng bằng 0.5 giây
         task.wait(0.35) 
-        
-        isCooldown = false -- Mở khóa cho cú bấm tiếp theo
+        isCooldown = false
     end
 end)
 
