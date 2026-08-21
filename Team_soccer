@@ -1,5 +1,5 @@
 -- ====================================================================
--- SCRIPT XOẠC BẢN CHUẨN ĐỘI TRƯỞNG: NÂNG CAO 3 STUDS KHÔNG LÚN ĐẤT
+-- SCRIPT XOẠC: ĐÓN LÕNG BÓNG (PREDICTION) + HẠ GẦM 1 STUD (FULL CODE)
 -- ====================================================================
 
 -- Xóa giao diện cũ nếu có để tránh trùng lặp
@@ -95,7 +95,7 @@ SlideButton.MouseButton1Up:Connect(cancelHold)
 SlideButton.MouseLeave:Connect(cancelHold)
 
 ----------------------------------------------------
--- LOGIC XOẠC: TANK-DASH (OFFSET 7 STUDS + NÂNG CAO 3 STUDS)
+-- LOGIC XOẠC: ĐÓN LÕNG BÓNG (PREDICTION) + HẠ GẦM 1 STUD
 ----------------------------------------------------
 local isCooldown = false
 
@@ -116,53 +116,54 @@ SlideButton.MouseButton1Click:Connect(function()
             isCooldown = true
             local anchorPosition = ball.Position
             
-            -- TÍNH TOÁN HƯỚNG DI CHUYỂN THỰC TẾ CỦA BÓNG
+            -- Thuật toán dự đoán vị trí bóng (bù trễ cho máy lag)
+            local predictionTime = 0.1 
+            local predictedBallPos = ball.Position + (ball.AssemblyLinearVelocity * predictionTime)
+            
+            -- Tính toán hướng di chuyển thực tế của bóng
             local ballMoveDir = ball.AssemblyLinearVelocity
             local direction = (ballMoveDir.Magnitude > 1) and ballMoveDir.Unit or hrp.CFrame.LookVector
             direction = Vector3.new(direction.X, 0, direction.Z).Unit
             
-            -- Điểm dừng cách tâm bóng 7 studs và LUÔN CAO HƠN TÂM BÓNG 3 STUDS ĐỂ KHÔNG BỊ LÚN ĐẤT
-            local targetPos = ball.Position + (direction * 7)
-            targetPos = Vector3.new(targetPos.X, ball.Position.Y + 3, targetPos.Z)
+            -- Điểm đón: Cách vị trí dự đoán 7 studs về phía trước, hạ gầm xuống 1 stud
+            local targetPos = predictedBallPos + (direction * 7)
+            targetPos = Vector3.new(targetPos.X, ball.Position.Y + 1, targetPos.Z)
             
-            -- ĐỔI HƯỚNG NHÂN VẬT: Quay mặt cùng chiều với hướng bóng lăn
+            -- Đổi hướng nhân vật nhìn cùng chiều bóng lăn
             hrp.CFrame = CFrame.new(hrp.Position, hrp.Position + direction)
             
-            -- BƯỚC 1: LƯỚT ĐẾN ĐÚNG ĐIỂM ĐÃ ĐƯỢC NÂNG CAO BẰNG BODYVELOCITY
+            -- Lướt tới tốc độ cao (180) để bắt kịp bóng nhanh chóng
             local bodyVel = Instance.new("BodyVelocity")
-            bodyVel.MaxForce = Vector3.new(100000, 100000, 100000) -- Bật lực kháng trọng lực nhẹ theo trục Y
-            bodyVel.Velocity = (targetPos - hrp.Position).Unit * 150
+            bodyVel.MaxForce = Vector3.new(100000, 100000, 100000)
+            bodyVel.Velocity = (targetPos - hrp.Position).Unit * 180
             bodyVel.Parent = hrp
             
             local dashTime = tick()
-            while tick() - dashTime < 0.3 do
+            while tick() - dashTime < 0.2 do
                 if (ball.Position - anchorPosition).Magnitude > 30 then break end
                 task.wait(0.05)
             end
             
-            -- Xóa lực đẩy sau khi lướt xong
             bodyVel:Destroy()
             
-            -- BƯỚC 2: KÍCH HOẠT LỆNH XOẠC (FIRE SERVER)
+            -- Kích hoạt lệnh xoạc
             game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("Slide"):FireServer(ball, 0.5, false)
             
-            -- BƯỚC 3: KHÓA CHÂN/THÂN (LOCK-ON DÍNH VÀO NGƯỜI - HRP)
+            -- Ghim bám dính
             local att0 = Instance.new("Attachment", hrp)
             local att1 = Instance.new("Attachment", ball)
             local alignPos = Instance.new("AlignPosition", hrp)
             alignPos.Attachment0 = att0
             alignPos.Attachment1 = att1
             alignPos.MaxForce = 999999 
-            alignPos.Responsiveness = 100
+            alignPos.Responsiveness = 150
             
-            -- Duy trì ghim bám trong 0.7s
             local lockTime = tick()
-            while tick() - lockTime < 0.7 do
+            while tick() - lockTime < 0.6 do
                 if (ball.Position - anchorPosition).Magnitude > 30 then break end
                 task.wait(0.05)
             end
             
-            -- DỌN DẸP AN TOÀN
             att0:Destroy()
             att1:Destroy()
             alignPos:Destroy()
@@ -170,7 +171,7 @@ SlideButton.MouseButton1Click:Connect(function()
             if hrp then hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0) end
             if hum then hum:ChangeState(Enum.HumanoidStateType.Running) end
             
-            task.wait(0.3) 
+            task.wait(0.2)
             isCooldown = false
         else
             -- Xoạc thường nếu ngoài tầm 30 studs
