@@ -1,5 +1,5 @@
 -- ====================================================================
--- SCRIPT XOẠC CHUẨN CHỈ + COOLDOWN + KHÓA/MỞ KHÓA KHÔNG ĐỔI CHỮ (ĐÃ FIX)
+-- SCRIPT XOẠC BẢN CHUẨN ĐỘI TRƯỞNG: NÂNG CAO 3 STUDS KHÔNG LÚN ĐẤT
 -- ====================================================================
 
 -- Xóa giao diện cũ nếu có để tránh trùng lặp
@@ -29,37 +29,27 @@ local ButtonCorner = Instance.new("UICorner")
 ButtonCorner.CornerRadius = UDim.new(1, 0)
 ButtonCorner.Parent = SlideButton
 
--- Trạng thái khóa vị trí nút và trạng thái đang kéo
 local isLocked = false
 local isDragging = false
 
--- Hàm kéo thả nút di động cho điện thoại
+-- Hàm kéo thả nút di động
 local function makeDraggable(frame)
     local UserInputService = game:GetService("UserInputService")
     local dragInput, dragStart, startPos
-    
     frame.InputBegan:Connect(function(input)
         if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
             if isLocked then return end
-            
             isDragging = true
             dragStart = input.Position
             startPos = frame.Position
-            
             input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then 
-                    isDragging = false 
-                end
+                if input.UserInputState == Enum.UserInputState.End then isDragging = false end
             end)
         end
     end)
-    
     frame.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then 
-            dragInput = input 
-        end
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end
     end)
-    
     UserInputService.InputChanged:Connect(function(input)
         if input == dragInput and isDragging and not isLocked then
             local delta = input.Position - dragStart
@@ -69,9 +59,7 @@ local function makeDraggable(frame)
 end
 makeDraggable(SlideButton)
 
-----------------------------------------------------
--- CƠ CHẾ NHẤN GIỮ ĐỂ KHÓA / MỞ KHÓA VỊ TRÍ (GIỮ 1 GIÂY) - ĐÃ FIX CHUẨN
-----------------------------------------------------
+-- Cơ chế nhấn giữ khóa vị trí
 local holdTime = 1
 local holding = false
 local holdTimer = 0
@@ -79,31 +67,19 @@ local holdCoroutine = nil
 
 SlideButton.MouseButton1Down:Connect(function()
     if isDragging then return end
-    
     holding = true
     holdTimer = 0
-    
-    if holdCoroutine then
-        task.cancel(holdCoroutine)
-    end
-    
+    if holdCoroutine then task.cancel(holdCoroutine) end
     holdCoroutine = task.spawn(function()
         local currentTimer = 0
         while holding do
             task.wait(0.1)
             if not holding then break end
-            
             currentTimer = currentTimer + 0.1
             holdTimer = currentTimer
-            
             if currentTimer >= holdTime then
                 isLocked = not isLocked
-                if isLocked then
-                    SlideButton.BackgroundColor3 = Color3.fromRGB(60, 255, 60) -- Xanh lá: Khóa vị trí
-                else
-                    SlideButton.BackgroundColor3 = Color3.fromRGB(255, 60, 60) -- Đỏ: Mở khóa di chuyển
-                end
-                
+                SlideButton.BackgroundColor3 = isLocked and Color3.fromRGB(60, 255, 60) or Color3.fromRGB(255, 60, 60)
                 holding = false
                 break
             end
@@ -113,53 +89,95 @@ end)
 
 local function cancelHold()
     holding = false
-    if holdCoroutine then
-        task.cancel(holdCoroutine)
-        holdCoroutine = nil
-    end
+    if holdCoroutine then task.cancel(holdCoroutine); holdCoroutine = nil end
 end
-
 SlideButton.MouseButton1Up:Connect(cancelHold)
 SlideButton.MouseLeave:Connect(cancelHold)
 
 ----------------------------------------------------
--- LOGIC XOẠC AN TOÀN TUYỆT ĐỐI (COOLDOWN >= 0.5S)
+-- LOGIC XOẠC: TANK-DASH (OFFSET 7 STUDS + NÂNG CAO 3 STUDS)
 ----------------------------------------------------
 local isCooldown = false
 
 SlideButton.MouseButton1Click:Connect(function()
-    -- Nếu vừa thực hiện thao tác giữ để khóa/mở thì bỏ qua sự kiện click xoạc này
-    if holdTimer >= holdTime then 
-        holdTimer = 0
-        return 
-    end
-
+    if holdTimer >= holdTime then holdTimer = 0 return end
     if isCooldown then return end
 
-    local ballsInPlay = workspace:FindFirstChild("BallsInPlay")
-    local ball = ballsInPlay and ballsInPlay:FindFirstChild("Ball")
-    
+    local ball = workspace:FindFirstChild("BallsInPlay") and workspace:FindFirstChild("BallsInPlay"):FindFirstChild("Ball")
     local player = game.Players.LocalPlayer
-    local character = player.Character
-    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-    local hrp = character and character:FindFirstChild("HumanoidRootPart")
+    local char = player.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
     
-    if ball then
-        isCooldown = true
+    if ball and hrp then
+        local distance = (hrp.Position - ball.Position).Magnitude
         
-        local args = {ball, 0.5, false}
-        game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("Slide"):FireServer(unpack(args))
-        
-        task.wait(0.15)
-        
-        if humanoid and hrp then
-            hrp.Velocity = Vector3.new(0, 0, 0)
-            humanoid:ChangeState(Enum.HumanoidStateType.Running)
-            hrp.CFrame = hrp.CFrame + Vector3.new(0, 0.1, 0)
+        if distance <= 30 then
+            isCooldown = true
+            local anchorPosition = ball.Position
+            
+            -- TÍNH TOÁN HƯỚNG DI CHUYỂN THỰC TẾ CỦA BÓNG
+            local ballMoveDir = ball.AssemblyLinearVelocity
+            local direction = (ballMoveDir.Magnitude > 1) and ballMoveDir.Unit or hrp.CFrame.LookVector
+            direction = Vector3.new(direction.X, 0, direction.Z).Unit
+            
+            -- Điểm dừng cách tâm bóng 7 studs và LUÔN CAO HƠN TÂM BÓNG 3 STUDS ĐỂ KHÔNG BỊ LÚN ĐẤT
+            local targetPos = ball.Position + (direction * 7)
+            targetPos = Vector3.new(targetPos.X, ball.Position.Y + 3, targetPos.Z)
+            
+            -- ĐỔI HƯỚNG NHÂN VẬT: Quay mặt cùng chiều với hướng bóng lăn
+            hrp.CFrame = CFrame.new(hrp.Position, hrp.Position + direction)
+            
+            -- BƯỚC 1: LƯỚT ĐẾN ĐÚNG ĐIỂM ĐÃ ĐƯỢC NÂNG CAO BẰNG BODYVELOCITY
+            local bodyVel = Instance.new("BodyVelocity")
+            bodyVel.MaxForce = Vector3.new(100000, 100000, 100000) -- Bật lực kháng trọng lực nhẹ theo trục Y
+            bodyVel.Velocity = (targetPos - hrp.Position).Unit * 150
+            bodyVel.Parent = hrp
+            
+            local dashTime = tick()
+            while tick() - dashTime < 0.3 do
+                if (ball.Position - anchorPosition).Magnitude > 30 then break end
+                task.wait(0.05)
+            end
+            
+            -- Xóa lực đẩy sau khi lướt xong
+            bodyVel:Destroy()
+            
+            -- BƯỚC 2: KÍCH HOẠT LỆNH XOẠC (FIRE SERVER)
+            game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("Slide"):FireServer(ball, 0.5, false)
+            
+            -- BƯỚC 3: KHÓA CHÂN/THÂN (LOCK-ON DÍNH VÀO NGƯỜI - HRP)
+            local att0 = Instance.new("Attachment", hrp)
+            local att1 = Instance.new("Attachment", ball)
+            local alignPos = Instance.new("AlignPosition", hrp)
+            alignPos.Attachment0 = att0
+            alignPos.Attachment1 = att1
+            alignPos.MaxForce = 999999 
+            alignPos.Responsiveness = 100
+            
+            -- Duy trì ghim bám trong 0.7s
+            local lockTime = tick()
+            while tick() - lockTime < 0.7 do
+                if (ball.Position - anchorPosition).Magnitude > 30 then break end
+                task.wait(0.05)
+            end
+            
+            -- DỌN DẸP AN TOÀN
+            att0:Destroy()
+            att1:Destroy()
+            alignPos:Destroy()
+            
+            if hrp then hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0) end
+            if hum then hum:ChangeState(Enum.HumanoidStateType.Running) end
+            
+            task.wait(0.3) 
+            isCooldown = false
+        else
+            -- Xoạc thường nếu ngoài tầm 30 studs
+            isCooldown = true
+            game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("Slide"):FireServer(ball, 0.5, false)
+            task.wait(0.5)
+            isCooldown = false
         end
-        
-        task.wait(0.35) 
-        isCooldown = false
     end
 end)
-
