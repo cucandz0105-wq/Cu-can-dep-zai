@@ -1,0 +1,1109 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+-- TỰ ĐỘNG XÓA BẢN SCRIPT CŨ NẾU ĐÃ TỒN TẠI (TRÁNH SPAM UI)
+local playerGui = LocalPlayer:WaitForChild("PlayerGui")
+if playerGui:FindFirstChild("ModMenu_Final_CrossPlatform") then
+    playerGui.ModMenu_Final_CrossPlatform:Destroy()
+end
+
+-- Lấy Module điều khiển gốc của Roblox
+local Controls
+task.spawn(function()
+    local PlayerModule = require(LocalPlayer:WaitForChild("PlayerScripts"):WaitForChild("PlayerModule"))
+    Controls = PlayerModule:GetControls()
+end)
+
+-- ==========================================
+-- 1. GIAO DIỆN (UI) - THU GỌN & TỰ ĐỘNG
+-- ==========================================
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "ModMenu_Final_CrossPlatform"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = playerGui
+
+-- Nút Toggle
+local ToggleButton = Instance.new("TextButton")
+ToggleButton.Size = UDim2.new(0, 45, 0, 45)
+ToggleButton.Position = UDim2.new(0, 20, 0, 20)
+ToggleButton.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+ToggleButton.Text = "-__-"
+ToggleButton.Font = Enum.Font.GothamBold
+ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleButton.Active = true
+ToggleButton.Draggable = true 
+ToggleButton.Parent = ScreenGui
+
+local UICornerToggle = Instance.new("UICorner")
+UICornerToggle.CornerRadius = UDim.new(1, 0)
+UICornerToggle.Parent = ToggleButton
+
+-- Khung nền chính
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 250, 0, 300)
+MainFrame.Position = UDim2.new(0.5, -125, 0.5, -150)
+MainFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+MainFrame.Visible = false
+MainFrame.Active = true
+MainFrame.Draggable = true 
+MainFrame.Parent = ScreenGui
+
+local UICornerMain = Instance.new("UICorner")
+UICornerMain.CornerRadius = UDim.new(0, 8)
+UICornerMain.Parent = MainFrame
+
+-- Tiêu đề Menu
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 0, 35)
+Title.BackgroundTransparency = 1
+Title.Text = "MENU CHỨC NĂNG"
+Title.Font = Enum.Font.GothamBold
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 14
+Title.Parent = MainFrame
+
+-- Khung cuộn chứa nút
+local ScrollFrame = Instance.new("ScrollingFrame")
+ScrollFrame.Size = UDim2.new(1, 0, 1, -35)
+ScrollFrame.Position = UDim2.new(0, 0, 0, 35)
+ScrollFrame.BackgroundTransparency = 1
+ScrollFrame.ScrollBarThickness = 4
+ScrollFrame.Parent = MainFrame
+
+ToggleButton.MouseButton1Click:Connect(function()
+    MainFrame.Visible = not MainFrame.Visible
+    ToggleButton.Text = MainFrame.Visible and "0__0" or "-__-"
+end)
+
+local UI_HEIGHT = 28
+local SPACING = 6
+local currentY = 10
+
+local function createBtn(text)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0.9, 0, 0, UI_HEIGHT)
+    btn.Position = UDim2.new(0.05, 0, 0, currentY)
+    btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.Font = Enum.Font.GothamSemibold
+    btn.TextSize = 12
+    btn.Text = text
+    btn.Parent = ScrollFrame
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 4)
+    corner.Parent = btn
+    
+    currentY = currentY + UI_HEIGHT + SPACING
+    ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, currentY + 10)
+    return btn
+end
+
+local function createToggleWithInput(text, defaultVal)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0.65, 0, 0, UI_HEIGHT)
+    btn.Position = UDim2.new(0.05, 0, 0, currentY)
+    btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.Font = Enum.Font.GothamSemibold
+    btn.TextSize = 12
+    btn.Text = text
+    btn.Parent = ScrollFrame
+    
+    local cornerBtn = Instance.new("UICorner")
+    cornerBtn.CornerRadius = UDim.new(0, 4)
+    cornerBtn.Parent = btn
+
+    local input = Instance.new("TextBox")
+    input.Size = UDim2.new(0.2, 0, 0, UI_HEIGHT)
+    input.Position = UDim2.new(0.75, 0, 0, currentY)
+    input.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    input.TextColor3 = Color3.fromRGB(255, 255, 255)
+    input.Font = Enum.Font.GothamSemibold
+    input.TextSize = 12
+    input.Text = tostring(defaultVal)
+    input.ClearTextOnFocus = true
+    input.Parent = ScrollFrame
+    
+    local cornerInput = Instance.new("UICorner")
+    cornerInput.CornerRadius = UDim.new(0, 4)
+    cornerInput.Parent = input
+
+    currentY = currentY + UI_HEIGHT + SPACING
+    ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, currentY + 10)
+    return btn, input
+end
+
+local function createDoubleBtn(text1, text2)
+    local btn1 = Instance.new("TextButton")
+    btn1.Size = UDim2.new(0.425, 0, 0, UI_HEIGHT)
+    btn1.Position = UDim2.new(0.05, 0, 0, currentY)
+    btn1.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    btn1.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn1.Font = Enum.Font.GothamSemibold
+    btn1.TextSize = 11
+    btn1.Text = text1
+    btn1.Parent = ScrollFrame
+    
+    local corner1 = Instance.new("UICorner")
+    corner1.CornerRadius = UDim.new(0, 4)
+    corner1.Parent = btn1
+
+    local btn2 = Instance.new("TextButton")
+    btn2.Size = UDim2.new(0.425, 0, 0, UI_HEIGHT)
+    btn2.Position = UDim2.new(0.525, 0, 0, currentY)
+    btn2.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    btn2.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn2.Font = Enum.Font.GothamSemibold
+    btn2.TextSize = 11
+    btn2.Text = text2
+    btn2.Parent = ScrollFrame
+    
+    local corner2 = Instance.new("UICorner")
+    corner2.CornerRadius = UDim.new(0, 4)
+    corner2.Parent = btn2
+    
+    currentY = currentY + UI_HEIGHT + SPACING
+    ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, currentY + 10)
+    return btn1, btn2
+end
+
+local function createTripleBtn(text1, text2, text3)
+    local btn1 = Instance.new("TextButton")
+    btn1.Size = UDim2.new(0.28, 0, 0, UI_HEIGHT)
+    btn1.Position = UDim2.new(0.05, 0, 0, currentY)
+    btn1.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    btn1.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn1.Font = Enum.Font.GothamSemibold
+    btn1.TextSize = 10
+    btn1.Text = text1
+    btn1.Parent = ScrollFrame
+    
+    local corner1 = Instance.new("UICorner")
+    corner1.CornerRadius = UDim.new(0, 4)
+    corner1.Parent = btn1
+
+    local btn2 = Instance.new("TextButton")
+    btn2.Size = UDim2.new(0.28, 0, 0, UI_HEIGHT)
+    btn2.Position = UDim2.new(0.36, 0, 0, currentY)
+    btn2.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    btn2.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn2.Font = Enum.Font.GothamSemibold
+    btn2.TextSize = 10
+    btn2.Text = text2
+    btn2.Parent = ScrollFrame
+    
+    local corner2 = Instance.new("UICorner")
+    corner2.CornerRadius = UDim.new(0, 4)
+    corner2.Parent = btn2
+
+    local btn3 = Instance.new("TextButton")
+    btn3.Size = UDim2.new(0.28, 0, 0, UI_HEIGHT)
+    btn3.Position = UDim2.new(0.67, 0, 0, currentY)
+    btn3.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    btn3.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn3.Font = Enum.Font.GothamSemibold
+    btn3.TextSize = 10
+    btn3.Text = text3
+    btn3.Parent = ScrollFrame
+    
+    local corner3 = Instance.new("UICorner")
+    corner3.CornerRadius = UDim.new(0, 4)
+    corner3.Parent = btn3
+    
+    currentY = currentY + UI_HEIGHT + SPACING
+    ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, currentY + 10)
+    return btn1, btn2, btn3
+end
+
+local function createActionWithInput(text, placeholder)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0.55, 0, 0, UI_HEIGHT)
+    btn.Position = UDim2.new(0.05, 0, 0, currentY)
+    btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.Font = Enum.Font.GothamSemibold
+    btn.TextSize = 12
+    btn.Text = text
+    btn.Parent = ScrollFrame
+    
+    local cornerBtn = Instance.new("UICorner")
+    cornerBtn.CornerRadius = UDim.new(0, 4)
+    cornerBtn.Parent = btn
+
+    local input = Instance.new("TextBox")
+    input.Size = UDim2.new(0.3, 0, 0, UI_HEIGHT)
+    input.Position = UDim2.new(0.65, 0, 0, currentY)
+    input.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    input.TextColor3 = Color3.fromRGB(255, 255, 255)
+    input.Font = Enum.Font.GothamSemibold
+    input.TextSize = 11
+    input.PlaceholderText = placeholder
+    input.Text = ""
+    input.ClearTextOnFocus = true
+    input.Parent = ScrollFrame
+    
+    local cornerInput = Instance.new("UICorner")
+    cornerInput.CornerRadius = UDim.new(0, 4)
+    cornerInput.Parent = input
+
+    currentY = currentY + UI_HEIGHT + SPACING
+    ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, currentY + 10)
+    return btn, input
+end
+
+local function getTargetPlayer(str)
+    if not str or str == "" then return nil end
+    str = string.lower(string.match(str, "^%s*(.-)%s*$"))
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer then
+            local name = string.lower(p.Name)
+            local display = string.lower(p.DisplayName)
+            local id = tostring(p.UserId)
+            if string.sub(name, 1, #str) == str or string.sub(display, 1, #str) == str or id == str then
+                return p
+            end
+        end
+    end
+    return nil
+end
+
+local states = {speed = false, fly = false, vfly = false, float = false, esp = false, espyou = false, infjump = false, noclip = false}
+
+-- 1. SPEED
+local btnSpeed, inputSpeed = createToggleWithInput("Speed: OFF", 50)
+local originalWalkSpeed = 16 
+
+btnSpeed.MouseButton1Click:Connect(function()
+    states.speed = not states.speed
+    btnSpeed.Text = states.speed and "Speed: ON" or "Speed: OFF"
+    btnSpeed.BackgroundColor3 = states.speed and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(60, 60, 60)
+    
+    local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid")
+    if hum then
+        if states.speed then
+            originalWalkSpeed = hum.WalkSpeed 
+        else
+            hum.WalkSpeed = originalWalkSpeed 
+        end
+    end
+end)
+
+RunService.Heartbeat:Connect(function()
+    if states.speed and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+        LocalPlayer.Character.Humanoid.WalkSpeed = tonumber(inputSpeed.Text) or 50
+    end
+end)
+
+-- 2. FLY
+local btnFly, inputFly = createToggleWithInput("Fly: OFF", 2)
+local flyBv, flyBg
+
+btnFly.MouseButton1Click:Connect(function()
+    states.fly = not states.fly
+    btnFly.Text = states.fly and "Fly: ON" or "Fly: OFF"
+    btnFly.BackgroundColor3 = states.fly and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(60, 60, 60)
+    
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    local hum = char and char:FindFirstChild("Humanoid")
+    
+    if states.fly and hrp and hum then
+        hum.PlatformStand = true
+        
+        flyBg = Instance.new("BodyGyro", hrp)
+        flyBg.P = 9e4
+        flyBg.maxTorque = Vector3.new(9e9, 9e9, 9e9)
+        flyBg.cframe = hrp.CFrame
+        
+        flyBv = Instance.new("BodyVelocity", hrp)
+        flyBv.maxForce = Vector3.new(1e5, 1e5, 1e5)
+        flyBv.velocity = Vector3.zero
+    else
+        if hum then hum.PlatformStand = false end
+        if flyBv then flyBv:Destroy() end
+        if flyBg then flyBg:Destroy() end
+    end
+end)
+
+RunService.RenderStepped:Connect(function()
+    if states.fly and flyBv and flyBg then
+        flyBg.cframe = Camera.CFrame
+        local moveVector = (Controls and Controls:GetMoveVector()) or Vector3.zero
+        local moveDir = (Camera.CFrame.RightVector * moveVector.X) - (Camera.CFrame.LookVector * moveVector.Z)
+        if moveDir.Magnitude > 0 then moveDir = moveDir.Unit end
+        flyBv.velocity = moveDir * ((tonumber(inputFly.Text) or 2) * 25)
+    end
+end)
+
+-- 2.1. VEHICLE FLY (VFLY)
+local btnVFly, inputVFly = createToggleWithInput("VFly: OFF", 2)
+local vflyBv, vflyBg
+local currentVehicleSeat = nil
+
+btnVFly.MouseButton1Click:Connect(function()
+    states.vfly = not states.vfly
+    btnVFly.Text = states.vfly and "VFly: ON" or "VFly: OFF"
+    btnVFly.BackgroundColor3 = states.vfly and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(60, 60, 60)
+    
+    -- Nếu tắt VFly, dọn dẹp các lực đẩy
+    if not states.vfly then
+        if vflyBv then vflyBv:Destroy() end
+        if vflyBg then vflyBg:Destroy() end
+        currentVehicleSeat = nil
+    end
+end)
+
+RunService.RenderStepped:Connect(function()
+    if states.vfly then
+        local char = LocalPlayer.Character
+        local hum = char and char:FindFirstChild("Humanoid")
+        
+        -- Kiểm tra xem người chơi có đang ngồi trên xe (SeatPart) không
+        if hum and hum.SeatPart then
+            local seat = hum.SeatPart
+            
+            -- Nếu vừa bước lên xe mới, khởi tạo lại lực (Force)
+            if currentVehicleSeat ~= seat then
+                if vflyBv then vflyBv:Destroy() end
+                if vflyBg then vflyBg:Destroy() end
+                
+                currentVehicleSeat = seat
+                
+                vflyBg = Instance.new("BodyGyro", seat)
+                vflyBg.P = 9e4
+                vflyBg.maxTorque = Vector3.new(9e9, 9e9, 9e9) -- Max lực để xoay xe
+                vflyBg.cframe = seat.CFrame
+                
+                vflyBv = Instance.new("BodyVelocity", seat)
+                vflyBv.maxForce = Vector3.new(9e9, 9e9, 9e9) -- Max lực để nâng được xe nặng
+                vflyBv.velocity = Vector3.zero
+            end
+            
+            -- Cập nhật hướng bay của xe theo hướng Camera (tương tự Fly thường)
+            if vflyBg and vflyBv then
+                vflyBg.cframe = Camera.CFrame
+                local moveVector = (Controls and Controls:GetMoveVector()) or Vector3.zero
+                local moveDir = (Camera.CFrame.RightVector * moveVector.X) - (Camera.CFrame.LookVector * moveVector.Z)
+                
+                if moveDir.Magnitude > 0 then moveDir = moveDir.Unit end
+                
+                -- Nhân với 50 thay vì 25 vì xe thường nặng hơn và cần vận tốc lớn hơn
+                vflyBv.velocity = moveDir * ((tonumber(inputVFly.Text) or 2) * 50)
+            end
+        else
+            -- Nếu người chơi nhảy khỏi xe trong lúc VFly đang bật thì dọn dẹp lực đẩy ngay lập tức
+            if vflyBv then vflyBv:Destroy() vflyBv = nil end
+            if vflyBg then vflyBg:Destroy() vflyBg = nil end
+            currentVehicleSeat = nil
+        end
+    end
+end)
+
+-- 3. FLOAT
+local btnFloat = createBtn("Float: OFF")
+local floatPart = nil
+local floatY = 0
+
+btnFloat.MouseButton1Click:Connect(function()
+    states.float = not states.float
+    btnFloat.Text = states.float and "Float: ON" or "Float: OFF"
+    btnFloat.BackgroundColor3 = states.float and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(60, 60, 60)
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if states.float and hrp then
+        floatY = hrp.Position.Y - 3.2 
+        floatPart = Instance.new("Part")
+        floatPart.Name = "InvisibleCarpet"
+        floatPart.Size = Vector3.new(5, 1, 5)
+        floatPart.Transparency = 1 
+        floatPart.Anchored = true
+        floatPart.CanCollide = true
+        floatPart.Parent = workspace
+        floatPart.CFrame = CFrame.new(hrp.Position.X, floatY, hrp.Position.Z)
+    else
+        if floatPart then floatPart:Destroy() floatPart = nil end
+    end
+end)
+
+RunService.Heartbeat:Connect(function()
+    if states.float and floatPart and LocalPlayer.Character then
+        local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        local hum = LocalPlayer.Character:FindFirstChild("Humanoid")
+        if hrp and hum then
+            if hum:GetState() == Enum.HumanoidStateType.Freefall then
+                floatY = hrp.Position.Y - 3.2
+            end
+            floatPart.CFrame = CFrame.new(hrp.Position.X, floatY, hrp.Position.Z)
+        end
+    end
+end)
+
+-- 4. ANTI LAG
+local btnLag = createBtn("Anti Lag")
+btnLag.MouseButton1Click:Connect(function()
+    for _, v in pairs(workspace:GetDescendants()) do
+        if v:IsA("BasePart") then
+            v.Material = Enum.Material.SmoothPlastic
+            v.CastShadow = false
+        elseif v:IsA("Decal") or v:IsA("Texture") or v:IsA("ParticleEmitter") then
+            v:Destroy()
+        end
+    end
+    btnLag.Text = "Anti Lag: Đã bật"
+    btnLag.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+end)
+
+-- 5. ESP
+local btnESP, btnESPYou = createDoubleBtn("ESP P: OFF", "ESP You: OFF")
+btnESP.MouseButton1Click:Connect(function()
+    states.esp = not states.esp
+    btnESP.Text = states.esp and "ESP P: ON" or "ESP P: OFF"
+    btnESP.BackgroundColor3 = states.esp and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(60, 60, 60)
+end)
+
+btnESPYou.MouseButton1Click:Connect(function()
+    states.espyou = not states.espyou
+    btnESPYou.Text = states.espyou and "ESP You: ON" or "ESP You: OFF"
+    btnESPYou.BackgroundColor3 = states.espyou and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(60, 60, 60)
+end)
+
+local function handleESP(char, p, isActive, isSelf)
+    if not char or not char:FindFirstChild("Head") then return end
+    local head = char.Head
+    if isActive then
+        local teamColor = (p.Team == LocalPlayer.Team and Color3.fromRGB(0, 255, 0)) or (p.TeamColor and p.TeamColor.Color or Color3.fromRGB(255, 0, 0))
+        if isSelf then teamColor = Color3.fromRGB(255, 0, 255) end 
+        local bill = head:FindFirstChild("ESP_Info") or Instance.new("BillboardGui", head)
+        if not head:FindFirstChild("ESP_Info") then
+            bill.Name = "ESP_Info"
+            bill.Size = UDim2.new(0, 150, 0, 50)
+            bill.StudsOffset = Vector3.new(0, 2.5, 0)
+            bill.AlwaysOnTop = true
+            local textLbl = Instance.new("TextLabel", bill)
+            textLbl.Size = UDim2.new(1, 0, 1, 0)
+            textLbl.BackgroundTransparency = 1
+            textLbl.TextStrokeTransparency = 0 
+            textLbl.Font = Enum.Font.GothamBold
+            textLbl.TextSize = 12
+        end
+        local hum = char:FindFirstChild("Humanoid")
+        local health = hum and math.floor(hum.Health) or 0
+        if isSelf then
+            bill.TextLabel.Text = string.format("you\nMáu: %d", health)
+        else
+            local charRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            local distance = charRoot and math.floor((charRoot.Position - head.Position).Magnitude) or 0
+            bill.TextLabel.Text = string.format("%s\nKC: %dm | Máu: %d", p.Name, distance, health)
+        end
+        bill.TextLabel.TextColor3 = teamColor
+        local highlight = char:FindFirstChild("ESP_Highlight") or Instance.new("Highlight", char)
+        highlight.Name = "ESP_Highlight"
+        highlight.FillColor = teamColor
+        highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    else
+        if head:FindFirstChild("ESP_Info") then head.ESP_Info:Destroy() end
+        if char:FindFirstChild("ESP_Highlight") then char.ESP_Highlight:Destroy() end
+    end
+end
+
+RunService.RenderStepped:Connect(function()
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer then handleESP(p.Character, p, states.esp, false) end
+    end
+    handleESP(LocalPlayer.Character, LocalPlayer, states.espyou, true)
+end)
+
+-- 6. INFINITE JUMP
+local btnInf = createBtn("Inf Jump: OFF")
+btnInf.MouseButton1Click:Connect(function()
+    states.infjump = not states.infjump
+    btnInf.Text = states.infjump and "Inf Jump: ON" or "Inf Jump: OFF"
+    btnInf.BackgroundColor3 = states.infjump and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(60, 60, 60)
+end)
+
+UserInputService.JumpRequest:Connect(function()
+    if states.infjump and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+        LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+    end
+end)
+-- ==========================================
+-- 7. NOCLIP
+-- ==========================================
+local btnNoclip = createBtn("Noclip: OFF")
+btnNoclip.MouseButton1Click:Connect(function()
+    states.noclip = not states.noclip
+    btnNoclip.Text = states.noclip and "Noclip: ON" or "Noclip: OFF"
+    btnNoclip.BackgroundColor3 = states.noclip and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(60, 60, 60)
+end)
+
+RunService.Stepped:Connect(function()
+    if states.noclip and LocalPlayer.Character then
+        for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+            if part:IsA("BasePart") and part.CanCollide then
+                part.CanCollide = false
+            end
+        end
+    end
+end)
+
+-- ==========================================
+-- 8. WALKFLING (Mặc định 99999)
+-- ==========================================
+local btnFling, inputFling = createToggleWithInput("WalkFling: OFF", 99999)
+local fActive = false
+local fConn = nil
+
+btnFling.MouseButton1Click:Connect(function()
+    fActive = not fActive
+    btnFling.Text = fActive and "WalkFling: ON" or "WalkFling: OFF"
+    btnFling.BackgroundColor3 = fActive and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(60, 60, 60)
+    if fActive then
+        fConn = RunService.Heartbeat:Connect(function()
+            local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                local p = tonumber(inputFling.Text) or 99999
+                hrp.RotVelocity = Vector3.new(p, p, p)
+                RunService.RenderStepped:Wait()
+                if hrp then hrp.RotVelocity = Vector3.new(0, 0, 0) end
+            end
+        end)
+    else
+        if fConn then fConn:Disconnect() fConn = nil end
+    end
+end)
+
+-- ==========================================
+-- BỔ SUNG: TPTOOL, F3X & DELETE TOOL (CÙNG 1 HÀNG)
+-- ==========================================
+local btnTptool, btnF3x, btnDelete = createTripleBtn("Tptool", "F3x", "Delete tool")
+
+btnTptool.MouseButton1Click:Connect(function()
+    local tool = Instance.new("Tool")
+    tool.RequiresHandle = false
+    tool.Name = "Tptool"
+    
+    tool.Activated:Connect(function()
+        local mouse = LocalPlayer:GetMouse()
+        if mouse.Target then
+            local pos = mouse.Hit.Position
+            local char = LocalPlayer.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                hrp.CFrame = CFrame.new(pos + Vector3.new(0, 3, 0)) * hrp.CFrame.Rotation
+            end
+        end
+    end)
+    
+    tool.Parent = LocalPlayer:FindFirstChild("Backpack")
+    
+    btnTptool.Text = "Đã lấy Tptool!"
+    btnTptool.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+    task.wait(1.5)
+    btnTptool.Text = "Tptool"
+    btnTptool.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+end)
+
+btnF3x.MouseButton1Click:Connect(function()
+    local backpack = LocalPlayer:FindFirstChild("Backpack")
+    if backpack then
+        for _, item in ipairs(backpack:GetChildren()) do
+            if item.Name == "F3X" or item.Name == "🛠️ F3X Tools (Client)" or item.Name == "Building Tools by F3X" or item.Name == "F3x" then
+                item:Destroy()
+            end
+        end
+    end
+
+    local success, f3xSource = pcall(function()
+        return game:GetObjects("rbxassetid://6695644299")[1].Source
+    end)
+    
+    if success and f3xSource then
+        loadstring(f3xSource)()
+        pcall(function()
+            game:GetService("StarterGui"):SetCore("SendNotification", {
+                Title = "F3X TOOL",
+                Text = "Đã nạp F3X đầy đủ giao diện vào Backpack!",
+                Duration = 3,
+            })
+        end)
+    else
+        pcall(function()
+            game:GetService("StarterGui"):SetCore("SendNotification", {
+                Title = "F3X TOOL WARNING",
+                Text = "Đang tải bản bypass qua IY...",
+                Duration = 3,
+            })
+        end)
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIy/infiniteyield/master/source"))()
+    end
+    
+    btnF3x.Text = "Đã lấy F3x!"
+    btnF3x.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+    task.wait(1.5)
+    btnF3x.Text = "F3x"
+    btnF3x.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+end)
+
+btnDelete.MouseButton1Click:Connect(function()
+    local tool = Instance.new("Tool")
+    tool.RequiresHandle = false
+    tool.Name = "DeleteTool"
+    
+    tool.Activated:Connect(function()
+        local mouse = LocalPlayer:GetMouse()
+        if mouse.Target and mouse.Target ~= workspace then
+            mouse.Target:Destroy()
+        end
+    end)
+    
+    tool.Parent = LocalPlayer:FindFirstChild("Backpack")
+    
+    btnDelete.Text = "Đã lấy Delete!"
+    btnDelete.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+    task.wait(1.5)
+    btnDelete.Text = "Delete tool"
+    btnDelete.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+end)
+
+-- ==========================================
+-- 9. TP TO PLAYER (TP lên đầu rồi rơi xuống)
+-- ==========================================
+local btnTP, inputTP = createActionWithInput("TP to Player", "Tên tắt/ID")
+btnTP.MouseButton1Click:Connect(function()
+    local target = getTargetPlayer(inputTP.Text)
+    if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+        local lpChar = LocalPlayer.Character
+        local lpHum = lpChar and lpChar:FindFirstChild("Humanoid")
+        local lpHrp = lpChar and lpChar:FindFirstChild("HumanoidRootPart")
+        if lpHrp then
+            lpHrp.CFrame = target.Character.HumanoidRootPart.CFrame + Vector3.new(0, 5, 0)
+            if lpHum then lpHum.Sit = false end
+            btnTP.Text = "Đã tới: " .. target.Name
+            btnTP.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+        end
+    else
+        btnTP.Text = "Không tìm thấy!"
+        btnTP.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+    end
+    task.wait(1.5)
+    btnTP.Text = "TP to Player"
+    btnTP.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+end)
+
+-- ==========================================
+-- 10. HEADSIT PLAYER
+-- ==========================================
+local btnHeadsit, inputHeadsit = createActionWithInput("Headsit", "Tên tắt/ID")
+btnHeadsit.MouseButton1Click:Connect(function()
+    local target = getTargetPlayer(inputHeadsit.Text)
+    if target and target.Character and target.Character:FindFirstChild("Head") then
+        local lpChar = LocalPlayer.Character
+        local hum = lpChar and lpChar:FindFirstChild("Humanoid")
+        local hrp = lpChar and lpChar:FindFirstChild("HumanoidRootPart")
+        if hum and hrp then
+            hum.Sit = true
+            btnHeadsit.Text = "Headsit: " .. string.sub(target.Name, 1, 5)
+            btnHeadsit.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+            
+            local headsitConn
+            headsitConn = RunService.Heartbeat:Connect(function()
+                if target.Character and target.Character:FindFirstChild("Head") and hrp and hum then
+                    if hum:GetState() == Enum.HumanoidStateType.Jumping or hum.Jump then
+                        hum.Sit = false
+                        if headsitConn then headsitConn:Disconnect() end
+                        return
+                    end
+                    hum.Sit = true
+                    hrp.CFrame = target.Character.Head.CFrame * CFrame.new(0, -0.2, 0.8) 
+                    hrp.Velocity = Vector3.new(0, 0, 0)
+                else
+                    hum.Sit = false
+                    if headsitConn then headsitConn:Disconnect() end
+                end
+            end)
+        end
+    else
+        btnHeadsit.Text = "Không tìm thấy!"
+        btnHeadsit.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+    end
+    task.wait(1.5)
+    btnHeadsit.Text = "Headsit"
+    btnHeadsit.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+end)
+
+-- ==========================================
+-- 11. VIEW PLAYER
+-- ==========================================
+local btnView, inputView = createActionWithInput("View: OFF", "Tên tắt/ID")
+local isViewing = false
+
+btnView.MouseButton1Click:Connect(function()
+    isViewing = not isViewing
+    if isViewing then
+        local target = getTargetPlayer(inputView.Text)
+        if target and target.Character and target.Character:FindFirstChild("Humanoid") then
+            Camera.CameraSubject = target.Character.Humanoid
+            btnView.Text = "View: ON (".. string.sub(target.Name, 1, 5) ..")"
+            btnView.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+        else
+            isViewing = false
+            btnView.Text = "Không tìm thấy!"
+            btnView.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+            task.wait(1.5)
+            btnView.Text = "View: OFF"
+            btnView.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        end
+    else
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            Camera.CameraSubject = LocalPlayer.Character.Humanoid
+        end
+        btnView.Text = "View: OFF"
+        btnView.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    end
+end)
+
+-- ==========================================
+-- 12. FULLBRIGHT & NOFOG
+-- ==========================================
+local Lighting = game:GetService("Lighting")
+
+-- Fullbright Button
+local btnFullbright = createBtn("Fullbright: OFF")
+states.fullbright = false
+
+local origAmbient = Lighting.Ambient
+local origOutdoorAmbient = Lighting.OutdoorAmbient
+local origBrightness = Lighting.Brightness
+local origClockTime = Lighting.ClockTime
+local origFogEnd = Lighting.FogEnd
+local origGlobalShadows = Lighting.GlobalShadows
+
+btnFullbright.MouseButton1Click:Connect(function()
+    states.fullbright = not states.fullbright
+    btnFullbright.Text = states.fullbright and "Fullbright: ON" or "Fullbright: OFF"
+    btnFullbright.BackgroundColor3 = states.fullbright and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(60, 60, 60)
+end)
+
+RunService.RenderStepped:Connect(function()
+    if states.fullbright then
+        Lighting.Ambient = Color3.fromRGB(255, 255, 255)
+        Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
+        Lighting.Brightness = 2
+        Lighting.ClockTime = 14
+        Lighting.FogEnd = 100000
+        Lighting.GlobalShadows = false
+    else
+        Lighting.Ambient = origAmbient
+        Lighting.OutdoorAmbient = origOutdoorAmbient
+        Lighting.Brightness = origBrightness
+        Lighting.ClockTime = origClockTime
+        Lighting.FogEnd = origFogEnd
+        Lighting.GlobalShadows = origGlobalShadows
+    end
+end)
+
+-- NoFog Button
+local btnNoFog = createBtn("NoFog: OFF")
+states.nofog = false
+
+local origFogEndNoFog = Lighting.FogEnd
+local atmospheres = {}
+for _, v in pairs(Lighting:GetChildren()) do
+    if v:IsA("Atmosphere") then
+        table.insert(atmospheres, {obj = v, density = v.Density})
+    end
+end
+
+btnNoFog.MouseButton1Click:Connect(function()
+    states.nofog = not states.nofog
+    btnNoFog.Text = states.nofog and "NoFog: ON" or "NoFog: OFF"
+    btnNoFog.BackgroundColor3 = states.nofog and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(60, 60, 60)
+end)
+
+RunService.RenderStepped:Connect(function()
+    if states.nofog then
+        Lighting.FogEnd = 1000000
+        for _, v in pairs(Lighting:GetChildren()) do
+            if v:IsA("Atmosphere") then
+                v.Density = 0
+            end
+        end
+    else
+        Lighting.FogEnd = origFogEndNoFog
+        for _, item in pairs(atmospheres) do
+            if item.obj and item.obj.Parent then
+                item.obj.Density = item.density
+            end
+        end
+    end
+end)
+-- ==========================================
+-- 14. CAMERA MODS (FOV, MAXZOOM, FREECAM) & ANTI-AFK
+-- ==========================================
+local UserInputService = game:GetService("UserInputService")
+
+-- 1. FOV Changer
+local btnFOV, inputFOV = createToggleWithInput("FOV: OFF", 70)
+states.fov = false
+local origFOV = Camera.FieldOfView
+
+btnFOV.MouseButton1Click:Connect(function()
+    states.fov = not states.fov
+    btnFOV.Text = states.fov and "FOV: ON" or "FOV: OFF"
+    btnFOV.BackgroundColor3 = states.fov and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(60, 60, 60)
+end)
+
+RunService.RenderStepped:Connect(function()
+    if states.fov then
+        Camera.FieldOfView = tonumber(inputFOV.Text) or 70
+    else
+        Camera.FieldOfView = origFOV
+    end
+end)
+
+-- 1.1. Max Zoom (Tăng giới hạn cuộn chuột xa hơn bình thường)
+local btnMaxZoom, inputMaxZoom = createToggleWithInput("MaxZoom: OFF", 1000)
+states.maxzoom = false
+local origMaxZoom = LocalPlayer.CameraMaxZoomDistance
+
+btnMaxZoom.MouseButton1Click:Connect(function()
+    states.maxzoom = not states.maxzoom
+    btnMaxZoom.Text = states.maxzoom and "MaxZoom: ON" or "MaxZoom: OFF"
+    btnMaxZoom.BackgroundColor3 = states.maxzoom and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(60, 60, 60)
+    
+    if states.maxzoom then
+        origMaxZoom = LocalPlayer.CameraMaxZoomDistance
+    else
+        LocalPlayer.CameraMaxZoomDistance = origMaxZoom
+    end
+end)
+
+RunService.RenderStepped:Connect(function()
+    if states.maxzoom then
+        LocalPlayer.CameraMaxZoomDistance = tonumber(inputMaxZoom.Text) or 1000
+    end
+end)
+
+-- 2. Freecam
+local btnFreecam = createBtn("Freecam: OFF")
+states.freecam = false
+local freecamConn = nil
+local freecamInputConn = nil
+local freecamPos = Vector3.new()
+local freecamYaw = 0
+local freecamPitch = 0
+
+local camSensitivity = 0.015 
+
+btnFreecam.MouseButton1Click:Connect(function()
+    states.freecam = not states.freecam
+    btnFreecam.Text = states.freecam and "Freecam: ON" or "Freecam: OFF"
+    btnFreecam.BackgroundColor3 = states.freecam and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(60, 60, 60)
+    
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    local humanoid = char and char:FindFirstChild("Humanoid")
+
+    if states.freecam then
+        if hrp then hrp.Anchored = true end
+        if humanoid then humanoid.PlatformStand = true end
+        
+        Camera.CameraType = Enum.CameraType.Scriptable
+        freecamPos = Camera.CFrame.Position
+        
+        local rx, ry, rz = Camera.CFrame:ToEulerAnglesYXZ()
+        freecamYaw = ry
+        freecamPitch = rx
+
+        freecamInputConn = UserInputService.InputChanged:Connect(function(input, gameProcessedEvent)
+            if gameProcessedEvent then return end 
+            
+            if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+                local delta = input.Delta
+                freecamYaw = freecamYaw - delta.X * camSensitivity
+                freecamPitch = math.clamp(freecamPitch - delta.Y * camSensitivity, -math.rad(85), math.rad(85))
+            end
+        end)
+
+        freecamConn = RunService.RenderStepped:Connect(function(dt)
+            local moveVector = (Controls and Controls:GetMoveVector()) or Vector3.zero
+            local rotationCF = CFrame.Angles(0, freecamYaw, 0) * CFrame.Angles(freecamPitch, 0, 0)
+            
+            local moveDir = (rotationCF.RightVector * moveVector.X) - (rotationCF.LookVector * moveVector.Z)
+            freecamPos = freecamPos + (moveDir * (60 * dt))
+            
+            Camera.CFrame = CFrame.new(freecamPos) * rotationCF
+        end)
+    else
+        if freecamConn then freecamConn:Disconnect() freecamConn = nil end
+        if freecamInputConn then freecamInputConn:Disconnect() freecamInputConn = nil end
+        
+        if hrp then hrp.Anchored = false end
+        if humanoid then humanoid.PlatformStand = false end
+        
+        Camera.CameraType = Enum.CameraType.Custom
+        if char and char:FindFirstChild("Humanoid") then
+            Camera.CameraSubject = char.Humanoid
+        end
+    end
+end)
+
+-- 3. Anti-AFK
+local btnAntiAfk = createBtn("Anti-AFK: OFF")
+states.antiafk = false
+local afkConnection = nil
+
+btnAntiAfk.MouseButton1Click:Connect(function()
+    states.antiafk = not states.antiafk
+    btnAntiAfk.Text = states.antiafk and "Anti-AFK: ON" or "Anti-AFK: OFF"
+    btnAntiAfk.BackgroundColor3 = states.antiafk and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(60, 60, 60)
+    
+    local virtualUser = game:GetService("VirtualUser")
+    if states.antiafk then
+        afkConnection = LocalPlayer.Idled:Connect(function()
+            virtualUser:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+            task.wait(1)
+            virtualUser:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+        end)
+    else
+        if afkConnection then
+            afkConnection:Disconnect()
+            afkConnection = nil
+        end
+    end
+end)
+
+-- ==========================================
+-- 15. ACTIONS (SIT & LIE)
+-- ==========================================
+local btnSit, btnLie = createDoubleBtn("Sit", "Lie (Nằm): OFF")
+local isLying = false
+local lieJumpConn = nil
+
+local function StandUp()
+    local char = LocalPlayer.Character
+    if char then
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        local hum = char:FindFirstChildWhichIsA("Humanoid")
+        
+        if hrp and hrp:FindFirstChild("RootJoint") then
+            hrp.RootJoint.C0 = CFrame.new(0, 0, 0) * CFrame.Angles(-math.rad(90), 0, math.rad(180))
+        end
+        if hum then
+            hum.PlatformStand = false
+        end
+    end
+    isLying = false
+    btnLie.Text = "Lie (Nằm): OFF"
+    btnLie.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+end
+
+btnSit.MouseButton1Click:Connect(function()
+    local char = LocalPlayer.Character
+    local hum = char and char:FindFirstChildWhichIsA("Humanoid")
+    if hum then
+        if isLying then StandUp() end
+        hum.Sit = true
+        btnSit.Text = "Đã Ngồi!"
+        btnSit.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+        task.wait(1.5)
+        btnSit.Text = "Sit"
+        btnSit.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    end
+end)
+
+btnLie.MouseButton1Click:Connect(function()
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    local hum = char and char:FindFirstChildWhichIsA("Humanoid")
+    
+    if not hrp or not hum then return end
+    
+    if isLying then
+        StandUp()
+    else
+        isLying = true
+        hum.PlatformStand = true
+        if hrp:FindFirstChild("RootJoint") then
+            hrp.RootJoint.C0 = CFrame.new(0, 0, 0) * CFrame.Angles(0, 0, math.rad(180))
+        end
+        btnLie.Text = "Lie (Nằm): ON"
+        btnLie.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+    end
+end)
+
+if lieJumpConn then lieJumpConn:Disconnect() end
+lieJumpConn = UserInputService.JumpRequest:Connect(function()
+    if isLying then
+        StandUp()
+    end
+end)
+
+LocalPlayer.CharacterAdded:Connect(function()
+    isLying = false
+end)
+
+-- ==========================================
+-- 13. REJOIN & SERVER HOP
+-- ==========================================
+local TeleportService = game:GetService("TeleportService")
+local HttpService = game:GetService("HttpService")
+
+local btnRejoin, btnServerHop = createDoubleBtn("Rejoin", "Server Hop")
+
+btnRejoin.MouseButton1Click:Connect(function()
+    btnRejoin.Text = "Đang Rejoin..."
+    btnRejoin.BackgroundColor3 = Color3.fromRGB(150, 150, 0)
+    pcall(function()
+        TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
+    end)
+    task.wait(2)
+    btnRejoin.Text = "Rejoin"
+    btnRejoin.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+end)
+
+btnServerHop.MouseButton1Click:Connect(function()
+    btnServerHop.Text = "Tìm Server..."
+    btnServerHop.BackgroundColor3 = Color3.fromRGB(150, 150, 0)
+    
+    local foundServer = false
+
+    local success, _ = pcall(function()
+        local url = "https://games.roblox.com/v1/games/" .. tostring(game.PlaceId) .. "/servers/Public?sortOrder=Desc&limit=100"
+        local data
+        
+        if type(game.HttpGet) == "function" then
+            data = HttpService:JSONDecode(game:HttpGet(url))
+        elseif request then
+            local res = request({Url = url, Method = "GET"})
+            data = HttpService:JSONDecode(res.Body)
+        end
+
+        if data and data.data then
+            for _, server in ipairs(data.data) do
+                if server.playing and server.maxPlayers and server.playing < server.maxPlayers and server.id ~= game.JobId then
+                    foundServer = true
+                    TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id, LocalPlayer)
+                    return
+                end
+            end
+        end
+    end)
+
+    if success and foundServer then
+        btnServerHop.Text = "Đang vào..."
+        btnServerHop.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+    else
+        btnServerHop.Text = "Không tìm thấy!"
+        btnServerHop.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+    end
+
+    task.wait(2)
+    btnServerHop.Text = "Server Hop"
+    btnServerHop.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+end)
