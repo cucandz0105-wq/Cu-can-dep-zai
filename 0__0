@@ -1,8 +1,8 @@
 local blacklist = {}
 local whitelist = { ["caceone"] = true, }
-
 local Players = game:GetService("Players")
-if blacklist[Local.LocalPlayer.Name] or blacklist[Local.LocalPlayer.UserId] then
+
+if blacklist[Players.LocalPlayer.Name] or blacklist[Players.LocalPlayer.UserId] then
 pcall(function()
         game:GetService("StarterGui"):SetCore("SendNotification", {
             Title = "CHECKING",
@@ -13,7 +13,7 @@ pcall(function()
   return
 end
 
-if not whitelist[Local.LocalPlayer.Name] and not whitelist[Local.LocalPlayer.UserId] then
+if not whitelist[Players.LocalPlayer.Name] and not whitelist[Players.LocalPlayer.UserId] then
 pcall(function()
         game:GetService("StarterGui"):SetCore("SendNotification", {
             Title = "CHECKING",
