@@ -875,6 +875,7 @@ RunService.RenderStepped:Connect(function()
         end
     end
 end)
+
 -- ==========================================
 -- 14. CAMERA MODS (FOV, MAXZOOM, FREECAM) & ANTI-AFK
 -- ==========================================
@@ -1079,6 +1080,21 @@ end)
 
 LocalPlayer.CharacterAdded:Connect(function()
     isLying = false
+end)
+
+-- ==========================================
+-- 16. RESET CHARACTER
+-- ==========================================
+local btnReset = createBtn("Reset Character")
+
+btnReset.MouseButton1Click:Connect(function()
+    local char = LocalPlayer.Character
+    local hum = char and char:FindFirstChildWhichIsA("Humanoid")
+    if hum then
+        hum.Health = 0
+    elseif char then
+        char:BreakJoints()
+    end
 end)
 
 -- ==========================================
