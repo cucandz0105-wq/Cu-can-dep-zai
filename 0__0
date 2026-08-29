@@ -801,47 +801,17 @@ btnView.MouseButton1Click:Connect(function()
 end)
 
 -- ==========================================
--- 12. FULLBRIGHT & NOFOG
+-- 12. FULLBRIGHT & NOFOG (Đã gộp chung, tối ưu sạch sẽ)
 -- ==========================================
 local Lighting = game:GetService("Lighting")
 
--- Fullbright Button
-local btnFullbright = createBtn("Fullbright: OFF")
-states.fullbright = false
-
+-- Biến lưu trạng thái gốc của Lighting
 local origAmbient = Lighting.Ambient
 local origOutdoorAmbient = Lighting.OutdoorAmbient
 local origBrightness = Lighting.Brightness
 local origFogEnd = Lighting.FogEnd
 local origGlobalShadows = Lighting.GlobalShadows
 
-btnFullbright.MouseButton1Click:Connect(function()
-    states.fullbright = not states.fullbright
-    btnFullbright.Text = states.fullbright and "Fullbright: ON" or "Fullbright: OFF"
-    btnFullbright.BackgroundColor3 = states.fullbright and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(60, 60, 60)
-end)
-
-RunService.RenderStepped:Connect(function()
-    if states.fullbright then
-        Lighting.Ambient = Color3.fromRGB(255, 255, 255)
-        Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
-        Lighting.Brightness = 2
-        Lighting.FogEnd = 100000
-        Lighting.GlobalShadows = false
-    else
-        Lighting.Ambient = origAmbient
-        Lighting.OutdoorAmbient = origOutdoorAmbient
-        Lighting.Brightness = origBrightness
-        Lighting.FogEnd = origFogEnd
-        Lighting.GlobalShadows = origGlobalShadows
-    end
-end)
-
--- NoFog Button
-local btnNoFog = createBtn("NoFog: OFF")
-states.nofog = false
-
-local origFogEndNoFog = Lighting.FogEnd
 local atmospheres = {}
 for _, v in pairs(Lighting:GetChildren()) do
     if v:IsA("Atmosphere") then
@@ -849,13 +819,40 @@ for _, v in pairs(Lighting:GetChildren()) do
     end
 end
 
+-- Fullbright Button
+local btnFullbright = createBtn("Fullbright: OFF")
+states.fullbright = false
+btnFullbright.MouseButton1Click:Connect(function()
+    states.fullbright = not states.fullbright
+    btnFullbright.Text = states.fullbright and "Fullbright: ON" or "Fullbright: OFF"
+    btnFullbright.BackgroundColor3 = states.fullbright and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(60, 60, 60)
+end)
+
+-- NoFog Button
+local btnNoFog = createBtn("NoFog: OFF")
+states.nofog = false
 btnNoFog.MouseButton1Click:Connect(function()
     states.nofog = not states.nofog
     btnNoFog.Text = states.nofog and "NoFog: ON" or "NoFog: OFF"
     btnNoFog.BackgroundColor3 = states.nofog and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(60, 60, 60)
 end)
 
+-- CHỈ DÙNG 1 VÒNG LẶP RENDERSTEPPED DUY NHẤT
 RunService.RenderStepped:Connect(function()
+    -- Xử lý ánh sáng Fullbright
+    if states.fullbright then
+        Lighting.Ambient = Color3.fromRGB(255, 255, 255)
+        Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
+        Lighting.Brightness = 2
+        Lighting.GlobalShadows = false
+    else
+        Lighting.Ambient = origAmbient
+        Lighting.OutdoorAmbient = origOutdoorAmbient
+        Lighting.Brightness = origBrightness
+        Lighting.GlobalShadows = origGlobalShadows
+    end
+
+    -- Xử lý sương mù (NoFog ưu tiên cao nhất, rồi đến Fullbright, không thì về mặc định)
     if states.nofog then
         Lighting.FogEnd = 1000000
         for _, v in pairs(Lighting:GetChildren()) do
@@ -863,8 +860,10 @@ RunService.RenderStepped:Connect(function()
                 v.Density = 0
             end
         end
+    elseif states.fullbright then
+        Lighting.FogEnd = 100000
     else
-        Lighting.FogEnd = origFogEndNoFog
+        Lighting.FogEnd = origFogEnd
         for _, item in pairs(atmospheres) do
             if item.obj and item.obj.Parent then
                 item.obj.Density = item.density
