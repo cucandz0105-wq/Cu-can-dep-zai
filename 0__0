@@ -1098,6 +1098,41 @@ btnReset.MouseButton1Click:Connect(function()
 end)
 
 -- ==========================================
+-- 17. ANTI-KICK (CLIENT-SIDE)
+-- ==========================================
+local btnAntiKick = createBtn("Anti-Kick: OFF")
+
+-- Dùng getgenv() để lưu trạng thái, giúp script an toàn nếu execute lại nhiều lần
+if getgenv().isAntiKickEnabled == nil then
+    getgenv().isAntiKickEnabled = false
+end
+
+-- Cập nhật giao diện nút lúc vừa load
+btnAntiKick.Text = getgenv().isAntiKickEnabled and "Anti-Kick: ON" or "Anti-Kick: OFF"
+btnAntiKick.BackgroundColor3 = getgenv().isAntiKickEnabled and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(60, 60, 60)
+
+btnAntiKick.MouseButton1Click:Connect(function()
+    getgenv().isAntiKickEnabled = not getgenv().isAntiKickEnabled
+    btnAntiKick.Text = getgenv().isAntiKickEnabled and "Anti-Kick: ON" or "Anti-Kick: OFF"
+    btnAntiKick.BackgroundColor3 = getgenv().isAntiKickEnabled and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(60, 60, 60)
+end)
+
+-- Chặn lệnh Kick bằng hookmetamethod (Chỉ khởi tạo 1 lần duy nhất)
+if not getgenv().AntiKickHooked then
+    getgenv().AntiKickHooked = true
+    local oldNamecall
+    oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+        local method = getnamecallmethod()
+        -- Bắt và hủy lệnh Kick nếu nút Anti-Kick đang được BẬT
+        if getgenv().isAntiKickEnabled and self == LocalPlayer and (method == "Kick" or method == "kick") then
+            warn("🛡️ Anti-Kick: Đã chặn một nỗ lực Kick từ game!")
+            return nil
+        end
+        return oldNamecall(self, ...)
+    end)
+end
+
+-- ==========================================
 -- 13. REJOIN & SERVER HOP
 -- ==========================================
 local TeleportService = game:GetService("TeleportService")
