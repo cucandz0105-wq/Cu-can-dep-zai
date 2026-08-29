@@ -812,7 +812,6 @@ states.fullbright = false
 local origAmbient = Lighting.Ambient
 local origOutdoorAmbient = Lighting.OutdoorAmbient
 local origBrightness = Lighting.Brightness
-local origClockTime = Lighting.ClockTime
 local origFogEnd = Lighting.FogEnd
 local origGlobalShadows = Lighting.GlobalShadows
 
@@ -833,7 +832,6 @@ RunService.RenderStepped:Connect(function()
         Lighting.Ambient = origAmbient
         Lighting.OutdoorAmbient = origOutdoorAmbient
         Lighting.Brightness = origBrightness
-        Lighting.ClockTime = origClockTime
         Lighting.FogEnd = origFogEnd
         Lighting.GlobalShadows = origGlobalShadows
     end
