@@ -1,0 +1,247 @@
+local ATTACH_OFFSET_Y = -1.2 -- Độ cao dính dưới thân target
+
+local players = game:GetService("Players")
+local runService = game:GetService("RunService")
+local userInputService = game:GetService("UserInputService")
+local localPlayer = players.LocalPlayer
+local playerGui = localPlayer:WaitForChild("PlayerGui")
+
+if playerGui:FindFirstChild("ProFlyGui") then
+    playerGui.ProFlyGui:Destroy()
+end
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "ProFlyGui"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = playerGui
+
+-- TẠO NÚT TRÒN & MENU
+local roundBtn = Instance.new("TextButton")
+roundBtn.Size = UDim2.new(0, 50, 0, 50)
+roundBtn.Position = UDim2.new(1, -70, 0, 100) 
+roundBtn.BackgroundColor3 = Color3.fromRGB(0, 162, 255)
+roundBtn.Text = "🐊"
+roundBtn.TextSize = 24
+roundBtn.Parent = screenGui
+
+local corner1 = Instance.new("UICorner")
+corner1.CornerRadius = UDim.new(1, 0)
+corner1.Parent = roundBtn
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 220, 0, 155)
+mainFrame.Position = UDim2.new(0, -230, 0, 0) 
+mainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+mainFrame.Visible = false
+mainFrame.Parent = roundBtn 
+
+local corner2 = Instance.new("UICorner")
+corner2.CornerRadius = UDim.new(0, 8)
+corner2.Parent = mainFrame
+
+-- Ô NHẬP TỐC ĐỘ
+local speedBox = Instance.new("TextBox")
+speedBox.Size = UDim2.new(0, 200, 0, 35)
+speedBox.Position = UDim2.new(0, 10, 0, 15)
+speedBox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+speedBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+speedBox.PlaceholderText = "Tốc độ (Mặc định: 40)"
+speedBox.Text = "40"
+speedBox.TextSize = 14
+speedBox.Parent = mainFrame
+
+local cornerSpeed = Instance.new("UICorner")
+cornerSpeed.CornerRadius = UDim.new(0, 6)
+cornerSpeed.Parent = speedBox
+
+-- Ô NHẬP TÊN PLAYER
+local textBox = Instance.new("TextBox")
+textBox.Size = UDim2.new(0, 200, 0, 35)
+textBox.Position = UDim2.new(0, 10, 0, 60)
+textBox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+textBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+textBox.PlaceholderText = "Nhập tên hoặc viết tắt..."
+textBox.Text = ""
+textBox.TextSize = 14
+textBox.Parent = mainFrame
+
+local corner3 = Instance.new("UICorner")
+corner3.CornerRadius = UDim.new(0, 6)
+corner3.Parent = textBox
+
+-- NÚT BẬT / TẮT
+local toggleBtn = Instance.new("TextButton")
+toggleBtn.Size = UDim2.new(0, 200, 0, 35)
+toggleBtn.Position = UDim2.new(0, 10, 0, 105)
+toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleBtn.Text = "Bật Cắn Khóa Thân"
+toggleBtn.TextSize = 15
+toggleBtn.Font = Enum.Font.SourceSansBold
+toggleBtn.Parent = mainFrame
+
+local corner4 = Instance.new("UICorner")
+corner4.CornerRadius = UDim.new(0, 6)
+corner4.Parent = toggleBtn
+
+roundBtn.MouseButton1Click:Connect(function()
+    mainFrame.Visible = not mainFrame.Visible
+end)
+
+-- DRAGGABLE BUTTON
+local dragging, dragInput, dragStart, startPos
+
+roundBtn.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = roundBtn.Position
+        
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+roundBtn.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+
+userInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        local delta = input.Position - dragStart
+        roundBtn.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+-- HÀM LẤY PART CHÍNH CỦA MODEL
+local function getRootPart(character)
+    if not character then return nil end
+    return character.PrimaryPart or character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso")
+end
+
+-- TÌM PLAYER
+local isFlying = false
+local targetName = ""
+
+local function findPlayer(inputName)
+    inputName = inputName:lower():gsub("%s+", "")
+    if inputName == "" then return nil end
+    for _, p in ipairs(players:GetPlayers()) do
+        local uName = p.Name:lower()
+        local dName = p.DisplayName:lower()
+        local initials = ""
+        for word in p.DisplayName:gmatch("%S+") do initials = initials .. word:sub(1, 1) end
+        initials = initials:lower()
+        if uName:find(inputName) or dName:find(inputName) or initials:find(inputName) then
+            return p
+        end
+    end
+    return nil
+end
+
+-- BẬT / TẮT
+toggleBtn.MouseButton1Click:Connect(function()
+    if not isFlying then
+        local input = textBox.Text
+        local target = findPlayer(input)
+        
+        if not target then
+            toggleBtn.Text = "❌ Chưa nhập đúng tên!"
+            task.wait(1.2)
+            if not isFlying then
+                toggleBtn.Text = "Bật Cắn Khóa Thân"
+            end
+            return
+        end
+        
+        isFlying = true
+        targetName = input
+        toggleBtn.Text = "Đang Khóa... (Tắt)"
+        toggleBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+    else
+        isFlying = false
+        toggleBtn.Text = "Bật Cắn Khóa Thân"
+        toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+        
+        local char = localPlayer.Character
+        if char then
+            local humanoid = char:FindFirstChildOfClass("Humanoid")
+            local rootPart = getRootPart(char)
+            local _, mySize = char:GetBoundingBox()
+            
+            if rootPart then
+                rootPart.CanCollide = true
+                rootPart.CFrame = rootPart.CFrame + Vector3.new(0, mySize.Y + 3, 0)
+                rootPart.AssemblyLinearVelocity = Vector3.zero
+                rootPart.AssemblyAngularVelocity = Vector3.zero
+            end
+            
+            if humanoid then 
+                humanoid.PlatformStand = false
+                humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+            end
+        end
+    end
+end)
+
+-- NOCLIP CHUẨN ĐÚNG LOGIC BẠN YÊU CẦU
+runService.Stepped:Connect(function()
+    if isFlying and localPlayer.Character then
+        for _, part in pairs(localPlayer.Character:GetDescendants()) do
+            if part:IsA("BasePart") and part.CanCollide then
+                part.CanCollide = false
+            end
+        end
+    end
+end)
+
+-- KHÓA CẮN TRỰC TIẾP VÀO THÂN TARGET
+runService.RenderStepped:Connect(function(dt)
+    if not isFlying then return end
+    
+    local char = localPlayer.Character
+    local rootPart = getRootPart(char)
+    if not char or not rootPart then return end
+    local humanoid = char:FindFirstChildOfClass("Humanoid")
+    
+    local targetPlayer = findPlayer(targetName)
+    if targetPlayer and targetPlayer.Character then
+        local targetChar = targetPlayer.Character
+        local targetPart = getRootPart(targetChar)
+        
+        if targetPart then
+            if humanoid then 
+                humanoid.PlatformStand = true 
+            end
+            
+            -- CFrame Đích: Dính vào thân target + Ngửa đầu 90 độ
+            local targetLockCFrame = targetPart.CFrame 
+                * CFrame.new(0, ATTACH_OFFSET_Y, 0) 
+                * CFrame.Angles(math.rad(90), 0, 0)
+            
+            local dist = (targetLockCFrame.Position - rootPart.Position).Magnitude
+            
+            local flySpeed = tonumber(speedBox.Text) or 40
+            local step = flySpeed * dt
+            
+            rootPart.AssemblyLinearVelocity = Vector3.zero
+            rootPart.AssemblyAngularVelocity = Vector3.zero
+            
+            if dist > step then
+                local direction = (targetLockCFrame.Position - rootPart.Position).Unit
+                local nextPos = rootPart.Position + direction * step
+                rootPart.CFrame = CFrame.new(nextPos, targetLockCFrame.Position) * CFrame.Angles(math.rad(90), 0, 0)
+            else
+                rootPart.CFrame = targetLockCFrame
+            end
+        end
+    else
+        if humanoid then humanoid.PlatformStand = false end
+    end
+end)
+
