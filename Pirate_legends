@@ -1,5 +1,5 @@
 local blacklist = {}
-local whitelist = { ["cancaldz"] = true, }
+local whitelist = { ["caceone"] = true, }
 local Players = game:GetService("Players")
 
 if blacklist[Players.LocalPlayer.Name] or blacklist[Players.LocalPlayer.UserId] then
@@ -1144,7 +1144,7 @@ _G.AntiKickConnection = GuiService.ErrorMessageChanged:Connect(function()
 end)
 -- =======================================================
 
-local FLY_SPEED, FALL_LIMIT, CLIMB_LIMIT, OFFSET_DIST, LERP_SMOOTH, MAX_HEIGHT, SEA_LEVEL = 160, 50, 60, 3.5, 0.25, 8.0, 9.0
+local FLY_SPEED, FALL_LIMIT, CLIMB_LIMIT, OFFSET_DIST, LERP_SMOOTH, MAX_HEIGHT, SEA_LEVEL = 62, 62, 42, 3.5, 0.25, 8.0, 9.0
 
 local isInteracting = false 
 local function AutoTriggerPrompt(target)
@@ -1453,7 +1453,7 @@ local function StartBot()
                 end
                 
                 local moveDir = (toSeller or ghostDoor) and (stopPos - hrp.Position).Unit or dir 
-                local clampledSpeed = math.min(FLY_SPEED * dt, 250) 
+                local clampledSpeed = math.min(FLY_SPEED * dt, 3.3) 
                 
                 local nextPos
                 if _G.IsEscapingStuck then
@@ -1523,12 +1523,12 @@ local function StartBot()
                         finalY = duKienY
                         if finalY <= targetY then finalY = targetY end 
                     elseif targetY > hrp.Position.Y + 2 then 
-                        local tocDoClimb = ganMucTieu and 250 or (CLIMB_LIMIT + 20)
+                        local tocDoClimb = ganMucTieu and 110 or (CLIMB_LIMIT + 20)
                         local duKienLenY = hrp.Position.Y + (tocDoClimb * dt)
                         
                         local limitFrameY = 3.3
                         if ganMucTieu or (targetY - hrp.Position.Y) > 15 then
-                            limitFrameY = 20
+                            limitFrameY = 6.0
                         end
                         
                         if (duKienLenY - hrp.Position.Y) > limitFrameY then 
