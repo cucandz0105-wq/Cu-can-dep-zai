@@ -1523,10 +1523,10 @@ local function StartBot()
                         finalY = duKienY
                         if finalY <= targetY then finalY = targetY end 
                     elseif targetY > hrp.Position.Y + 2 then 
-                        local tocDoClimb = ganMucTieu and 110 or (CLIMB_LIMIT + 20)
+                        local tocDoClimb = 5000
                         local duKienLenY = hrp.Position.Y + (tocDoClimb * dt)
                         
-                        local limitFrameY = 3.3
+                        local limitFrameY = 5.0
                         if ganMucTieu or (targetY - hrp.Position.Y) > 15 then
                             limitFrameY = 6.0
                         end
