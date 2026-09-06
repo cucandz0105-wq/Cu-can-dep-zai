@@ -1144,7 +1144,7 @@ _G.AntiKickConnection = GuiService.ErrorMessageChanged:Connect(function()
 end)
 -- =======================================================
 
-local FLY_SPEED, FALL_LIMIT, CLIMB_LIMIT, OFFSET_DIST, LERP_SMOOTH, MAX_HEIGHT, SEA_LEVEL = 1000, 62, 42, 3.5, 0.25, 8.0, 9.0
+local FLY_SPEED, FALL_LIMIT, CLIMB_LIMIT, OFFSET_DIST, LERP_SMOOTH, MAX_HEIGHT, SEA_LEVEL = 3000, 62, 42, 3.5, 0.25, 8.0, 9.0
 
 local isInteracting = false 
 local function AutoTriggerPrompt(target)
@@ -1453,7 +1453,7 @@ local function StartBot()
                 end
                 
                 local moveDir = (toSeller or ghostDoor) and (stopPos - hrp.Position).Unit or dir 
-                local clampledSpeed = math.min(FLY_SPEED * dt, 3.3) 
+                local clampledSpeed = math.min(FLY_SPEED * dt, 30.0) 
                 
                 local nextPos
                 if _G.IsEscapingStuck then
