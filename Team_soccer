@@ -1,8 +1,8 @@
 -- ====================================================================
--- SCRIPT XOẠC: KÍCH HOẠT VÀ BAY TỚI ĐỒNG THỜI (FULL CODE)
+-- SCRIPT XOẠC: ĐÓN ĐẦU 7.5 STUDS + KÍCH HOẠT VÀ BAY TỚI ĐỒNG THỜI (FULL CODE)
 -- ====================================================================
 
--- Xóa giao diện cũ nếu có để tránh trùng lặp[span_0](start_span)[span_0](end_span)
+-- Xóa giao diện cũ nếu có để tránh trùng lặp[span_2](start_span)[span_2](end_span)
 if game.CoreGui:FindFirstChild("CustomSlideUI") then
     game.CoreGui.CustomSlideUI:Destroy()
 end
@@ -24,7 +24,7 @@ SlideButton.TextSize = 16
 SlideButton.Font = Enum.Font.SourceSansBold
 SlideButton.Active = true
 
--- Bo tròn thành hình tròn hoàn toàn[span_1](start_span)[span_1](end_span)
+-- Bo tròn thành hình tròn hoàn toàn[span_3](start_span)[span_3](end_span)
 local ButtonCorner = Instance.new("UICorner")
 ButtonCorner.CornerRadius = UDim.new(1, 0)
 ButtonCorner.Parent = SlideButton
@@ -32,7 +32,7 @@ ButtonCorner.Parent = SlideButton
 local isLocked = false
 local isDragging = false
 
--- Hàm kéo thả nút di động[span_2](start_span)[span_2](end_span)
+-- Hàm kéo thả nút di động[span_4](start_span)[span_4](end_span)
 local function makeDraggable(frame)
     local UserInputService = game:GetService("UserInputService")
     local dragInput, dragStart, startPos
@@ -59,7 +59,7 @@ local function makeDraggable(frame)
 end
 makeDraggable(SlideButton)
 
--- Cơ chế nhấn giữ khóa vị trí[span_3](start_span)[span_3](end_span)
+-- Cơ chế nhấn giữ khóa vị trí[span_5](start_span)[span_5](end_span)
 local holdTime = 1
 local holding = false
 local holdTimer = 0
@@ -95,7 +95,7 @@ SlideButton.MouseButton1Up:Connect(cancelHold)
 SlideButton.MouseLeave:Connect(cancelHold)
 
 ----------------------------------------------------
--- LOGIC XOẠC: KÍCH HOẠT VÀ BAY TỚI ĐỒNG THỜI
+-- LOGIC XOẠC: ĐÓN ĐẦU 7.5 STUDS + KÍCH HOẠT ĐỒNG THỜI
 ----------------------------------------------------
 local isCooldown = false
 
@@ -116,21 +116,26 @@ SlideButton.MouseButton1Click:Connect(function()
             isCooldown = true
             local anchorPosition = ball.Position
             
-            -- 1. Kích hoạt lệnh xoạc (FireServer) ngay lập tức[span_4](start_span)[span_4](end_span)
+            -- 1. Kích hoạt lệnh xoạc (FireServer) ngay lập tức[span_6](start_span)[span_6](end_span)
             game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("Slide"):FireServer(ball, 0.5, false)
             
-            -- 2. Tính toán vị trí dự đoán của bóng để lao tới không cần đợi chờ[span_5](start_span)[span_5](end_span)
+            -- 2. Thuật toán dự đoán vị trí bóng (bù trễ cho máy lag)[span_7](start_span)[span_7](end_span)
             local predictionTime = 0.1 
             local predictedBallPos = ball.Position + (ball.AssemblyLinearVelocity * predictionTime)
-            local targetPos = Vector3.new(predictedBallPos.X, ball.Position.Y + 1, predictedBallPos.Z)
             
-            -- Hướng nhìn theo bóng[span_6](start_span)[span_6](end_span)
+            -- Tính toán hướng di chuyển thực tế của bóng[span_8](start_span)[span_8](end_span)
             local ballMoveDir = ball.AssemblyLinearVelocity
             local direction = (ballMoveDir.Magnitude > 1) and ballMoveDir.Unit or hrp.CFrame.LookVector
             direction = Vector3.new(direction.X, 0, direction.Z).Unit
+            
+            -- Điểm đón: Cách vị trí dự đoán 7.5 studs về phía trước, hạ gầm xuống 1 stud[span_9](start_span)[span_9](end_span)[span_10](start_span)[span_10](end_span)
+            local targetPos = predictedBallPos + (direction * 7.5)
+            targetPos = Vector3.new(targetPos.X, ball.Position.Y + 1, targetPos.Z)
+            
+            -- Đổi hướng nhân vật nhìn cùng chiều bóng lăn[span_11](start_span)[span_11](end_span)
             hrp.CFrame = CFrame.new(hrp.Position, hrp.Position + direction)
             
-            -- 3. Lướt tới tốc độ cao (180) song song với lệnh xoạc[span_7](start_span)[span_7](end_span)
+            -- 3. Lướt tới tốc độ cao (180) song song với lệnh xoạc[span_12](start_span)[span_12](end_span)
             local bodyVel = Instance.new("BodyVelocity")
             bodyVel.MaxForce = Vector3.new(100000, 100000, 100000)
             bodyVel.Velocity = (targetPos - hrp.Position).Unit * 180
@@ -144,7 +149,7 @@ SlideButton.MouseButton1Click:Connect(function()
             
             bodyVel:Destroy()
             
-            -- 4. Ghim bám dính nhẹ nhàng vào bóng sau khi lướt[span_8](start_span)[span_8](end_span)
+            -- 4. Ghim bám dính vào bóng sau khi lướt tới[span_13](start_span)[span_13](end_span)
             local att0 = Instance.new("Attachment", hrp)
             local att1 = Instance.new("Attachment", ball)
             local alignPos = Instance.new("AlignPosition", hrp)
@@ -169,7 +174,7 @@ SlideButton.MouseButton1Click:Connect(function()
             task.wait(0.2)
             isCooldown = false
         else
-            -- Xoạc thường nếu ngoài tầm 30 studs[span_9](start_span)[span_9](end_span)
+            -- Xoạc thường nếu ngoài tầm 30 studs[span_14](start_span)[span_14](end_span)
             isCooldown = true
             game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("Slide"):FireServer(ball, 0.5, false)
             task.wait(0.5)
@@ -177,3 +182,4 @@ SlideButton.MouseButton1Click:Connect(function()
         end
     end
 end)
+
