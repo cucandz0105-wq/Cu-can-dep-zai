@@ -1067,7 +1067,7 @@ local function AutoBuyQuestFromStore()
     if not (_G.AutoDigAndPick or _G.AutoChestOnly) then return end if HasHolesOnMap() or IsHoldingChest() then return end
     task.wait(0.4)
     pcall(function()
-        local gp = LocalPlayer:FindFirstChild("QuestStore") and LocalPlayer.QuestStore:FindFirstChild("GoldenPioneer")
+        local gp = LocalPlayer:FindFirstChild("QuestStore") and LocalPlayer.QuestStore:FindFirstChild("GoldenPioneerNPC")
         if gp then for _, v in ipairs(gp:GetChildren()) do if v.Name ~= "LastNPC" then game.ReplicatedStorage.Remotes.Quest.BuyQuest:FireServer({TreasureQuestObj = v}) task.wait(0.15) end end end
     end)
     task.wait(0.2)
