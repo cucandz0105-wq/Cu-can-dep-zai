@@ -1081,30 +1081,49 @@ end
 local function HasHolesOnMap() return (_G.AutoDigAndPick and GetNearestBuriedChest()) and true or false end
 
 local function AutoBuyQuestFromStore()
-    if not (_G.AutoDigAndPick or _G.AutoChestOnly) then return end if HasHolesOnMap() or IsHoldingChest() then return end
+    if not (_G.AutoDigAndPick or _G.AutoChestOnly) then return end 
+    if HasHolesOnMap() or IsHoldingChest() then return end
+    
     task.wait(0.4)
     pcall(function()
         local gp = LocalPlayer:FindFirstChild("QuestStore") and LocalPlayer.QuestStore:FindFirstChild("GoldenPioneer")
-        if gp then for _, v in ipairs(gp:GetChildren()) do if v.Name ~= "LastNPC" then game.ReplicatedStorage.Remotes.Quest.BuyQuest:FireServer({TreasureQuestObj = v}) task.wait(0.15) end end end
+        if gp then 
+            for _, v in ipairs(gp:GetChildren()) do 
+                if v.Name ~= "LastNPC" then 
+                    game.ReplicatedStorage.Remotes.Quest.BuyQuest:FireServer({TreasureQuestObj = v}) 
+                    task.wait(0.15) 
+                end 
+            end 
+        end
     end)
+    
     task.wait(0.2)
     pcall(function() 
-    local gui = LocalPlayer.PlayerGui:FindFirstChild("PickQuestUI") 
-    if gui then 
-        -- 1. Thử click vào nút CloseButton có sẵn
-        local closeBtn = gui:FindFirstChild("CloseButton", true)
-        if closeBtn and firesignal then
-            firesignal(closeBtn.MouseButton1Click)
-        end
-        
-        -- 2. Hoặc gọi hàm close_button trong script
-        if gui:FindFirstChild("PickQuestClient") and getsenv then 
-            local env = getsenv(gui.PickQuestClient) 
-            if env and env.close_button then 
-                env.close_button() 
-            end 
+        local gui = LocalPlayer.PlayerGui:FindFirstChild("PickQuestUI") 
+        if gui then 
+            -- 1. Mô phỏng bấm nút CloseButton an toàn
+            pcall(function()
+                local closeBtn = gui:FindFirstChild("CloseButton", true)
+                if closeBtn and type(firesignal) == "function" then
+                    firesignal(closeBtn.MouseButton1Click)
+                end
+            end)
+            
+            -- 2. Gọi hàm đóng ngầm trong PickQuestClient (Chống crash tuyệt đối)
+            pcall(function()
+                if type(getsenv) == "function" then
+                    local clientScript = gui:FindFirstChild("PickQuestClient")
+                    if clientScript then
+                        local env = getsenv(clientScript)
+                        if env and type(env.close_button) == "function" then
+                            env.close_button()
+                        end
+                    end
+                end
+            end)
         end 
-    end 
+    end)
+end
 
 local function FirePrompt(pmt)
     local act = string.lower(pmt.ActionText) local isDig = string.find(act, "dig") or string.find(act, "dao") if isDig then _G.IsDigging = true end
