@@ -1450,7 +1450,7 @@ local function StartBot()
                     params.RespectCanCollide = true
 
                     local lookAheadDistance = 10
-                    local scanOrigin = Vector3.new(nextPos.X, nextPos.Y + 300, nextPos.Z) + (moveDir * lookAheadDistance)
+                    local scanOrigin = Vector3.new(nextPos.X, nextPos.Y + 10000, nextPos.Z) + (moveDir * lookAheadDistance)
                     local ray = Workspace:Raycast(scanOrigin, Vector3.new(0, -700, 0), params)
 
                     if ray and ray.Instance then 
