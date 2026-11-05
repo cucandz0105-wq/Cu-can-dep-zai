@@ -1405,7 +1405,7 @@ local function StartBot()
             local isQuestMenuOpen = false
 
             if pGui then
-                local shopUI = pGui:FindFirstChild("QuestShopUI")
+                local shopUI = pGui:FindFirstChild("PickQuestUI")
                 local pickUI = pGui:FindFirstChild("PickQuestUI")
                 if (shopUI and (shopUI:GetAttribute("Enabled") or shopUI.Enabled)) or 
                    (pickUI and (pickUI:GetAttribute("Enabled") or pickUI.Enabled)) then
