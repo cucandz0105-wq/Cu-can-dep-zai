@@ -1019,7 +1019,9 @@ local function GetNearestSeller()
     local islandsModel = Workspace:FindFirstChild("IslandsModel")
     
     if islandsModel then
-        for _, desc in pairs(islandsModel:GetDescendants()) do
+        -- Tìm trực tiếp trong thư mục chứa NPC (Creed / QuestMaster) để không phải quét lan man cả map
+        local targetFolder = islandsModel:FindFirstChild("Creed", true) or islandsModel
+        for _, desc in pairs(targetFolder:GetDescendants()) do
             if desc.Name == "GoldenPioneerNPC" and (desc:IsA("Model") or desc:IsA("BasePart")) then
                 local npcPivot = desc:IsA("Model") and desc:GetPivot() or desc.CFrame
                 local dist = (hrp.Position - npcPivot.Position).Magnitude 
@@ -1080,14 +1082,45 @@ end
 local function HasHolesOnMap() return (_G.AutoDigAndPick and GetNearestBuriedChest()) and true or false end
 
 local function AutoBuyQuestFromStore()
-    if not (_G.AutoDigAndPick or _G.AutoChestOnly) then return end if HasHolesOnMap() or IsHoldingChest() then return end
+    if not (_G.AutoDigAndPick or _G.AutoChestOnly) then return end 
+    if HasHolesOnMap() or IsHoldingChest() then return end
+    
     task.wait(0.4)
     pcall(function()
-        local gp = LocalPlayer:FindFirstChild("QuestStore") and LocalPlayer.QuestStore:FindFirstChild("GoldenPioneer")
-        if gp then for _, v in ipairs(gp:GetChildren()) do if v.Name ~= "LastNPC" then game.ReplicatedStorage.Remotes.Quest.BuyQuest:FireServer({TreasureQuestObj = v}) task.wait(0.15) end end end
+        local gp = LocalPlayer:FindFirstChild("QuestStore") and LocalPlayer.QuestStore:FindFirstChild("GoldenPioneerNPC")
+        if gp then 
+            for _, v in ipairs(gp:GetChildren()) do 
+                if v.Name ~= "LastNPC" then 
+                    game.ReplicatedStorage.Remotes.Quest.BuyQuest:FireServer({TreasureQuestObj = v}) 
+                    task.wait(0.15) 
+                end 
+            end 
+        end
     end)
-    task.wait(0.2)
-    pcall(function() local gui = LocalPlayer.PlayerGui:FindFirstChild("QuestShopUI") if gui and gui:FindFirstChild("QuestShopClient") and getsenv then local env = getsenv(gui.QuestShopClient) if env and env.close_button then env.close_button() end end end)
+    
+    task.wait(0.3)
+    -- Ép quét và đóng tất cả các biến thể UI nhiệm vụ đang bật trên màn hình
+    pcall(function()
+        local pGui = LocalPlayer:FindFirstChild("PlayerGui")
+        if pGui then
+            for _, ui in ipairs(pGui:GetChildren()) do
+                if string.find(string.lower(ui.Name), "quest") then
+                    -- Tắt trực tiếp thuộc tính Enabled của UI nếu có
+                    if ui:IsA("ScreenGui") then
+                        ui.Enabled = false
+                    end
+                    -- Gọi hàm close của môi trường nếu tồn tại
+                    if getsenv then
+                        local success, env = pcall(getsenv, ui:FindFirstChildWhichIsA("LocalScript", true))
+                        if success and env then
+                            if env.close_button then pcall(env.close_button) end
+                            if env.Close then pcall(env.Close) end
+                        end
+                    end
+                end
+            end
+        end
+    end)
 end
 
 local function FirePrompt(pmt)
