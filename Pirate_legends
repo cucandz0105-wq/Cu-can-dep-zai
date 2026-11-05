@@ -1088,8 +1088,24 @@ local function AutoBuyQuestFromStore()
         if gp then for _, v in ipairs(gp:GetChildren()) do if v.Name ~= "LastNPC" then game.ReplicatedStorage.Remotes.Quest.BuyQuest:FireServer({TreasureQuestObj = v}) task.wait(0.15) end end end
     end)
     task.wait(0.2)
-    pcall(function() local gui = LocalPlayer.PlayerGui:FindFirstChild("PickQuestUI") if gui and gui:FindFirstChild("PickQuestClient") and getsenv then local env = getsenv(gui.PickQuestClient) if env and env.close_button then env.close_button() end end end)
-end
+    pcall(function() 
+    local gui = LocalPlayer.PlayerGui:FindFirstChild("PickQuestUI") 
+    if gui then 
+        -- 1. Thử click vào nút CloseButton có sẵn
+        local closeBtn = gui:FindFirstChild("CloseButton", true)
+        if closeBtn and firesignal then
+            firesignal(closeBtn.MouseButton1Click)
+        end
+        
+        -- 2. Hoặc gọi hàm close_button trong script
+        if gui:FindFirstChild("PickQuestClient") and getsenv then 
+            local env = getsenv(gui.PickQuestClient) 
+            if env and env.close_button then 
+                env.close_button() 
+            end 
+        end 
+    end 
+end)
 
 local function FirePrompt(pmt)
     local act = string.lower(pmt.ActionText) local isDig = string.find(act, "dig") or string.find(act, "dao") if isDig then _G.IsDigging = true end
