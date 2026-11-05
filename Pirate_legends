@@ -1010,9 +1010,25 @@ local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
 
 local function GetNearestSeller()
-    local char = LocalPlayer.Character local hrp = char and char:FindFirstChild("HumanoidRootPart") if not hrp then return nil end
-    local nearNPC, minDist = nil, math.huge local mdl = Workspace:FindFirstChild("IslandsModel") local folder = mdl and mdl:FindFirstChild("NPCs")
-    if folder then for _, npc in pairs(folder:GetChildren()) do if npc.Name == "GoldenPioneerNPC" then local dist = (hrp.Position - npc:GetPivot().Position).Magnitude if dist < minDist then minDist, nearNPC = dist, npc end end end end
+    local char = LocalPlayer.Character 
+    local hrp = char and char:FindFirstChild("HumanoidRootPart") 
+    if not hrp then return nil end
+    
+    local nearNPC, minDist = nil, math.huge 
+    local islandsModel = Workspace:FindFirstChild("IslandsModel")
+    
+    if islandsModel then
+        -- Quét toàn bộ các hòn đảo để tìm ra GoldenPioneerNPC ở gần bro nhất thực sự
+        for _, desc in pairs(islandsModel:GetDescendants()) do
+            if desc.Name == "GoldenPioneerNPC" and (desc:IsA("Model") or desc:IsA("BasePart")) then
+                local npcPivot = desc:IsA("Model") and desc:GetPivot() or desc.CFrame
+                local dist = (hrp.Position - npcPivot.Position).Magnitude 
+                if dist < minDist then 
+                    minDist, nearNPC = dist, desc 
+                end 
+            end 
+        end 
+    end
     return nearNPC
 end
 
@@ -1067,11 +1083,11 @@ local function AutoBuyQuestFromStore()
     if not (_G.AutoDigAndPick or _G.AutoChestOnly) then return end if HasHolesOnMap() or IsHoldingChest() then return end
     task.wait(0.4)
     pcall(function()
-        local gp = LocalPlayer:FindFirstChild("QuestStore") and LocalPlayer.QuestStore:FindFirstChild("GoldenPioneer")
+        local gp = LocalPlayer:FindFirstChild("QuestStore") and LocalPlayer.QuestStore:FindFirstChild("GoldenPioneerNPC")
         if gp then for _, v in ipairs(gp:GetChildren()) do if v.Name ~= "LastNPC" then game.ReplicatedStorage.Remotes.Quest.BuyQuest:FireServer({TreasureQuestObj = v}) task.wait(0.15) end end end
     end)
     task.wait(0.2)
-    pcall(function() local gui = LocalPlayer.PlayerGui:FindFirstChild("QuestShopUI") if gui and gui:FindFirstChild("QuestShopClient") and getsenv then local env = getsenv(gui.QuestShopClient) if env and env.close_button then env.close_button() end end end)
+    pcall(function() local gui = LocalPlayer.PlayerGui:FindFirstChild("PickQuestUI") if gui and gui:FindFirstChild("PickQuestClient") and getsenv then local env = getsenv(gui.PickQuestClient) if env and env.close_button then env.close_button() end end end)
 end
 
 local function FirePrompt(pmt)
