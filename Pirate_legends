@@ -1010,9 +1010,26 @@ local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
 
 local function GetNearestSeller()
-    local char = LocalPlayer.Character local hrp = char and char:FindFirstChild("HumanoidRootPart") if not hrp then return nil end
-    local nearNPC, minDist = nil, math.huge local mdl = Workspace:FindFirstChild("IslandsModel") local folder = mdl and mdl:FindFirstChild("NPCs")
-    if folder then for _, npc in pairs(folder:GetChildren()) do if npc.Name == "GoldenPioneerNPC" then local dist = (hrp.Position - npc:GetPivot().Position).Magnitude if dist < minDist then minDist, nearNPC = dist, npc end end end end
+    local char = LocalPlayer.Character 
+    local hrp = char and char:FindFirstChild("HumanoidRootPart") 
+    if not hrp then return nil end
+    
+    local nearNPC, minDist = nil, math.huge 
+    local islandsModel = Workspace:FindFirstChild("IslandsModel")
+    
+    if islandsModel then
+        -- Tìm trực tiếp trong thư mục chứa NPC (Creed / QuestMaster) để không phải quét lan man cả map
+        local targetFolder = islandsModel:FindFirstChild("Creed", true) or islandsModel
+        for _, desc in pairs(targetFolder:GetDescendants()) do
+            if desc.Name == "GoldenPioneerNPC" and (desc:IsA("Model") or desc:IsA("BasePart")) then
+                local npcPivot = desc:IsA("Model") and desc:GetPivot() or desc.CFrame
+                local dist = (hrp.Position - npcPivot.Position).Magnitude 
+                if dist < minDist then 
+                    minDist, nearNPC = dist, desc 
+                end 
+            end 
+        end 
+    end
     return nearNPC
 end
 
