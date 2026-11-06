@@ -1095,8 +1095,12 @@ local function AutoBuyQuestFromStore()
         if gp then for _, v in ipairs(gp:GetChildren()) do if v.Name ~= "LastNPC" then game.ReplicatedStorage.Remotes.Quest.BuyQuest:FireServer({TreasureQuestObj = v}) task.wait(0.15) end end end
     end)
     task.wait(0.2)
-    pcall(function() local gui = LocalPlayer.PlayerGui:FindFirstChild("QuestShopUI") if gui and gui:FindFirstChild("QuestShopClient") and getsenv then local env = getsenv(gui.QuestShopClient) if env and env.close_button then env.close_button() end end end)
-end
+    pcall(function()
+    local pg = game:GetService("Players").LocalPlayer.PlayerGui
+    local gui = pg.Shops.Quests.QuestShopUI
+    local env = getsenv(gui.QuestShopClient)
+    env.close_button()
+end)
 
 local function FirePrompt(pmt)
     local act = string.lower(pmt.ActionText) local isDig = string.find(act, "dig") or string.find(act, "dao") if isDig then _G.IsDigging = true end
@@ -1378,13 +1382,19 @@ local function StartBot()
             local isQuestMenuOpen = false
 
             if pGui then
-                local shopUI = pGui:FindFirstChild("QuestShopUI")
-                local pickUI = pGui:FindFirstChild("PickQuestUI")
-                if (shopUI and (shopUI:GetAttribute("Enabled") or shopUI.Enabled)) or 
-                   (pickUI and (pickUI:GetAttribute("Enabled") or pickUI.Enabled)) then
-                    isQuestMenuOpen = true
-                end
-            end
+    local shops = pGui:FindFirstChild("Shops")
+    local quests = shops and shops:FindFirstChild("Quests")
+
+    local shopUI = quests and quests:FindFirstChild("QuestShopUI")
+    local advancedUI = quests and quests:FindFirstChild("AdvancedQuestsUI")
+    local pickUI = pGui:FindFirstChild("PickQuestUI")
+
+    if (shopUI and shopUI.Enabled)
+    or (advancedUI and advancedUI.Enabled)
+    or (pickUI and pickUI.Enabled) then
+        isQuestMenuOpen = true
+    end
+end
 
             if notNpcOrDoor and not isQuestMenuOpen and _G.IsEscapingStuck and _G.TimeAfterTP then
                 local elapsedAfterTP = os.clock() - _G.TimeAfterTP
