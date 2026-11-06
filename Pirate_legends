@@ -1088,14 +1088,45 @@ end
 local function HasHolesOnMap() return (_G.AutoDigAndPick and GetNearestBuriedChest()) and true or false end
 
 local function AutoBuyQuestFromStore()
-    if not (_G.AutoDigAndPick or _G.AutoChestOnly) then return end if HasHolesOnMap() or IsHoldingChest() then return end
+    if not (_G.AutoDigAndPick or _G.AutoChestOnly) then return end 
+    if HasHolesOnMap() or IsHoldingChest() then return end
+    
     task.wait(0.4)
     pcall(function()
         local gp = LocalPlayer:FindFirstChild("QuestStore") and LocalPlayer.QuestStore:FindFirstChild("GoldenPioneer")
-        if gp then for _, v in ipairs(gp:GetChildren()) do if v.Name ~= "LastNPC" then game.ReplicatedStorage.Remotes.Quest.BuyQuest:FireServer({TreasureQuestObj = v}) task.wait(0.15) end end end
+        if gp then 
+            for _, v in ipairs(gp:GetChildren()) do 
+                if v.Name ~= "LastNPC" then 
+                    game.ReplicatedStorage.Remotes.Quest.BuyQuest:FireServer({TreasureQuestObj = v}) 
+                    task.wait(0.15) 
+                end 
+            end 
+        end
     end)
+    
     task.wait(0.2)
-    pcall(function() local gui = LocalPlayer.PlayerGui:FindFirstChild("QuestShopUI") if gui and gui:FindFirstChild("QuestShopClient") and getsenv then local env = getsenv(gui.QuestShopClient) if env and env.close_button then env.close_button() end end end)
+    
+    -- Tự động đóng bảng UI chuẩn xác qua môi trường ngầm (getsenv)
+    pcall(function()
+        local pGui = LocalPlayer:FindFirstChild("PlayerGui")
+        if not pGui then return end
+        local targetGuis = {"PickQuestUI", "WeaponShop_UI", "QuestShopUI"}
+        
+        for _, uiName in ipairs(targetGuis) do
+            local gui = pGui:FindFirstChild(uiName)
+            if gui then
+                for _, child in ipairs(gui:GetDescendants()) do
+                    if child:IsA("LocalScript") and getsenv then
+                        local success, env = pcall(getsenv, child)
+                        if success and env then
+                            if env.close_button then env.close_button() return end
+                            if env.CloseButton then env.CloseButton() return end
+                        end
+                    end
+                end
+            end
+        end
+    end)
 end
 
 local function FirePrompt(pmt)
