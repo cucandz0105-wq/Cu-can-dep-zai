@@ -1276,6 +1276,18 @@ local function StartBot()
                 _G.TimeAfterTP = nil 
                 _G.TimeAtTarget = nil 
                 isInteracting = false
+-- TP gần rương và NPC Seller, bỏ qua Farryman
+if not ghostDoor then
+    local distance = (tPos - hrp.Position).Magnitude
+
+    if distance > 20 then
+        local direction = (tPos - hrp.Position).Unit
+        local tpPosition = tPos - (direction * 20)
+
+        hrp.CFrame = CFrame.lookAt(tpPosition, tPos)
+        _G.LastHrpPosition = tpPosition
+    end
+end
             end
             -- =======================================================
             -- THẢM TÀNG HÌNH BẢO HỘ (BỆ ĐỠ RAYCAST Y = 6.2)
