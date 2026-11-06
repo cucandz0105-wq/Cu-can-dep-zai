@@ -1276,18 +1276,7 @@ local function StartBot()
                 _G.TimeAfterTP = nil 
                 _G.TimeAtTarget = nil 
                 isInteracting = false
--- TP gần rương và NPC Seller, bỏ qua Farryman
-if not ghostDoor then
-    local distance = (tPos - hrp.Position).Magnitude
-
-    if distance > 100 then
-        local direction = (tPos - hrp.Position).Unit
-        local tpPosition = tPos - (direction * 100)
-
-        hrp.CFrame = CFrame.lookAt(tpPosition, tPos)
-        _G.LastHrpPosition = tpPosition
-    end
-end
+                _G.TP_Pending = not ghostDoor
             end
             -- =======================================================
             -- THẢM TÀNG HÌNH BẢO HỘ (BỆ ĐỠ RAYCAST Y = 6.2)
@@ -1323,6 +1312,19 @@ end
                 _G.LastHrpPosition = hrp.Position
                 return
             end
+-- TP gần rương và NPC Seller, bỏ qua Farryman
+if _G.TP_Pending then
+    _G.TP_Pending = false
+
+    local offset = tPos - hrp.Position
+    local distance = offset.Magnitude
+
+    if distance > 100 then
+        local tpPosition = tPos - offset.Unit * 100
+        hrp.CFrame = CFrame.lookAt(tpPosition, tPos)
+        _G.LastHrpPosition = tpPosition
+    end
+end
 
             -- Tự động reset bộ đếm giật nếu quá 6s không bị giật nữa
             if os.clock() - _G.LastRubberbandTime > 6.0 then
