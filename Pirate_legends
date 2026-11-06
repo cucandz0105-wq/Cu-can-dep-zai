@@ -1104,27 +1104,25 @@ local function AutoBuyQuestFromStore()
         end
     end)
     
-    task.wait(0.2)
+    task.wait(0.3)
     
-    -- Tự động đóng bảng UI chuẩn xác qua môi trường ngầm (getsenv)
+    -- Tương tác trực tiếp bằng firesignal vào đúng đường dẫn CloseButton vừa tìm thấy
     pcall(function()
         local pGui = LocalPlayer:FindFirstChild("PlayerGui")
         if not pGui then return end
-        local targetGuis = {"PickQuestUI", "Quests", "WeaponShop_UI", "QuestShopUI"}
         
-        for _, uiName in ipairs(targetGuis) do
-            local gui = pGui:FindFirstChild(uiName)
-            if gui then
-                for _, child in ipairs(gui:GetDescendants()) do
-                    if child:IsA("LocalScript") and getsenv then
-                        local success, env = pcall(getsenv, child)
-                        if success and env then
-                            if env.close_button then env.close_button() return end
-                            if env.CloseButton then env.CloseButton() return end
-                        end
-                    end
-                end
-            end
+        -- Thử bấm CloseButton của PickQuestUI trước
+        local btn1 = pGui:FindFirstChild("PickQuestUI") and pGui.PickQuestUI:FindFirstChild("CloseButton", true)
+        if btn1 and btn1:IsA("GuiButton") then
+            if firesignal then firesignal(btn1.MouseButton1Click) else for _, c in pairs(getconnections(btn1.MouseButton1Click)) do c:Fire() end end
+            return
+        end
+        
+        -- Hoặc bấm CloseButton của WeaponShop_UI
+        local btn2 = pGui:FindFirstChild("WeaponShop_UI") and pGui.WeaponShop_UI:FindFirstChild("CloseButton", true)
+        if btn2 and btn2:IsA("GuiButton") then
+            if firesignal then firesignal(btn2.MouseButton1Click) else for _, c in pairs(getconnections(btn2.MouseButton1Click)) do c:Fire() end end
+            return
         end
     end)
 end
