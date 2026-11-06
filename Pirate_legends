@@ -1009,11 +1009,35 @@ local TweenService = game:GetService("TweenService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
 
+local cachedNearestSeller = nil
+local lastSearchTime = 0
+
 local function GetNearestSeller()
-    local char = LocalPlayer.Character local hrp = char and char:FindFirstChild("HumanoidRootPart") if not hrp then return nil end
-    local nearNPC, minDist = nil, math.huge local mdl = Workspace:FindFirstChild("IslandsModel") local folder = mdl and mdl:FindFirstChild("NPCs")
-    if folder then for _, npc in pairs(folder:GetChildren()) do if npc.Name == "GoldenPioneerNPC" then local dist = (hrp.Position - npc:GetPivot().Position).Magnitude if dist < minDist then minDist, nearNPC = dist, npc end end end end
-    return nearNPC
+    local char = LocalPlayer.Character 
+    local hrp = char and char:FindFirstChild("HumanoidRootPart") 
+    if not hrp then return nil end
+    
+    -- Chỉ cho phép quét lại toàn map mỗi 1.5 giây một lần để tiết kiệm tài nguyên tuyệt đối
+    if os.clock() - lastSearchTime > 1.5 then
+        lastSearchTime = os.clock()
+        local nearNPC, minDist = nil, math.huge 
+        local islandsModel = Workspace:FindFirstChild("IslandsModel")
+        
+        if islandsModel then
+            for _, desc in pairs(islandsModel:GetDescendants()) do
+                if desc.Name == "GoldenPioneerNPC" and (desc:IsA("Model") or desc:IsA("BasePart")) then
+                    local npcPivot = desc:IsA("Model") and desc:GetPivot() or desc.CFrame
+                    local dist = (hrp.Position - npcPivot.Position).Magnitude 
+                    if dist < minDist then 
+                        minDist, nearNPC = dist, desc 
+                    end 
+                end 
+            end 
+        end
+        cachedNearestSeller = nearNPC
+    end
+    
+    return cachedNearestSeller
 end
 
 local function IsHoldingChest()
