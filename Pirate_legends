@@ -1096,11 +1096,12 @@ local function AutoBuyQuestFromStore()
     end)
     task.wait(0.2)
     pcall(function()
-    local pg = game:GetService("Players").LocalPlayer.PlayerGui
-    local gui = pg.Shops.Quests.QuestShopUI
-    local env = getsenv(gui.QuestShopClient)
-    env.close_button()
-end)
+         local pg = game:GetService("Players").LocalPlayer.PlayerGui
+         local gui = pg.Shops.Quests.QuestShopUI
+         local env = getsenv(gui.QuestShopClient)
+     env.close_button()
+    end)
+end
 
 local function FirePrompt(pmt)
     local act = string.lower(pmt.ActionText) local isDig = string.find(act, "dig") or string.find(act, "dao") if isDig then _G.IsDigging = true end
