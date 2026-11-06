@@ -1173,7 +1173,7 @@ _G.AntiKickConnection = GuiService.ErrorMessageChanged:Connect(function()
 end)
 -- =======================================================
 
-local FLY_SPEED, FALL_LIMIT, CLIMB_LIMIT, OFFSET_DIST, LERP_SMOOTH, MAX_HEIGHT, SEA_LEVEL = 1000, 62, 42, 3.5, 0.25, 8.0, 9.0
+local FLY_SPEED, FALL_LIMIT, CLIMB_LIMIT, OFFSET_DIST, LERP_SMOOTH, MAX_HEIGHT, SEA_LEVEL = 700, 62, 42, 3.5, 0.25, 8.0, 9.0
 
 local isInteracting = false 
 local function AutoTriggerPrompt(target)
@@ -1319,8 +1319,8 @@ if _G.TP_Pending then
     local offset = tPos - hrp.Position
     local distance = offset.Magnitude
 
-    if distance > 30 then
-        local tpPosition = tPos - offset.Unit * 30
+    if distance > 60 then
+        local tpPosition = tPos - offset.Unit * 60
         hrp.CFrame = CFrame.lookAt(tpPosition, tPos)
         _G.LastHrpPosition = tpPosition
     end
