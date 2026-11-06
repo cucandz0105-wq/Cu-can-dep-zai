@@ -1280,9 +1280,9 @@ local function StartBot()
 if not ghostDoor then
     local distance = (tPos - hrp.Position).Magnitude
 
-    if distance > 20 then
+    if distance > 100 then
         local direction = (tPos - hrp.Position).Unit
-        local tpPosition = tPos - (direction * 20)
+        local tpPosition = tPos - (direction * 100)
 
         hrp.CFrame = CFrame.lookAt(tpPosition, tPos)
         _G.LastHrpPosition = tpPosition
