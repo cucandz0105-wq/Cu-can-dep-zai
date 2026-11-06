@@ -1110,7 +1110,7 @@ local function AutoBuyQuestFromStore()
     pcall(function()
         local pGui = LocalPlayer:FindFirstChild("PlayerGui")
         if not pGui then return end
-        local targetGuis = {"PickQuestUI", "WeaponShop_UI", "QuestShopUI"}
+        local targetGuis = {"PickQuestUI", "Quests", "WeaponShop_UI", "QuestShopUI"}
         
         for _, uiName in ipairs(targetGuis) do
             local gui = pGui:FindFirstChild(uiName)
