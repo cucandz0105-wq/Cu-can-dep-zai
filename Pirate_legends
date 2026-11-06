@@ -1106,23 +1106,29 @@ local function AutoBuyQuestFromStore()
     
     task.wait(0.3)
     
-    -- Tương tác trực tiếp bằng firesignal vào đúng đường dẫn CloseButton vừa tìm thấy
+    -- Kích hoạt trực tiếp hàm :Activate() chuẩn của Roblox trên CloseButton
     pcall(function()
         local pGui = LocalPlayer:FindFirstChild("PlayerGui")
         if not pGui then return end
         
-        -- Thử bấm CloseButton của PickQuestUI trước
-        local btn1 = pGui:FindFirstChild("PickQuestUI") and pGui.PickQuestUI:FindFirstChild("CloseButton", true)
-        if btn1 and btn1:IsA("GuiButton") then
-            if firesignal then firesignal(btn1.MouseButton1Click) else for _, c in pairs(getconnections(btn1.MouseButton1Click)) do c:Fire() end end
-            return
+        -- 1. Thử gọi Activate cho PickQuestUI.CloseButton[span_0](start_span)[span_0](end_span)
+        local pickUI = pGui:FindFirstChild("PickQuestUI")
+        if pickUI then
+            local btn = pickUI:FindFirstChild("CloseButton", true)
+            if btn and btn:IsA("GuiButton") then
+                btn:Activate()
+                return
+            end
         end
         
-        -- Hoặc bấm CloseButton của WeaponShop_UI
-        local btn2 = pGui:FindFirstChild("WeaponShop_UI") and pGui.WeaponShop_UI:FindFirstChild("CloseButton", true)
-        if btn2 and btn2:IsA("GuiButton") then
-            if firesignal then firesignal(btn2.MouseButton1Click) else for _, c in pairs(getconnections(btn2.MouseButton1Click)) do c:Fire() end end
-            return
+        -- 2. Thử gọi Activate cho WeaponShop_UI.Frame2.CloseButton[span_1](start_span)[span_1](end_span)
+        local shopUI = pGui:FindFirstChild("WeaponShop_UI")
+        if shopUI then
+            local btn = shopUI:FindFirstChild("CloseButton", true)
+            if btn and btn:IsA("GuiButton") then
+                btn:Activate()
+                return
+            end
         end
     end)
 end
