@@ -1011,7 +1011,7 @@ local Camera = Workspace.CurrentCamera
 
 local cachedNearestSeller = nil
 local lastSearchTime = 0
-local blacklistedSellers = {} -- Danh sách lưu các NPC đang bị cooldown
+local blacklistedSellers = {} -- Danh sách đen chứa các NPC đang bị cooldown
 local sellerWaitStartTime = nil
 local currentActiveSeller = nil
 
@@ -1023,7 +1023,7 @@ local function GetNearestSeller()
     local islandsModel = Workspace:FindFirstChild("IslandsModel")
     if not islandsModel then return nil end
     
-    -- Thu thập tất cả các NPC Seller có trên toàn map
+    -- Thu thập toàn bộ NPC đúng tên "GoldenPioneerNPC" trên map (bỏ qua những đứa đang bị blacklist)
     local allSellers = {}
     for _, desc in pairs(islandsModel:GetDescendants()) do
         if desc.Name == "GoldenPioneerNPC" and (desc:IsA("Model") or desc:IsA("BasePart")) then
@@ -1033,7 +1033,7 @@ local function GetNearestSeller()
         end
     end
     
-    -- Nếu tất cả NPC trên map đều đã bị đưa vào danh sách đen (cooldown hết), reset lại bảng đen để quét lại từ đầu
+    -- Nếu tất cả Seller đều bị kẹt cooldown hết, reset lại danh sách đen để quét lại từ đầu
     if #allSellers == 0 then
         blacklistedSellers = {}
         for _, desc in pairs(islandsModel:GetDescendants()) do
@@ -1045,7 +1045,7 @@ local function GetNearestSeller()
     
     if #allSellers == 0 then return nil end
     
-    -- Tìm NPC Seller gần nhất trong số những NPC chưa bị cooldown
+    -- Tìm NPC Seller gần nhất trong số những đứa chưa bị cooldown
     local nearNPC, minDist = nil, math.huge 
     for _, desc in ipairs(allSellers) do
         local npcPivot = desc:IsA("Model") and desc:GetPivot() or desc.CFrame
@@ -1055,19 +1055,18 @@ local function GetNearestSeller()
         end 
     end
     
-    -- Kiểm tra logic 5 giây chờ mua quest
+    -- Kiểm tra logic chờ 5 giây mua quest
     if currentActiveSeller ~= nearNPC then
         currentActiveSeller = nearNPC
-        sellerWaitStartTime = os.clock() -- Bắt đầu bấm giờ 5s khi chuyển sang NPC mới
+        sellerWaitStartTime = os.clock() -- Bắt đầu đếm ngược 5 giây khi chuyển sang Seller mới
     else
-        -- Nếu đứng ở NPC này quá 5 giây mà vẫn chưa cầm rương hoặc chưa nhận được quest mới -> Co được coi là kẹt cooldown!
+        -- Nếu đứng ở Seller này quá 5 giây mà chưa nhận được nhiệm vụ -> Coi như dính cooldown!
         if sellerWaitStartTime and (os.clock() - sellerWaitStartTime >= 5.0) then
             if nearNPC then
-                -- Đưa NPC này vào danh sách đen tạm thời
-                blacklistedSellers[nearNPC] = true
-                sellerWaitStartTime = os.clock() -- Reset đồng hồ cho NPC tiếp theo
+                blacklistedSellers[nearNPC] = true -- Đưa vào sổ đen tạm thời
+                sellerWaitStartTime = os.clock() -- Reset bộ đếm
                 
-                -- Chọn bừa một NPC Seller ngẫu nhiên khác trên map để nhảy sang ngay lập tức
+                -- Bốc ngẫu nhiên một NPC Seller khác trên map để bay sang ngay lập tức
                 local remainingSellers = {}
                 for _, desc in ipairs(allSellers) do
                     if desc ~= nearNPC then
