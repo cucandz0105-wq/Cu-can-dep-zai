@@ -1011,32 +1011,81 @@ local Camera = Workspace.CurrentCamera
 
 local cachedNearestSeller = nil
 local lastSearchTime = 0
+local blacklistedSellers = {} -- Danh sách lưu các NPC đang bị cooldown
+local sellerWaitStartTime = nil
+local currentActiveSeller = nil
 
 local function GetNearestSeller()
     local char = LocalPlayer.Character 
     local hrp = char and char:FindFirstChild("HumanoidRootPart") 
     if not hrp then return nil end
     
-    -- Chỉ cho phép quét lại toàn map mỗi 1.5 giây một lần để tiết kiệm tài nguyên tuyệt đối
-    if os.clock() - lastSearchTime > 1.5 then
-        lastSearchTime = os.clock()
-        local nearNPC, minDist = nil, math.huge 
-        local islandsModel = Workspace:FindFirstChild("IslandsModel")
-        
-        if islandsModel then
-            for _, desc in pairs(islandsModel:GetDescendants()) do
-                if desc.Name == "GoldenPioneerNPC" and (desc:IsA("Model") or desc:IsA("BasePart")) then
-                    local npcPivot = desc:IsA("Model") and desc:GetPivot() or desc.CFrame
-                    local dist = (hrp.Position - npcPivot.Position).Magnitude 
-                    if dist < minDist then 
-                        minDist, nearNPC = dist, desc 
-                    end 
-                end 
-            end 
+    local islandsModel = Workspace:FindFirstChild("IslandsModel")
+    if not islandsModel then return nil end
+    
+    -- Thu thập tất cả các NPC Seller có trên toàn map
+    local allSellers = {}
+    for _, desc in pairs(islandsModel:GetDescendants()) do
+        if desc.Name == "GoldenPioneerNPC" and (desc:IsA("Model") or desc:IsA("BasePart")) then
+            if not blacklistedSellers[desc] then
+                table.insert(allSellers, desc)
+            end
         end
-        cachedNearestSeller = nearNPC
     end
     
+    -- Nếu tất cả NPC trên map đều đã bị đưa vào danh sách đen (cooldown hết), reset lại bảng đen để quét lại từ đầu
+    if #allSellers == 0 then
+        blacklistedSellers = {}
+        for _, desc in pairs(islandsModel:GetDescendants()) do
+            if desc.Name == "GoldenPioneerNPC" and (desc:IsA("Model") or desc:IsA("BasePart")) then
+                table.insert(allSellers, desc)
+            end
+        end
+    end
+    
+    if #allSellers == 0 then return nil end
+    
+    -- Tìm NPC Seller gần nhất trong số những NPC chưa bị cooldown
+    local nearNPC, minDist = nil, math.huge 
+    for _, desc in ipairs(allSellers) do
+        local npcPivot = desc:IsA("Model") and desc:GetPivot() or desc.CFrame
+        local dist = (hrp.Position - npcPivot.Position).Magnitude 
+        if dist < minDist then 
+            minDist, nearNPC = desc 
+        end 
+    end
+    
+    -- Kiểm tra logic 5 giây chờ mua quest
+    if currentActiveSeller ~= nearNPC then
+        currentActiveSeller = nearNPC
+        sellerWaitStartTime = os.clock() -- Bắt đầu bấm giờ 5s khi chuyển sang NPC mới
+    else
+        -- Nếu đứng ở NPC này quá 5 giây mà vẫn chưa cầm rương hoặc chưa nhận được quest mới -> Co được coi là kẹt cooldown!
+        if sellerWaitStartTime and (os.clock() - sellerWaitStartTime >= 5.0) then
+            if nearNPC then
+                -- Đưa NPC này vào danh sách đen tạm thời
+                blacklistedSellers[nearNPC] = true
+                sellerWaitStartTime = os.clock() -- Reset đồng hồ cho NPC tiếp theo
+                
+                -- Chọn bừa một NPC Seller ngẫu nhiên khác trên map để nhảy sang ngay lập tức
+                local remainingSellers = {}
+                for _, desc in ipairs(allSellers) do
+                    if desc ~= nearNPC then
+                        table.insert(remainingSellers, desc)
+                    end
+                end
+                
+                if #remainingSellers > 0 then
+                    local randomSeller = remainingSellers[math.random(1, #remainingSellers)]
+                    cachedNearestSeller = randomSeller
+                    currentActiveSeller = randomSeller
+                    return randomSeller
+                end
+            end
+        end
+    end
+    
+    cachedNearestSeller = nearNPC
     return cachedNearestSeller
 end
 
