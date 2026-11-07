@@ -1171,9 +1171,10 @@ _G.AntiKickConnection = GuiService.ErrorMessageChanged:Connect(function()
         GuiService:ClearError()
     end)
 end)
--- =======================================================
 
+-- ⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡
 local FLY_SPEED, FALL_LIMIT, CLIMB_LIMIT, OFFSET_DIST, LERP_SMOOTH, MAX_HEIGHT, SEA_LEVEL = 60, 62, 42, 3.5, 0.25, 8.0, 9.0
+-- ⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡
 
 local isInteracting = false 
 local function AutoTriggerPrompt(target)
@@ -1311,9 +1312,9 @@ local function StartBot()
                 -- ⚡ TELEPORT ĐÓN ĐẦU: Nhảy ngay đến vị trí cách mục tiêu 20 studs nếu ở xa
                 pcall(function()
                     local initialDist = (hrp.Position - tPos).Magnitude
-                    if initialDist > 20 then
+                    if initialDist > 50 then
                         local approachDir = (tPos - hrp.Position).Unit
-                        local targetTeleportPos = tPos - (approachDir * 20)
+                        local targetTeleportPos = tPos - (approachDir * 50)
                         targetTeleportPos = Vector3.new(targetTeleportPos.X, tPos.Y + 1.8, targetTeleportPos.Z)
                         hrp.CFrame = CFrame.new(targetTeleportPos, tPos)
                     end
