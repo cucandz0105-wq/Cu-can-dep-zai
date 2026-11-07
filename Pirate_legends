@@ -1506,6 +1506,17 @@ local function StartBot()
                 end
 
                 AutoTriggerPrompt(tPart)
+   
+                -- 🛑 Chờ 0.6 giây để rương ngoi lên sau khi đào, không bị bay mất hút
+                pcall(function()
+                    local actText = ""
+                    local pmt = tPart:IsA("ProximityPrompt") and tPart or tPart:FindFirstChildOfClass("ProximityPrompt", true)
+                    if pmt then actText = string.lower(pmt.ActionText) end
+                    
+                    if string.find(actText, "dig") or string.find(actText, "dao") then
+                        task.wait(0.6) 
+                    end
+                end)
 
                 local safeY = tPos.Y + (hrp.Size.Y / 2) + 2.5
 
