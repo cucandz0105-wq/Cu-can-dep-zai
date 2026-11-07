@@ -1173,7 +1173,7 @@ _G.AntiKickConnection = GuiService.ErrorMessageChanged:Connect(function()
 end)
 -- =======================================================
 
-local FLY_SPEED, FALL_LIMIT, CLIMB_LIMIT, OFFSET_DIST, LERP_SMOOTH, MAX_HEIGHT, SEA_LEVEL = 8000, 62, 42, 3.5, 0.25, 8.0, 9.0
+local FLY_SPEED, FALL_LIMIT, CLIMB_LIMIT, OFFSET_DIST, LERP_SMOOTH, MAX_HEIGHT, SEA_LEVEL = 60, 62, 42, 3.5, 0.25, 8.0, 9.0
 
 local isInteracting = false 
 local function AutoTriggerPrompt(target)
@@ -1264,10 +1264,10 @@ local function StartBot()
                 return 
             end
             hrp.AssemblyLinearVelocity, hrp.AssemblyAngularVelocity = Vector3.new(0,0,0), Vector3.new(0,0,0)
-            
-            -- ĐIỀU KIỆN NHẢ ANCHOR KHI MỤC TIÊU ĐÃ ĐƯỢC THAY ĐỔI / BIẾN MẤT
+    
+      -- ĐIỀU KIỆN NHẢ ANCHOR KHI MỤC TIÊU ĐÃ ĐƯỢC THAY ĐỔI / BIẾN MẤT
             if _G.CurrentTarget ~= tPart then 
-                hrp.Anchored = false -- Nhả Neo ngay lập tức để bay sang mục tiêu mới
+                hrp.Anchored = false -- Nhả Neo ngay lập tức để đổi mục tiêu
                 _G.CurrentTarget = tPart 
                 _G.StuckTime = os.clock() 
                 _G.SellerStuckTime = nil 
@@ -1276,7 +1276,67 @@ local function StartBot()
                 _G.TimeAfterTP = nil 
                 _G.TimeAtTarget = nil 
                 isInteracting = false
+                
+                -- ⚡ TELEPORT ĐÓN ĐẦU: Nhảy ngay đến vị trí cách mục tiêu 20 studs nếu ở xa
+                pcall(function()
+                    local initialDist = (hrp.Position - tPos).Magnitude
+                    if initialDist > 20 then
+                        local approachDir = (tPos - hrp.Position).Unit
+                        local targetTeleportPos = tPos - (approachDir * 20)
+                        targetTeleportPos = Vector3.new(targetTeleportPos.X, tPos.Y + 1.8, targetTeleportPos.Z)
+                        hrp.CFrame = CFrame.new(targetTeleportPos, tPos)
+                    end
+                end)
             end
+
+            -- Kiểm tra khoảng cách thực tế sau khi đã teleport đón đầu
+            local dist = (hrp.Position - tPos).Magnitude 
+            if toSeller and dist < 18 then 
+                Camera.CFrame = CFrame.new(Camera.CFrame.Position, tPos) 
+            end
+            
+            local dir = (tPos - hrp.Position).Unit 
+            local stopPos, sellerY_Chuan = tPos - (dir * OFFSET_DIST), tPos.Y
+            
+            if toSeller and npc then 
+                local sHrp = npc:FindFirstChild("HumanoidRootPart") or npc:FindFirstChildWhichIsA("BasePart") 
+                if sHrp then 
+                    local lVec = sHrp.CFrame.LookVector 
+                    sellerY_Chuan = sHrp.Position.Y 
+                    stopPos = Vector3.new(tPos.X + (lVec.X * OFFSET_DIST), sellerY_Chuan, tPos.Z + (lVec.Z * OFFSET_DIST)) 
+                    dist = (hrp.Position - stopPos).Magnitude + OFFSET_DIST 
+                end 
+            elseif ghostDoor then 
+                sellerY_Chuan = tPos.Y 
+                stopPos = tPos - (dir * OFFSET_DIST) 
+            end
+            
+            local stopLimit = (toSeller or ghostDoor) and (OFFSET_DIST + 1.2) or (OFFSET_DIST + 0.5)
+
+            -- Khi đã áp sát mục tiêu trong phạm vi dừng
+            if dist <= stopLimit then
+                _G.DaDenDich = true
+                if not _G.TimeAtTarget then _G.TimeAtTarget = os.clock() end
+                AutoTriggerPrompt(tPart)
+                
+                local finalStopPos = Vector3.new(stopPos.X, (toSeller or ghostDoor) and stopPos.Y or (tPos.Y + (hrp.Size.Y / 2) + 1.8), stopPos.Z)
+                hrp.CFrame = CFrame.new(finalStopPos, Vector3.new(tPos.X, finalStopPos.Y, tPos.Z)) 
+            else
+                -- 🚀 BAY THẲNG 3D QUÃNG ĐƯỜNG CÒN LẠI (SAU KHI ĐÃ TP CÁCH 20 STUDS)
+                hrp.Anchored = false
+                _G.TimeAtTarget = nil 
+                
+                local destPos = (toSeller or ghostDoor) and stopPos or Vector3.new(tPos.X, tPos.Y + 1.8, tPos.Z)
+                local moveStep = math.min(FLY_SPEED * dt, dist)
+                local currentDir = (destPos - hrp.Position).Unit
+                local nextPos = hrp.Position + (currentDir * moveStep)
+                
+                hrp.CFrame = CFrame.new(nextPos, destPos)
+            end      
+        end
+    end
+end
+
             -- =======================================================
             -- THẢM TÀNG HÌNH BẢO HỘ (BỆ ĐỠ RAYCAST Y = 6.2)
             -- =======================================================
