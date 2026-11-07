@@ -1478,7 +1478,8 @@ end
                         hrp.CFrame = CFrame.new(finalStopPos, Vector3.new(tPos.X, finalStopPos.Y, tPos.Z)) 
                     end
                 end
-            else
+            
+                            else
                 hrp.Anchored = false
                 _G.TimeAtTarget = nil 
                 
@@ -1487,108 +1488,15 @@ end
                     _G.TimeAfterTP = nil
                 end
                 
-                local moveDir = (toSeller or ghostDoor) and (stopPos - hrp.Position).Unit or dir 
-                local clampledSpeed = math.min(FLY_SPEED * dt, 5.0) 
+                -- 🚀 BAY THẲNG 3D TRỰC TIẾP THEO TOẠ ĐỘ X, Y, Z (ĐÃ XÓA SẠCH RAYCAST)
+                local destPos = (toSeller or ghostDoor) and stopPos or Vector3.new(tPos.X, tPos.Y + 1.8, tPos.Z)
                 
-                local nextPos
-                if _G.IsEscapingStuck then
-                    nextPos = hrp.Position 
-                else
-                    nextPos = hrp.Position + (moveDir * clampledSpeed)
-                end
-                 
-                local targetY, groundY, trenBien = hrp.Position.Y, nil, false 
-                local ganMucTieu = dist < 1
+                local moveStep = math.min(FLY_SPEED * dt, dist)
+                local currentDir = (destPos - hrp.Position).Unit
+                local nextPos = hrp.Position + (currentDir * moveStep)
                 
-                -- BẬT LẠI RAYCAST 100% ĐỂ BÁM ĐỊA HÌNH CHO AN TOÀN
-                if ganMucTieu then 
-                    if _G.IsEscapingStuck then
-                        targetY = tPos.Y + (hrp.Size.Y / 2) + 2.5
-                    else
-                        targetY = (toSeller or ghostDoor) and sellerY_Chuan or (tPos.Y + (hrp.Size.Y / 2) + 1.8) 
-                    end
-                    nextPos = Vector3.new(nextPos.X, hrp.Position.Y, nextPos.Z)
-                elseif not inCave then
-                    local params = RaycastParams.new() params.FilterType = Enum.RaycastFilterType.Exclude local ignore = {char}for _, item in pairs(char:GetChildren()) do if item:IsA("Tool") or item:IsA("Model") then table.insert(ignore, item) end end
-
-                    if Workspace:FindFirstChild("IslandsModel") and Workspace["IslandsModel"]:FindFirstChild("NPCs") then table.insert(ignore, Workspace["IslandsModel"]["NPCs"]) end
-                    if Workspace:FindFirstChild("Trees") then table.insert(ignore, Workspace["Trees"]) end if Workspace:FindFirstChild("TreeFolder") then table.insert(ignore, Workspace["TreeFolder"]) end
-                    if Workspace:FindFirstChild("Ships") then table.insert(ignore, Workspace["Ships"]) end
-
-                    params.FilterDescendantsInstances = ignore 
-                    params.RespectCanCollide = true
-
-                    local lookAheadDistance = 10
-                    local scanOrigin = Vector3.new(nextPos.X, nextPos.Y + 300, nextPos.Z) + (moveDir * lookAheadDistance)
-                    local ray = Workspace:Raycast(scanOrigin, Vector3.new(0, -700, 0), params)
-
-                    if ray and ray.Instance then 
-                        groundY = ray.Position.Y 
-                        targetY = groundY + (hrp.Size.Y / 2) + 0.01 
-                        if tPos.Y < hrp.Position.Y - 5 and targetY > tPos.Y + 10 then 
-                            targetY = tPos.Y + (hrp.Size.Y / 2) + 0.01 
-                        end 
-                    else 
-                        -- Nếu ở giữa biển, hạ sát xuống mặt nước lướt đi chứ không lơ lửng trên trời
-                        targetY, trenBien = SEA_LEVEL, true 
-                    end
-                else 
-                    targetY = math.max(tPos.Y + (hrp.Size.Y / 2) + 0.01, -30) 
-                end
-                
-                local finalY = hrp.Position.Y
-                if trenBien and not ganMucTieu then 
-                    if hrp.Position.Y > SEA_LEVEL then 
-                        _G.FakeFallSpeed = _G.FakeFallSpeed + (workspace.Gravity * dt) 
-                        if _G.FakeFallSpeed > 110 then _G.FakeFallSpeed = 110 end 
-                        local deltaY = _G.FakeFallSpeed * dt
-                        if deltaY > 1.0 then deltaY = 1.0 end
-                        finalY = hrp.Position.Y - deltaY
-                        if finalY < SEA_LEVEL then finalY, _G.FakeFallSpeed = SEA_LEVEL, 0 end 
-                    else 
-                        finalY, _G.FakeFallSpeed = SEA_LEVEL, 0 
-                    end
-                else 
-                    _G.FakeFallSpeed = 0 
-                    if targetY < hrp.Position.Y - 2 then 
-                        local duKienY = hrp.Position.Y - (FALL_LIMIT * dt)
-                        if duKienY < targetY then duKienY = targetY end
-                        local doLechY = hrp.Position.Y - duKienY
-                        if doLechY > 1.0 then duKienY = hrp.Position.Y - 1.0 end
-                        finalY = duKienY
-                        if finalY <= targetY then finalY = targetY end 
-                    elseif targetY > hrp.Position.Y + 2 then 
-                        local tocDoClimb = 5000
-                        local duKienLenY = hrp.Position.Y + (tocDoClimb * dt)
-                        
-                        local limitFrameY = 5.0
-                        if ganMucTieu or (targetY - hrp.Position.Y) > 15 then
-                            limitFrameY = 6.0
-                        end
-                        
-                        if (duKienLenY - hrp.Position.Y) > limitFrameY then 
-                            duKienLenY = hrp.Position.Y + limitFrameY 
-                        end 
-                        
-                        finalY = duKienLenY
-                        if finalY > targetY then finalY = targetY end 
-                    else 
-                        finalY = hrp.Position.Y + (targetY - hrp.Position.Y) * LERP_SMOOTH
-                    end 
-                end
-
-                if not inCave and finalY < SEA_LEVEL then
-                    finalY = SEA_LEVEL
-                end
-
-                if groundY and (finalY - groundY > MAX_HEIGHT) and not ganMucTieu then finalY = groundY + MAX_HEIGHT end
-                finalY = math.max(finalY, -30)
-                if (Vector3.new(tPos.X, finalY, tPos.Z) - Vector3.new(nextPos.X, finalY, nextPos.Z)).Magnitude > 0.1 then 
-                    hrp.CFrame = CFrame.new(Vector3.new(nextPos.X, finalY, nextPos.Z), Vector3.new(tPos.X, finalY, tPos.Z))
-                else 
-                    hrp.CFrame = CFrame.new(Vector3.new(nextPos.X, finalY, nextPos.Z), nextPos.X + hrp.CFrame.LookVector) 
-                end
-            end
+                hrp.CFrame = CFrame.new(nextPos, destPos)
+            end      
         end
     end)
 end
