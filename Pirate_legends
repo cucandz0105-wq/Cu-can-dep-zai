@@ -1221,15 +1221,19 @@ local function StartBot()
     end)
     
     _G.BotConnection = RunService.Heartbeat:Connect(function(dt)
-        local char = LocalPlayer.Character local hrp, hum = char and char:FindFirstChild("HumanoidRootPart"), char and char:FindFirstChildWhichIsA("Humanoid")
+        local char = LocalPlayer.Character 
+        local hrp, hum = char and char:FindFirstChild("HumanoidRootPart"), char and char:FindFirstChildWhichIsA("Humanoid")
         if not hrp or not hum then 
-            _G.CurrentTarget = nil _G.FakeFallSpeed = 0 
+            _G.CurrentTarget = nil 
+            _G.FakeFallSpeed = 0 
             if hrp then hrp.Anchored = false end
             return 
         end
+        
         if (_G.AutoDigAndPick or _G.AutoChestOnly) then
             local tPos, tPart, toSeller, npc, ghostDoor = nil, nil, false, nil, nil
-            local galleon = Workspace:FindFirstChild("Ferryman's Galleon") local gd = galleon and galleon:FindFirstChild("SpiritTeleport") and galleon["SpiritTeleport"]:FindFirstChild("Main")
+            local galleon = Workspace:FindFirstChild("Ferryman's Galleon") 
+            local gd = galleon and galleon:FindFirstChild("SpiritTeleport") and galleon["SpiritTeleport"]:FindFirstChild("Main")
             
             local distToDoor = math.huge
             if gd then
@@ -1246,28 +1250,55 @@ local function StartBot()
             
             if _G.IsTeleportingHome then
                 if gd then 
-                    ghostDoor = gd tPos = gd:GetPivot().Position tPart = gd 
+                    ghostDoor = gd 
+                    tPos = gd:GetPivot().Position 
+                    tPart = gd 
                 else
-                    _G.CurrentTarget = nil hrp.AssemblyLinearVelocity = Vector3.new(0,0,0) hrp.Anchored = false return
+                    _G.CurrentTarget = nil 
+                    hrp.AssemblyLinearVelocity = Vector3.new(0,0,0) 
+                    hrp.Anchored = false 
+                    return 
                 end
             end
             
             if not _G.IsTeleportingHome and not tPos then
-                if IsHoldingChest() then npc = GetNearestSeller() if npc then tPos, toSeller = npc:GetPivot().Position, true tPart = npc end
-                else tPart = _G.AutoChestOnly and GetNearestDroppedChest() or (_G.AutoDigAndPick and (GetChestAtFeet() or GetNearestBuriedChest())) if tPart then tPos = tPart.Position else npc = GetNearestSeller() if npc then tPos, toSeller = npc:GetPivot().Position, true tPart = npc elseif gd and distToDoor > 200 then ghostDoor = gd tPos = gd:GetPivot().Position tPart = gd end end end
+                if IsHoldingChest() then 
+                    npc = GetNearestSeller() 
+                    if npc then 
+                        tPos, toSeller = npc:GetPivot().Position, true 
+                        tPart = npc 
+                    end
+                else 
+                    tPart = _G.AutoChestOnly and GetNearestDroppedChest() or (_G.AutoDigAndPick and (GetChestAtFeet() or GetNearestBuriedChest())) 
+                    if tPart then 
+                        tPos = tPart.Position 
+                    else 
+                        npc = GetNearestSeller() 
+                        if npc then 
+                            tPos, toSeller = npc:GetPivot().Position, true 
+                            tPart = npc 
+                        elseif gd and distToDoor > 200 then 
+                            ghostDoor = gd 
+                            tPos = gd:GetPivot().Position 
+                            tPart = gd 
+                        end 
+                    end 
+                end
             end
             
             if not tPos then 
-                _G.CurrentTarget = nil _G.FakeFallSpeed = 0 
+                _G.CurrentTarget = nil 
+                _G.FakeFallSpeed = 0 
                 hrp.AssemblyLinearVelocity, hrp.AssemblyAngularVelocity = Vector3.new(0,0,0), Vector3.new(0,0,0) 
                 hrp.Anchored = false 
                 return 
             end
+            
             hrp.AssemblyLinearVelocity, hrp.AssemblyAngularVelocity = Vector3.new(0,0,0), Vector3.new(0,0,0)
     
-      -- ĐIỀU KIỆN NHẢ ANCHOR KHI MỤC TIÊU ĐÃ ĐƯỢC THAY ĐỔI / BIẾN MẤT
+            -- ĐIỀU KIỆN NHẢ ANCHOR KHI MỤC TIÊU THAY ĐỔI
             if _G.CurrentTarget ~= tPart then 
-                hrp.Anchored = false -- Nhả Neo ngay lập tức để đổi mục tiêu
+                hrp.Anchored = false 
                 _G.CurrentTarget = tPart 
                 _G.StuckTime = os.clock() 
                 _G.SellerStuckTime = nil 
@@ -1289,7 +1320,93 @@ local function StartBot()
                 end)
             end
 
-            -- Kiểm tra khoảng cách thực tế sau khi đã teleport đón đầu
+            -- =======================================================
+            -- THẢM TÀNG HÌNH BẢO HỘ (BỆ ĐỠ RAYCAST Y = 6.2)
+            -- =======================================================
+            local fakeSeaFloor = workspace:FindFirstChild("FakeSeaFloor")
+            if not fakeSeaFloor then
+                fakeSeaFloor = Instance.new("Part")
+                fakeSeaFloor.Name = "FakeSeaFloor"
+                fakeSeaFloor.Size = Vector3.new(300, 1, 300)
+                fakeSeaFloor.Transparency = 1
+                fakeSeaFloor.Anchored = true
+                fakeSeaFloor.CanCollide = true
+                fakeSeaFloor.Material = Enum.Material.SmoothPlastic
+                fakeSeaFloor.Parent = workspace
+            end
+
+            if hrp then
+                fakeSeaFloor.CFrame = CFrame.new(hrp.Position.X, 6.2, hrp.Position.Z)
+            end
+
+            -- =======================================================
+            -- ANTI-RUBBERBAND SYSTEM (CỬA SỔ THỜI GIAN THÔNG MINH)
+            -- =======================================================
+            if not _G.LastHrpPosition then 
+                _G.LastHrpPosition = hrp.Position
+                _G.RubberbandCount = 0
+                _G.LastRubberbandTime = os.clock()
+                _G.PauseStartTime = nil
+                _G.IsPausedForAntiCheat = false
+            end
+
+            if _G.IsPausedForAntiCheat then
+                _G.LastHrpPosition = hrp.Position
+                return
+            end
+
+            if os.clock() - _G.LastRubberbandTime > 6.0 then
+                _G.RubberbandCount = 0
+            end
+
+            if _G.PauseStartTime and (os.clock() - _G.PauseStartTime > 6.0) then
+                _G.PauseStartTime = nil
+            end
+
+            local currentDistToTarget = (hrp.Position - tPos).Magnitude
+            local lastDistToTarget = (_G.LastHrpPosition - tPos).Magnitude
+
+            if (currentDistToTarget - lastDistToTarget) > 10.0 then
+                _G.RubberbandCount = _G.RubberbandCount + 1
+                _G.LastRubberbandTime = os.clock()
+                
+                if _G.RubberbandCount >= 8 then 
+                    if _G.PauseStartTime and (os.clock() - _G.PauseStartTime <= 6.0) then
+                        if char and hum and hum.Health > 0 then 
+                            _G.CurrentTarget = nil
+                            _G.IsEscapingStuck = false
+                            _G.TimeAfterTP = nil
+                            _G.TimeAtTarget = nil
+                            _G.DaDenDich = false
+                            _G.SellerStuckTime = nil
+                            _G.RubberbandCount = 0
+                            _G.LastHrpPosition = nil
+                            _G.PauseStartTime = nil
+                            _G.IsPausedForAntiCheat = false
+
+                            hrp.Anchored = false
+                            hum.Health = 0 
+                        end
+                        return
+                    else
+                        _G.PauseStartTime = os.clock() 
+                        _G.RubberbandCount = 0 
+                        _G.IsPausedForAntiCheat = true
+                        
+                        hrp.Anchored = false
+                        hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                        
+                        task.delay(1.0, function()
+                            _G.IsPausedForAntiCheat = false
+                            if hrp then _G.LastHrpPosition = hrp.Position end
+                        end)
+                        return
+                    end
+                end
+            end
+            _G.LastHrpPosition = hrp.Position
+            -- =======================================================
+            
             local dist = (hrp.Position - tPos).Magnitude 
             if toSeller and dist < 18 then 
                 Camera.CFrame = CFrame.new(Camera.CFrame.Position, tPos) 
@@ -1312,150 +1429,25 @@ local function StartBot()
             end
             
             local stopLimit = (toSeller or ghostDoor) and (OFFSET_DIST + 1.2) or (OFFSET_DIST + 0.5)
-
-            -- Khi đã áp sát mục tiêu trong phạm vi dừng
-            if dist <= stopLimit then
-                _G.DaDenDich = true
-                if not _G.TimeAtTarget then _G.TimeAtTarget = os.clock() end
-                AutoTriggerPrompt(tPart)
-                
-                local finalStopPos = Vector3.new(stopPos.X, (toSeller or ghostDoor) and stopPos.Y or (tPos.Y + (hrp.Size.Y / 2) + 1.8), stopPos.Z)
-                hrp.CFrame = CFrame.new(finalStopPos, Vector3.new(tPos.X, finalStopPos.Y, tPos.Z)) 
-            else
-                -- 🚀 BAY THẲNG 3D QUÃNG ĐƯỜNG CÒN LẠI (SAU KHI ĐÃ TP CÁCH 20 STUDS)
-                hrp.Anchored = false
-                _G.TimeAtTarget = nil 
-                
-                local destPos = (toSeller or ghostDoor) and stopPos or Vector3.new(tPos.X, tPos.Y + 1.8, tPos.Z)
-                local moveStep = math.min(FLY_SPEED * dt, dist)
-                local currentDir = (destPos - hrp.Position).Unit
-                local nextPos = hrp.Position + (currentDir * moveStep)
-                
-                hrp.CFrame = CFrame.new(nextPos, destPos)
-            end      
-        end
-    end
-end
-
-            -- =======================================================
-            -- THẢM TÀNG HÌNH BẢO HỘ (BỆ ĐỠ RAYCAST Y = 6.2)
-            -- =======================================================
-            local fakeSeaFloor = workspace:FindFirstChild("FakeSeaFloor")
-         if not fakeSeaFloor then
-            fakeSeaFloor = Instance.new("Part")
-            fakeSeaFloor.Name = "FakeSeaFloor"
-            fakeSeaFloor.Size = Vector3.new(300, 1, 300)
-            fakeSeaFloor.Transparency = 1
-            fakeSeaFloor.Anchored = true
-            fakeSeaFloor.CanCollide = true
-            fakeSeaFloor.Material = Enum.Material.SmoothPlastic
-            fakeSeaFloor.Parent = workspace
-         end
-
-           if hrp then
-        fakeSeaFloor.CFrame = CFrame.new(hrp.Position.X, 6.2, hrp.Position.Z)
-     end
-            -- =======================================================
-            -- ANTI-RUBBERBAND SYSTEM (CỬA SỔ THỜI GIAN THÔNG MINH)
-            -- =======================================================
-            if not _G.LastHrpPosition then 
-                _G.LastHrpPosition = hrp.Position
-                _G.RubberbandCount = 0
-                _G.LastRubberbandTime = os.clock()
-                _G.PauseStartTime = nil
-                _G.IsPausedForAntiCheat = false
-            end
-
-            -- Nếu đang trong 1 giây ngắt bay thì tạm dừng tính toán di chuyển
-            if _G.IsPausedForAntiCheat then
-                _G.LastHrpPosition = hrp.Position
-                return
-            end
-
-            -- Tự động reset bộ đếm giật nếu quá 6s không bị giật nữa
-            if os.clock() - _G.LastRubberbandTime > 6.0 then
-                _G.RubberbandCount = 0
-            end
-
-            -- Tự động hủy "Chế độ chờ" nếu sau 6s không bị dính giật lại
-            if _G.PauseStartTime and (os.clock() - _G.PauseStartTime > 6.0) then
-                _G.PauseStartTime = nil
-            end
-
-            local currentDistToTarget = (hrp.Position - tPos).Magnitude
-            local lastDistToTarget = (_G.LastHrpPosition - tPos).Magnitude
-
-            if (currentDistToTarget - lastDistToTarget) > 10.0 then
-                _G.RubberbandCount = _G.RubberbandCount + 1
-                _G.LastRubberbandTime = os.clock()
-                
-                -- BỊ GIẬT ĐỦ 8 LẦN
-                if _G.RubberbandCount >= 8 then 
-                    -- TRƯỜNG HỢP 1: Vẫn bị giật tiếp TRONG CỬA SỔ 10 GIÂY -> ĐỘT TỬ
-                    if _G.PauseStartTime and (os.clock() - _G.PauseStartTime <= 6.0) then
-                        if char and hum and hum.Health > 0 then 
-                            _G.CurrentTarget = nil
-                            _G.IsEscapingStuck = false
-                            _G.TimeAfterTP = nil
-                            _G.TimeAtTarget = nil
-                            _G.DaDenDich = false
-                            _G.SellerStuckTime = nil
-                            _G.RubberbandCount = 0
-                            _G.LastHrpPosition = nil
-                            _G.PauseStartTime = nil
-                            _G.IsPausedForAntiCheat = false
-
-                            hrp.Anchored = false
-                            hum.Health = 0 
-                        end
-                        return
-                    else
-                        -- TRƯỜNG HỢP 2: Lần đầu chạm mốc 8 lần -> Ngắt bay 1s + Bấm giờ 10s
-                        _G.PauseStartTime = os.clock() -- Bắt đầu tính cửa sổ 10s
-                        _G.RubberbandCount = 0 -- Reset đếm giật để chờ lần giật tiếp theo
-                        _G.IsPausedForAntiCheat = true
-                        
-                        hrp.Anchored = false
-                        hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0) -- Hãm gia tốc giật
-                        
-                        task.delay(1.0, function()
-                            _G.IsPausedForAntiCheat = false
-                            if hrp then _G.LastHrpPosition = hrp.Position end
-                        end)
-                        return
-                    end
-                end
-            end
-            _G.LastHrpPosition = hrp.Position
-            -- =======================================================
-            
-            local dist = (hrp.Position - tPos).Magnitude if toSeller and dist < 18 then Camera.CFrame = CFrame.new(Camera.CFrame.Position, tPos) end
-            local dir = (tPos - hrp.Position).Unit local stopPos, sellerY_Chuan = tPos - (dir * OFFSET_DIST), tPos.Y
-            if toSeller and npc then local sHrp = npc:FindFirstChild("HumanoidRootPart") or npc:FindFirstChildWhichIsA("BasePart") if sHrp then local lVec = sHrp.CFrame.LookVector sellerY_Chuan = sHrp.Position.Y stopPos = Vector3.new(tPos.X + (lVec.X * OFFSET_DIST), sellerY_Chuan, tPos.Z + (lVec.Z * OFFSET_DIST)) dist = (hrp.Position - stopPos).Magnitude + OFFSET_DIST end 
-            elseif ghostDoor then sellerY_Chuan = tPos.Y stopPos = tPos - (dir * OFFSET_DIST) end
-            local stopLimit = (toSeller or ghostDoor) and (OFFSET_DIST + 1.2) or (OFFSET_DIST + 0.5)
             
             -- =======================================================================
-            -- CHU KỲ ĐỘT TỬ ĐỘC LẬP TỰ DO (Giữ nguyên)
+            -- CHU KỲ ĐỘT TỬ ĐỘC LẬP TỰ DO
             -- =======================================================================
             local notNpcOrDoor = (not toSeller) and (not ghostDoor)
             local pGui = LocalPlayer:FindFirstChildWhichIsA("PlayerGui")
             local isQuestMenuOpen = false
 
             if pGui then
-    local shops = pGui:FindFirstChild("Shops")
-    local quests = shops and shops:FindFirstChild("Quests")
+                local shops = pGui:FindFirstChild("Shops")
+                local quests = shops and shops:FindFirstChild("Quests")
+                local shopUI = quests and quests:FindFirstChild("QuestShopUI")
+                local advancedUI = quests and quests:FindFirstChild("AdvancedQuestsUI")
+                local pickUI = pGui:FindFirstChild("PickQuestUI")
 
-    local shopUI = quests and quests:FindFirstChild("QuestShopUI")
-    local advancedUI = quests and quests:FindFirstChild("AdvancedQuestsUI")
-    local pickUI = pGui:FindFirstChild("PickQuestUI")
-
-    if (shopUI and shopUI.Enabled)
-    or (advancedUI and advancedUI.Enabled)
-    or (pickUI and pickUI.Enabled) then
-        isQuestMenuOpen = true
-    end
-end
+                if (shopUI and shopUI.Enabled) or (advancedUI and advancedUI.Enabled) or (pickUI and pickUI.Enabled) then
+                    isQuestMenuOpen = true
+                end
+            end
 
             if notNpcOrDoor and not isQuestMenuOpen and _G.IsEscapingStuck and _G.TimeAfterTP then
                 local elapsedAfterTP = os.clock() - _G.TimeAfterTP
@@ -1538,8 +1530,8 @@ end
                         hrp.CFrame = CFrame.new(finalStopPos, Vector3.new(tPos.X, finalStopPos.Y, tPos.Z)) 
                     end
                 end
-            
-                            else
+            else
+                -- 🚀 BAY THẲNG 3D TRỰC TIẾP (SAU KHI ĐÃ TP CÁCH 20 STUDS - ĐÃ BỎ RAYCAST)
                 hrp.Anchored = false
                 _G.TimeAtTarget = nil 
                 
@@ -1548,9 +1540,7 @@ end
                     _G.TimeAfterTP = nil
                 end
                 
-                -- 🚀 BAY THẲNG 3D TRỰC TIẾP THEO TOẠ ĐỘ X, Y, Z (ĐÃ XÓA SẠCH RAYCAST)
                 local destPos = (toSeller or ghostDoor) and stopPos or Vector3.new(tPos.X, tPos.Y + 1.8, tPos.Z)
-                
                 local moveStep = math.min(FLY_SPEED * dt, dist)
                 local currentDir = (destPos - hrp.Position).Unit
                 local nextPos = hrp.Position + (currentDir * moveStep)
