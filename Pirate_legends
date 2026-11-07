@@ -1186,11 +1186,29 @@ local function AutoTriggerPrompt(target)
             prompt.RequiresLineOfSight = false
             prompt.MaxActivationDistance = 30
             
-            -- TỐI ƯU: Không chờ đợi, bấm ngay lập tức khi vừa chạm vùng
+                        local now = os.clock()
+
+            if _G.PromptDebounce and _G.PromptDebounce[prompt]
+                and now - _G.PromptDebounce[prompt] < 0.9 then
+                isInteracting = false
+                return
+            end
+
+            if _G.PromptDebounce then
+                _G.PromptDebounce[prompt] = now
+            end
+
+            local act = string.lower(prompt.ActionText)
+            local isDig = string.find(act, "dig") or string.find(act, "dao")
+
+            if isDig then
+                _G.ChestPickupPending = true
+                _G.ChestPickupStartedAt = now
+                _G.ChestPickupTarget = prompt.Parent
+            end
+
             if fireproximityprompt then
                 fireproximityprompt(prompt)
-                fireproximityprompt(prompt) -- Gửi liên tiếp 2 phát đảm bảo server nhận ngay
-                task.wait(0.01) -- Reset hàng chờ cực nhanh
             else
                 prompt:InputHoldBegin()
                 task.wait(prompt.HoldDuration + 0.02)
@@ -1229,6 +1247,35 @@ local function StartBot()
         end
         if (_G.AutoDigAndPick or _G.AutoChestOnly) then
             local tPos, tPart, toSeller, npc, ghostDoor = nil, nil, false, nil, nil
+
+    if _G.ChestPickupPending then
+        if IsHoldingChest() then
+            _G.ChestPickupPending = false
+            _G.ChestPickupTarget = nil
+        elseif os.clock() - _G.ChestPickupStartedAt >= 5 then
+            _G.ChestPickupPending = false
+            _G.ChestPickupTarget = nil
+        else
+            local pendingTarget = _G.ChestPickupTarget
+            if pendingTarget and pendingTarget.Parent then
+                tPart = pendingTarget
+
+                local pp = pendingTarget:IsA("ProximityPrompt")
+                    and pendingTarget
+                    or pendingTarget:FindFirstChildWhichIsA("ProximityPrompt", true)
+
+                local obj = pp and pp.Parent or pendingTarget
+
+                if obj:IsA("Model") then
+                    tPos = obj:GetPivot().Position
+                elseif obj:IsA("BasePart") then
+                    tPos = obj.Position
+                end
+            end
+        end
+    end
+
+    local galleon = Workspace:FindFirstChild("Ferryman's Galleon")
             local galleon = Workspace:FindFirstChild("Ferryman's Galleon") local gd = galleon and galleon:FindFirstChild("SpiritTeleport") and galleon["SpiritTeleport"]:FindFirstChild("Main")
             
             local distToDoor = math.huge
@@ -1621,6 +1668,11 @@ local function StopBot()
     _G.IsPausedForAntiCheat = false
 
     isInteracting = false
+
+_G.ChestPickupPending = false
+_G.ChestPickupStartedAt = 0
+_G.ChestPickupTarget = nil
+_G.PromptDebounce = {}
 
     -- Chỉ gỡ Connection và nhún Character khi TẮT HẲN cả 2 nút
     if not _G.AutoDigAndPick and not _G.AutoChestOnly then
