@@ -45,6 +45,11 @@ local Camera = Workspace.CurrentCamera
 _G.AutoDigAndPick, _G.AutoChestOnly, _G.IsDigging, _G.FakeFallSpeed = false, false, false, 0
 _G.CurrentTarget, _G.StuckTime = nil, 0
 
+-- TRẠNG THÁI KHÓA MỤC TIÊU ĐÀO VÀ NHẶT RƯƠNG
+_G.DigChestPending = false
+_G.DigChestPosition = nil
+_G.DigChestHole = nil
+
 -- DỌN DẸP UI CŨ
 local oldGuis = {"SyncDropGui", "BoatMenuMobileGui", "PirateGodGui"}
 for _, guiName in ipairs(oldGuis) do
@@ -1145,10 +1150,35 @@ local function IsHoldingChest()
 end
 
 local function GetNearestBuriedChest()
-    local char = LocalPlayer.Character local hrp = char and char:FindFirstChild("HumanoidRootPart") if not hrp then return nil end
-    local nearHole, minDist = nil, math.huge local folder = Workspace:FindFirstChild("ChestsFolder")
-    if folder then for _, isl in pairs(folder:GetChildren()) do for _, cst in pairs(isl:GetChildren()) do if cst.Name == "BuriedChest" then local pmt = cst:FindFirstChildWhichIsA("ProximityPrompt", true) local spn = cst:FindFirstChild("Spawn") if pmt and pmt.Enabled and spn then local dist = (hrp.Position - spn.Position).Magnitude if dist < minDist then minDist, nearHole = dist, spn end end end end end end
-    return nearHole
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return nil, nil end
+
+    local nearHole, nearModel, minDist = nil, nil, math.huge
+    local folder = Workspace:FindFirstChild("ChestsFolder")
+
+    if folder then
+        for _, isl in pairs(folder:GetChildren()) do
+            for _, cst in pairs(isl:GetChildren()) do
+                if cst.Name == "BuriedChest" then
+                    local pmt = cst:FindFirstChildWhichIsA("ProximityPrompt", true)
+                    local spn = cst:FindFirstChild("Spawn")
+
+                    if pmt and pmt.Enabled and spn then
+                        local dist = (hrp.Position - spn.Position).Magnitude
+
+                        if dist < minDist then
+                            minDist = dist
+                            nearHole = spn
+                            nearModel = cst
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    return nearHole, nearModel
 end
 
 local function GetNearestDroppedChest()
@@ -1163,6 +1193,35 @@ local function GetNearestDroppedChest()
             end 
         end 
     end
+    return nearChest
+end
+
+local function GetDroppedChestNear(position, maxDistance)
+    if not position then return nil end
+
+    local nearChest, minDist = nil, maxDistance or 35
+
+    for _, o in pairs(Workspace:GetChildren()) do
+        if o:IsA("Tool") or o:IsA("Model") then
+            local name = string.lower(o.Name)
+
+            if string.find(name, "chest") or string.find(name, "ruong") or string.find(name, "thuyen") then
+                local hdl = o:IsA("Model")
+                    and (o:FindFirstChild("Handle") or o:FindFirstChildWhichIsA("BasePart", true))
+                    or o:FindFirstChildWhichIsA("BasePart") or o
+
+                if hdl and hdl:IsA("BasePart") then
+                    local dist = (position - hdl.Position).Magnitude
+
+                    if dist < minDist then
+                        minDist = dist
+                        nearChest = hdl
+                    end
+                end
+            end
+        end
+    end
+
     return nearChest
 end
 
@@ -1277,24 +1336,34 @@ local function AutoTriggerPrompt(target)
     local prompt = target:IsA("ProximityPrompt") and target or target:FindFirstChildOfClass("ProximityPrompt", true)
     
     if prompt and prompt.Enabled then
-        isInteracting = true
-        task.spawn(function()
-            prompt.RequiresLineOfSight = false
-            prompt.MaxActivationDistance = 30
-            
-            -- TỐI ƯU: Không chờ đợi, bấm ngay lập tức khi vừa chạm vùng
-            if fireproximityprompt then
-                fireproximityprompt(prompt)
-                fireproximityprompt(prompt) -- Gửi liên tiếp 2 phát đảm bảo server nhận ngay
-                task.wait(0.01) -- Reset hàng chờ cực nhanh
-            else
-                prompt:InputHoldBegin()
-                task.wait(prompt.HoldDuration + 0.02)
-                prompt:InputHoldEnd()
-            end
-            isInteracting = false
-        end)
+    local actText = string.lower(prompt.ActionText)
+
+    if (string.find(actText, "dig") or string.find(actText, "dao"))
+        and _G.AutoDigAndPick and not _G.AutoChestOnly then
+
+        _G.DigChestPending = true
+        _G.DigChestPosition = target.Position
+        _G.DigChestHole = target
     end
+
+    isInteracting = true
+    task.spawn(function()
+        prompt.RequiresLineOfSight = false
+        prompt.MaxActivationDistance = 30
+
+        if fireproximityprompt then
+            fireproximityprompt(prompt)
+            fireproximityprompt(prompt)
+            task.wait(0.01)
+        else
+            prompt:InputHoldBegin()
+            task.wait(prompt.HoldDuration + 0.02)
+            prompt:InputHoldEnd()
+        end
+
+        isInteracting = false
+    end)
+end
 end
 -- =======================================================
 
@@ -1358,30 +1427,53 @@ local function StartBot()
             end
             
             if not _G.IsTeleportingHome and not tPos then
-                if IsHoldingChest() then 
-                    npc = GetNearestSeller() 
-                    if npc then 
-                        tPos, toSeller = npc:GetPivot().Position, true 
-                        tPart = npc 
-                    end
-                else 
-                    tPart = _G.AutoChestOnly and GetNearestDroppedChest() or (_G.AutoDigAndPick and (GetChestAtFeet() or GetNearestBuriedChest())) 
-                    if tPart then 
-                        tPos = tPart.Position 
-                    else 
-                        npc = GetNearestSeller() 
-                        if npc then 
-                            tPos, toSeller = npc:GetPivot().Position, true 
-                            tPart = npc 
-                        elseif gd and distToDoor > 200 then 
-                            ghostDoor = gd 
-                            tPos = gd:GetPivot().Position 
-                            tPart = gd 
-                        end 
-                    end 
-                end
+    if IsHoldingChest() then
+        -- Đã nhặt được rương: bỏ khóa và đi bán
+        _G.DigChestPending = false
+        _G.DigChestPosition = nil
+        _G.DigChestHole = nil
+
+        npc = GetNearestSeller()
+        if npc then
+            tPos, toSeller = npc:GetPivot().Position, true
+            tPart = npc
+        end
+
+    elseif _G.DigChestPending and _G.DigChestPosition then
+        -- Đang chờ rương vừa đào xuất hiện
+        tPart = GetDroppedChestNear(_G.DigChestPosition, 35)
+
+        if tPart then
+            -- Ưu tiên nhặt đúng rương gần hố vừa đào
+            tPos = tPart.Position
+            toSeller = false
+        else
+            -- Chưa thấy rương thì giữ nguyên vị trí hố
+            tPos = _G.DigChestPosition
+            tPart = _G.DigChestHole
+            toSeller = false
+        end
+
+    else
+        tPart = _G.AutoChestOnly and GetNearestDroppedChest()
+            or (_G.AutoDigAndPick and (GetChestAtFeet() or GetNearestBuriedChest()))
+
+        if tPart then
+            tPos = tPart.Position
+        else
+            npc = GetNearestSeller()
+            if npc then
+                tPos, toSeller = npc:GetPivot().Position, true
+                tPart = npc
+            elseif gd and distToDoor > 200 then
+                ghostDoor = gd
+                tPos = gd:GetPivot().Position
+                tPart = gd
             end
-            
+        end
+    end
+end
+
             if not tPos then 
                 _G.CurrentTarget = nil 
                 _G.FakeFallSpeed = 0 
