@@ -50,6 +50,10 @@ _G.DigChestPending = false
 _G.DigChestPosition = nil
 _G.DigChestHole = nil
 
+-- HỆ THỐNG THỬ LẠI MỤC TIÊU
+_G.DigChestRetryCount = 0
+_G.TargetStuckDeathPending = false
+
 -- DỌN DẸP UI CŨ
 local oldGuis = {"SyncDropGui", "BoatMenuMobileGui", "PirateGodGui"}
 for _, guiName in ipairs(oldGuis) do
@@ -1269,10 +1273,15 @@ local function FirePrompt(pmt)
             local spawn = buried and buried:FindFirstChild("Spawn")
 
             if spawn and spawn:IsA("BasePart") then
-                _G.DigChestPending = true
-                _G.DigChestPosition = spawn.Position
-                _G.DigChestHole = spawn
-            end
+    -- Chỉ reset khi chuyển sang hố mới
+    if _G.DigChestHole ~= spawn then
+        _G.DigChestRetryCount = 0
+    end
+
+    _G.DigChestPending = true
+    _G.DigChestPosition = spawn.Position
+    _G.DigChestHole = spawn
+end
         end
     end
 
@@ -1372,6 +1381,11 @@ local function AutoTriggerPrompt(target)
 
     if (string.find(actText, "dig") or string.find(actText, "dao"))
         and _G.AutoDigAndPick and not _G.AutoChestOnly then
+
+-- Chỉ reset khi chuyển sang hố mới
+        if _G.DigChestHole ~= target then
+            _G.DigChestRetryCount = 0
+        end
 
         _G.DigChestPending = true
         _G.DigChestPosition = target.Position
