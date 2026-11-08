@@ -1268,10 +1268,11 @@ local function FirePrompt(pmt)
             local buried = pmt:FindFirstAncestor("BuriedChest")
             local spawn = buried and buried:FindFirstChild("Spawn")
 
-            if spawn and spawn:IsA("BasePart") then
-                _G.DigChestPending = true
-                _G.DigChestPosition = spawn.Position
-                _G.DigChestHole = spawn
+            if buried and spawn and spawn:IsA("BasePart") then
+    _G.DigChestPending = true
+    _G.DigChestPosition = spawn.Position
+    _G.DigChestHole = buried
+    _G.DigChestLostAt = nil
             end
         end
     end
@@ -1459,51 +1460,68 @@ local function StartBot()
             end
             
             if not _G.IsTeleportingHome and not tPos then
-    if IsHoldingChest() then
-        -- Đã nhặt được rương: bỏ khóa và đi bán
-        _G.DigChestPending = false
-        _G.DigChestPosition = nil
-        _G.DigChestHole = nil
+if IsHoldingChest() then
+    _G.DigChestPending = false
+    _G.DigChestPosition = nil
+    _G.DigChestHole = nil
+    _G.DigChestLostAt = nil
 
+    npc = GetNearestSeller()
+    if npc then
+        tPos, toSeller = npc:GetPivot().Position, true
+        tPart = npc
+    end
+
+elseif _G.DigChestPending and _G.DigChestPosition then
+    local droppedChest = GetDroppedChestNear(_G.DigChestPosition, 35)
+    local holeExists = _G.DigChestHole
+        and _G.DigChestHole.Parent ~= nil
+
+    if droppedChest then
+        tPart = droppedChest
+        tPos = droppedChest.Position
+        _G.DigChestLostAt = nil
+
+    elseif holeExists then
+        local spawn = _G.DigChestHole:FindFirstChild("Spawn")
+        tPart = spawn or _G.DigChestHole
+        tPos = _G.DigChestPosition
+        _G.DigChestLostAt = nil
+
+    else
+        if not _G.DigChestLostAt then
+            _G.DigChestLostAt = os.clock()
+        end
+
+        if os.clock() - _G.DigChestLostAt >= 3 then
+            _G.DigChestPending = false
+            _G.DigChestPosition = nil
+            _G.DigChestHole = nil
+            _G.DigChestLostAt = nil
+        else
+            tPos = _G.DigChestPosition
+            tPart = hrp
+        end
+    end
+
+else
+    tPart = _G.AutoChestOnly and GetNearestDroppedChest()
+        or (_G.AutoDigAndPick and (GetChestAtFeet() or GetNearestBuriedChest()))
+
+    if tPart then
+        tPos = tPart.Position
+    else
         npc = GetNearestSeller()
         if npc then
             tPos, toSeller = npc:GetPivot().Position, true
             tPart = npc
-        end
-
-    elseif _G.DigChestPending and _G.DigChestPosition then
-        -- Đang chờ rương vừa đào xuất hiện
-        tPart = GetDroppedChestNear(_G.DigChestPosition, 35)
-
-        if tPart then
-            -- Ưu tiên nhặt đúng rương gần hố vừa đào
-            tPos = tPart.Position
-            toSeller = false
-        else
-            -- Chưa thấy rương thì giữ nguyên vị trí hố
-            tPos = _G.DigChestPosition
-            tPart = _G.DigChestHole
-            toSeller = false
-        end
-
-    else
-        tPart = _G.AutoChestOnly and GetNearestDroppedChest()
-            or (_G.AutoDigAndPick and (GetChestAtFeet() or GetNearestBuriedChest()))
-
-        if tPart then
-            tPos = tPart.Position
-        else
-            npc = GetNearestSeller()
-            if npc then
-                tPos, toSeller = npc:GetPivot().Position, true
-                tPart = npc
-            elseif gd and distToDoor > 200 then
-                ghostDoor = gd
-                tPos = gd:GetPivot().Position
-                tPart = gd
-            end
+        elseif gd and distToDoor > 200 then
+            ghostDoor = gd
+            tPos = gd:GetPivot().Position
+            tPart = gd
         end
     end
+end
 end
 
             if not tPos then 
