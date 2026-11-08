@@ -1506,8 +1506,8 @@ local function StartBot()
         local holeStillExists =
             _G.DigChestHole and _G.DigChestHole.Parent
 
-        local chestStillExists =
-            GetDroppedChestNear(_G.DigChestPosition, 35) ~= nil
+        local holeStillExists =
+    IsBuriedChestTargetAlive(_G.DigChestHole)
 
         if not holeStillExists and not chestStillExists then
             -- Hố và rương đều không còn ở mục tiêu cũ
@@ -1954,12 +1954,13 @@ LocalPlayer.CharacterAdded:Connect(function(newChar)
                 -- Lần chết đầu: giữ mục tiêu cũ để thử lại
                 _G.DigChestRetryCount = 1
             else
-                -- Kiểm tra hố và rương cũ còn tồn tại không
-                local holeStillExists =
-                    _G.DigChestHole and _G.DigChestHole.Parent
 
-                local chestStillExists =
-                    GetDroppedChestNear(_G.DigChestPosition, 35) ~= nil
+-- Kiểm tra hố và rương cũ còn tồn tại không
+local holeStillExists =
+    IsBuriedChestTargetAlive(_G.DigChestHole)
+
+local chestStillExists =
+    GetDroppedChestNear(_G.DigChestPosition, 35) ~= nil
 
                 if not holeStillExists and not chestStillExists then
                     -- Cả hố và rương đều biến mất
