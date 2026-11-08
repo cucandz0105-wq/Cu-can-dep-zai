@@ -1258,8 +1258,40 @@ local function AutoBuyQuestFromStore()
 end
 
 local function FirePrompt(pmt)
-    local act = string.lower(pmt.ActionText) local isDig = string.find(act, "dig") or string.find(act, "dao") if isDig then _G.IsDigging = true end
-    task.spawn(function() task.wait(0.01) if fireproximityprompt then fireproximityprompt(pmt) else pmt:InputHoldBegin() task.wait(pmt.HoldDuration > 0 and pmt.HoldDuration or 0.02) pmt:InputHoldEnd() end if isDig then task.wait(0.5) _G.IsDigging = false end end)
+    local act = string.lower(pmt.ActionText)
+    local isDig = string.find(act, "dig") or string.find(act, "dao")
+
+    if isDig then
+        _G.IsDigging = true
+
+        if _G.AutoDigAndPick and not _G.AutoChestOnly then
+            local buried = pmt:FindFirstAncestor("BuriedChest")
+            local spawn = buried and buried:FindFirstChild("Spawn")
+
+            if spawn and spawn:IsA("BasePart") then
+                _G.DigChestPending = true
+                _G.DigChestPosition = spawn.Position
+                _G.DigChestHole = spawn
+            end
+        end
+    end
+
+    task.spawn(function()
+        task.wait(0.01)
+
+        if fireproximityprompt then
+            fireproximityprompt(pmt)
+        else
+            pmt:InputHoldBegin()
+            task.wait(pmt.HoldDuration > 0 and pmt.HoldDuration or 0.02)
+            pmt:InputHoldEnd()
+        end
+
+        if isDig then
+            task.wait(0.5)
+            _G.IsDigging = false
+        end
+    end)
 end
 
 local function CheckPromptLogic(pmt)
