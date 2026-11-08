@@ -1478,6 +1478,7 @@ local function StartBot()
         _G.DigChestPending = false
         _G.DigChestPosition = nil
         _G.DigChestHole = nil
+        _G.DigChestRetryCount = 0
 
         npc = GetNearestSeller()
         if npc then
