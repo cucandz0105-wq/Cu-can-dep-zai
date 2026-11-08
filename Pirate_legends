@@ -1473,7 +1473,26 @@ local function StartBot()
             end
             
             if not _G.IsTeleportingHome and not tPos then
+
+    -- KIỂM TRA LẠI MỤC TIÊU ĐÀO CŨ
+    if _G.DigChestPending and _G.DigChestPosition then
+        local holeStillExists =
+            _G.DigChestHole and _G.DigChestHole.Parent
+
+        local chestStillExists =
+            GetDroppedChestNear(_G.DigChestPosition, 35) ~= nil
+
+        if not holeStillExists and not chestStillExists then
+            -- Hố và rương đều không còn ở mục tiêu cũ
+            _G.DigChestPending = false
+            _G.DigChestPosition = nil
+            _G.DigChestHole = nil
+            _G.DigChestRetryCount = 0
+        end
+    end
+
     if IsHoldingChest() then
+
         -- Đã nhặt được rương: bỏ khóa và đi bán
         _G.DigChestPending = false
         _G.DigChestPosition = nil
