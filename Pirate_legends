@@ -1686,9 +1686,15 @@ end
             if notNpcOrDoor and not isQuestMenuOpen and _G.IsEscapingStuck and _G.TimeAfterTP then
                 local elapsedAfterTP = os.clock() - _G.TimeAfterTP
                 if elapsedAfterTP >= 2.0 then
-                    if char and hum and hum.Health > 0 then 
+                 if char and hum and hum.Health > 0 then
                         hrp.Anchored = false
-                        hum.Health = 0 
+
+                        -- Đánh dấu chết do kẹt mục tiêu đào
+                        if _G.DigChestPending and _G.DigChestPosition then
+                            _G.TargetStuckDeathPending = true
+                        end
+
+                        hum.Health = 0
                     end
                     _G.IsEscapingStuck = false 
                     _G.TimeAfterTP = nil
