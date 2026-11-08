@@ -1185,6 +1185,28 @@ local function GetNearestBuriedChest()
     return nearHole, nearModel
 end
 
+local function IsBuriedChestTargetAlive(targetSpawn)
+    if not targetSpawn then return false end
+
+    local folder = Workspace:FindFirstChild("ChestsFolder")
+    if not folder then return false end
+
+    for _, isl in pairs(folder:GetChildren()) do
+        for _, cst in pairs(isl:GetChildren()) do
+            if cst.Name == "BuriedChest" then
+                local pmt = cst:FindFirstChildWhichIsA("ProximityPrompt", true)
+                local spn = cst:FindFirstChild("Spawn")
+
+                if pmt and pmt.Enabled and spn == targetSpawn then
+                    return true
+                end
+            end
+        end
+    end
+
+    return false
+end
+
 local function GetNearestDroppedChest()
     local char = LocalPlayer.Character local hrp = char and char:FindFirstChild("HumanoidRootPart") if not hrp then return nil end
     local nearChest, minDist = nil, math.huge
@@ -1380,17 +1402,22 @@ local function AutoTriggerPrompt(target)
     local actText = string.lower(prompt.ActionText)
 
     if (string.find(actText, "dig") or string.find(actText, "dao"))
-        and _G.AutoDigAndPick and not _G.AutoChestOnly then
+    and _G.AutoDigAndPick and not _G.AutoChestOnly then
 
--- Chỉ reset khi chuyển sang hố mới
-        if _G.DigChestHole ~= target then
+    local buried = prompt:FindFirstAncestor("BuriedChest")
+    local spawn = buried and buried:FindFirstChild("Spawn")
+
+    if spawn and spawn:IsA("BasePart") then
+        -- Chỉ reset khi chuyển sang hố mới
+        if _G.DigChestHole ~= spawn then
             _G.DigChestRetryCount = 0
         end
 
         _G.DigChestPending = true
-        _G.DigChestPosition = target.Position
-        _G.DigChestHole = target
+        _G.DigChestPosition = spawn.Position
+        _G.DigChestHole = spawn
     end
+end
 
     isInteracting = true
     task.spawn(function()
