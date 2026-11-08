@@ -1501,22 +1501,22 @@ local function StartBot()
             
             if not _G.IsTeleportingHome and not tPos then
 
-    -- KIỂM TRA LẠI MỤC TIÊU ĐÀO CŨ
-    if _G.DigChestPending and _G.DigChestPosition then
-        local holeStillExists =
-            _G.DigChestHole and _G.DigChestHole.Parent
+-- KIỂM TRA LẠI MỤC TIÊU ĐÀO CŨ
+if _G.DigChestPending and _G.DigChestPosition then
+    local holeStillExists =
+        IsBuriedChestTargetAlive(_G.DigChestHole)
 
-        local holeStillExists =
-    IsBuriedChestTargetAlive(_G.DigChestHole)
+    local chestStillExists =
+        GetDroppedChestNear(_G.DigChestPosition, 35) ~= nil
 
-        if not holeStillExists and not chestStillExists then
-            -- Hố và rương đều không còn ở mục tiêu cũ
-            _G.DigChestPending = false
-            _G.DigChestPosition = nil
-            _G.DigChestHole = nil
-            _G.DigChestRetryCount = 0
-        end
+    if not holeStillExists and not chestStillExists then
+        -- Hố và rương đều không còn
+        _G.DigChestPending = false
+        _G.DigChestPosition = nil
+        _G.DigChestHole = nil
+        _G.DigChestRetryCount = 0
     end
+end
 
     if IsHoldingChest() then
 
@@ -1950,28 +1950,27 @@ LocalPlayer.CharacterAdded:Connect(function(newChar)
         _G.TargetStuckDeathPending = false
 
         if _G.DigChestPending and _G.DigChestPosition then
-            if (_G.DigChestRetryCount or 0) == 0 then
+            -- Kiểm tra hố và rương ở mọi lần chết do kẹt mục tiêu
+            local holeStillExists =
+                IsBuriedChestTargetAlive(_G.DigChestHole)
+
+            local chestStillExists =
+                GetDroppedChestNear(_G.DigChestPosition, 35) ~= nil
+
+            if not holeStillExists and not chestStillExists then
+                -- Cả hố và rương đều biến mất: bỏ mục tiêu cũ
+                _G.DigChestPending = false
+                _G.DigChestPosition = nil
+                _G.DigChestHole = nil
+                _G.DigChestRetryCount = 0
+
+            elseif (_G.DigChestRetryCount or 0) == 0 then
                 -- Lần chết đầu: giữ mục tiêu cũ để thử lại
                 _G.DigChestRetryCount = 1
+
             else
-
--- Kiểm tra hố và rương cũ còn tồn tại không
-local holeStillExists =
-    IsBuriedChestTargetAlive(_G.DigChestHole)
-
-local chestStillExists =
-    GetDroppedChestNear(_G.DigChestPosition, 35) ~= nil
-
-                if not holeStillExists and not chestStillExists then
-                    -- Cả hố và rương đều biến mất
-                    _G.DigChestPending = false
-                    _G.DigChestPosition = nil
-                    _G.DigChestHole = nil
-                    _G.DigChestRetryCount = 0
-                else
-                    -- Vẫn còn mục tiêu thì tiếp tục nhặt
-                    _G.DigChestRetryCount = 2
-                end
+                -- Chết lần tiếp theo nhưng mục tiêu vẫn còn
+                _G.DigChestRetryCount = 2
             end
         end
     end
