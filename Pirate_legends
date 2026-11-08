@@ -1898,6 +1898,23 @@ if BtnPick then
 end
 -- RESET SẠCH CỜ TRẠNG THÁI MỖI KHI HỒI SINH (CHARACTER RE-SPAWN)
 LocalPlayer.CharacterAdded:Connect(function(newChar)
+    -- Chỉ xử lý nếu lần chết trước là Target-stuck
+    if _G.TargetStuckDeathPending then
+        _G.TargetStuckDeathPending = false
+
+        if _G.DigChestPending and _G.DigChestPosition then
+            if (_G.DigChestRetryCount or 0) == 0 then
+                -- Lần chết đầu: giữ mục tiêu cũ để thử lại
+                _G.DigChestRetryCount = 1
+            else
+                -- Lần chết thứ hai: bỏ mục tiêu cũ
+                _G.DigChestPending = false
+                _G.DigChestPosition = nil
+                _G.DigChestHole = nil
+                _G.DigChestRetryCount = 0
+            end
+        end
+    end
     _G.IsDigging, _G.FakeFallSpeed, _G.CurrentTarget, _G.StuckTime, _G.IsTeleportingHome = false, 0, nil, 0, false
     _G.DaDenDich = false
     _G.SellerStuckTime = nil
