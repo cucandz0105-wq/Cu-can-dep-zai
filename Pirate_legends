@@ -314,6 +314,17 @@ BtnPick.ZIndex = 17
 BtnPick.Parent = FarmContainer
 Instance.new("UICorner", BtnPick).CornerRadius = UDim.new(0, 8)
 
+local BtnTrainer = Instance.new("TextButton")
+BtnTrainer.Size = UDim2.new(1, -20, 0, 45)
+BtnTrainer.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+BtnTrainer.Text = "TP TO TRAINER"
+BtnTrainer.TextColor3 = Color3.fromRGB(255, 255, 255)
+BtnTrainer.Font = Enum.Font.SourceSansBold
+BtnTrainer.TextSize = 14
+BtnTrainer.ZIndex = 17
+BtnTrainer.Parent = FarmContainer
+Instance.new("UICorner", BtnTrainer).CornerRadius = UDim.new(0, 8)
+
 local CreditsLabel = Instance.new("TextLabel")
 CreditsLabel.Size = UDim2.new(1, 0, 0, 20)
 CreditsLabel.Position = UDim2.new(0, 0, 1, -20)
@@ -1899,6 +1910,103 @@ local function StopBot()
 end
 
 -- =======================================================
+-- TP TO TRAINER - KHÔNG GIỚI HẠN SỐ LẦN
+-- =======================================================
+
+local function GetLiveTrainerPart(npc, trainerFolder)
+    if not npc or not npc:IsA("Model") then
+        return nil
+    end
+
+    if npc.Name ~= "Trainer" then
+        return nil
+    end
+
+    if npc.Parent ~= trainerFolder then
+        return nil
+    end
+
+    if not npc:IsDescendantOf(Workspace) then
+        return nil
+    end
+
+    local hum = npc:FindFirstChildWhichIsA("Humanoid", true)
+    if hum and hum.Health <= 0 then
+        return nil
+    end
+
+    local part = npc:FindFirstChild("HumanoidRootPart", true)
+
+    if not part or not part:IsA("BasePart") then
+        part = npc.PrimaryPart
+    end
+
+    if not part or not part:IsA("BasePart") then
+        part = npc:FindFirstChildWhichIsA("BasePart", true)
+    end
+
+    if not part or not part:IsDescendantOf(npc) then
+        return nil
+    end
+
+    if not part:IsDescendantOf(Workspace) then
+        return nil
+    end
+
+    return part
+end
+
+local function ClickToTPTrainer()
+    local trainerFolder = Workspace:FindFirstChild("Trainers")
+
+    if not trainerFolder then
+        BtnTrainer.Text = "TRAINER FOLDER NOT FOUND"
+        return
+    end
+
+    local character = LocalPlayer.Character
+    local hrp = character and character:FindFirstChild("HumanoidRootPart")
+
+    if not hrp then
+        BtnTrainer.Text = "CHARACTER NOT READY"
+        return
+    end
+
+    local nearestPart = nil
+    local nearestDistance = math.huge
+
+    for _, npc in ipairs(trainerFolder:GetChildren()) do
+        local livePart = GetLiveTrainerPart(npc, trainerFolder)
+
+        if livePart then
+            local distance = (hrp.Position - livePart.Position).Magnitude
+
+            if distance < nearestDistance then
+                nearestDistance = distance
+                nearestPart = livePart
+            end
+        end
+    end
+
+    if not nearestPart then
+        BtnTrainer.Text = "WAITING FOR TRAINER"
+        return
+    end
+
+    -- Kiểm tra lại NPC trước khi TP
+    if not nearestPart.Parent
+        or not nearestPart:IsDescendantOf(Workspace) then
+        BtnTrainer.Text = "TRAINER DISAPPEARED"
+        return
+    end
+
+    hrp.CFrame = nearestPart.CFrame * CFrame.new(0, 3, 0)
+
+    BtnTrainer.Text = "TP TO TRAINER"
+    BtnTrainer.BackgroundColor3 = Color3.fromRGB(0, 120, 200)
+end
+
+-- =======================================================
 -- KẾT NỐI UI VÀ KHỞI ĐỘNG CÔNG TÁC FARM
 -- =======================================================
 if BtnDig then BtnDig.Text = "AUTO FARM [OFF]" end
@@ -1955,6 +2063,11 @@ if BtnPick then
         end
     end)
 end
+
+if BtnTrainer then
+    BtnTrainer.MouseButton1Click:Connect(ClickToTPTrainer)
+end
+
 -- RESET SẠCH CỜ TRẠNG THÁI MỖI KHI HỒI SINH (CHARACTER RE-SPAWN)
 LocalPlayer.CharacterAdded:Connect(function(newChar)
     -- Chỉ xử lý nếu lần chết trước là Target-stuck
