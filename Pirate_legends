@@ -1956,6 +1956,9 @@ local function GetLiveTrainerPart(npc, trainerFolder)
     return part
 end
 
+-- Lưu Trainer vừa TP tới, không lưu danh sách đã gặp
+local lastTPTrainer = nil
+
 local function ClickToTPTrainer()
     local trainerFolder = Workspace:FindFirstChild("Trainers")
 
@@ -1972,35 +1975,70 @@ local function ClickToTPTrainer()
         return
     end
 
-    local nearestPart = nil
-    local nearestDistance = math.huge
+    -- Thu thập tất cả Trainer đang tồn tại
+    local liveTrainers = {}
 
     for _, npc in ipairs(trainerFolder:GetChildren()) do
-        local livePart = GetLiveTrainerPart(npc, trainerFolder)
+        local part = GetLiveTrainerPart(npc, trainerFolder)
 
-        if livePart then
-            local distance = (hrp.Position - livePart.Position).Magnitude
-
-            if distance < nearestDistance then
-                nearestDistance = distance
-                nearestPart = livePart
-            end
+        if part then
+            table.insert(liveTrainers, {
+                Model = npc,
+                Part = part
+            })
         end
     end
 
-    if not nearestPart then
+    if #liveTrainers == 0 then
+        lastTPTrainer = nil
         BtnTrainer.Text = "WAITING FOR TRAINER"
         return
     end
 
+    -- Sắp xếp cố định theo vị trí trên bản đồ
+    table.sort(liveTrainers, function(a, b)
+        local pa = a.Part.Position
+        local pb = b.Part.Position
+
+        if pa.X ~= pb.X then
+            return pa.X < pb.X
+        end
+
+        if pa.Z ~= pb.Z then
+            return pa.Z < pb.Z
+        end
+
+        return pa.Y < pb.Y
+    end)
+
+    -- Chọn Trainer kế tiếp trong vòng luân phiên
+    local nextIndex = 1
+
+    if lastTPTrainer then
+        for i, entry in ipairs(liveTrainers) do
+            if entry.Model == lastTPTrainer then
+                nextIndex = (i % #liveTrainers) + 1
+                break
+            end
+        end
+    end
+
+    local target = liveTrainers[nextIndex]
+
     -- Kiểm tra lại NPC trước khi TP
-    if not nearestPart.Parent
-        or not nearestPart:IsDescendantOf(Workspace) then
+    local livePart = GetLiveTrainerPart(
+        target.Model,
+        trainerFolder
+    )
+
+    if not livePart then
         BtnTrainer.Text = "TRAINER DISAPPEARED"
         return
     end
 
-    hrp.CFrame = nearestPart.CFrame * CFrame.new(0, 3, 0)
+    hrp.CFrame = livePart.CFrame * CFrame.new(0, 3, 0)
+
+    lastTPTrainer = target.Model
 
     BtnTrainer.Text = "TP TO TRAINER"
     BtnTrainer.BackgroundColor3 = Color3.fromRGB(0, 120, 200)
