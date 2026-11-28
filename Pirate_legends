@@ -1943,12 +1943,28 @@ end
                     _G.TimeAfterTP = nil
                 end
                 
-                local destPos = (toSeller or ghostDoor) and stopPos or Vector3.new(tPos.X, tPos.Y + 1.8, tPos.Z)
-                local moveStep = math.min(FLY_SPEED * dt, dist)
-                local currentDir = (destPos - hrp.Position).Unit
-                local nextPos = hrp.Position + (currentDir * moveStep)
-                
-                hrp.CFrame = CFrame.new(nextPos, destPos)
+                -- SMART FLY 3D
+local destPos = (toSeller or ghostDoor)
+    and stopPos
+    or Vector3.new(tPos.X, tPos.Y + 1.8, tPos.Z)
+
+local currentDir = GetSmartFlyDirection(hrp, destPos)
+
+if currentDir then
+    local moveStep = math.min(FLY_SPEED * dt, 60)
+
+    local nextPos = hrp.Position
+        + currentDir * moveStep
+
+    hrp.CFrame = CFrame.new(
+        nextPos,
+        nextPos + currentDir
+    )
+else
+    -- Không có hướng an toàn: đứng chờ
+    hrp.AssemblyLinearVelocity = Vector3.zero
+end
+
             end      
         end
     end)
