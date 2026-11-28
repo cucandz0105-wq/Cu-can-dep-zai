@@ -1454,6 +1454,99 @@ end
 end
 -- =======================================================
 
+-- =====================================================
+-- SMART FLY 3D - OBSTACLE AVOIDANCE
+-- =====================================================
+
+local function IsPathClear(hrp, destination)
+    local direction = destination - hrp.Position
+
+    if direction.Magnitude < 0.1 then
+        return true
+    end
+
+    local params = RaycastParams.new()
+    params.FilterType = Enum.RaycastFilterType.Exclude
+    params.FilterDescendantsInstances = {
+        LocalPlayer.Character
+    }
+    params.IgnoreWater = false
+
+    local size = Vector3.new(
+        hrp.Size.X * 0.85,
+        hrp.Size.Y * 0.85,
+        hrp.Size.Z * 0.85
+    )
+
+    local result = Workspace:Blockcast(
+        hrp.CFrame,
+        size,
+        direction,
+        params
+    )
+
+    return result == nil
+end
+
+local function GetSmartFlyDirection(hrp, destination)
+    local origin = hrp.Position
+    local offset = destination - origin
+
+    if offset.Magnitude < 0.1 then
+        return Vector3.zero
+    end
+
+    -- Đường thẳng an toàn: đi trực tiếp
+    if IsPathClear(hrp, destination) then
+        return offset.Unit
+    end
+
+    -- Tạo các hướng thử vòng tránh
+    local forward = offset.Unit
+    local right = forward:Cross(Vector3.yAxis)
+
+    if right.Magnitude < 0.01 then
+        right = Vector3.xAxis
+    else
+        right = right.Unit
+    end
+
+    local up = right:Cross(forward).Unit
+
+    local candidates = {
+        forward + up,
+        forward - up,
+        forward + right,
+        forward - right,
+        forward + up * 0.7 + right * 0.7,
+        forward + up * 0.7 - right * 0.7,
+        forward - up * 0.7 + right * 0.7,
+        forward - up * 0.7 - right * 0.7,
+    }
+
+    local bestDirection = nil
+    local bestScore = math.huge
+    local lookAhead = math.min(offset.Magnitude, 12)
+
+    for _, candidate in ipairs(candidates) do
+        local direction = candidate.Unit
+        local waypoint = origin + direction * lookAhead
+
+        if IsPathClear(hrp, waypoint) then
+            local score =
+                (destination - waypoint).Magnitude
+                + (direction - forward).Magnitude * 2
+
+            if score < bestScore then
+                bestScore = score
+                bestDirection = direction
+            end
+        end
+    end
+
+    return bestDirection
+end
+
 local function StartBot()
     if _G.BotConnection then _G.BotConnection:Disconnect() _G.BotConnection = nil end 
     if _G.NoclipConnection then _G.NoclipConnection:Disconnect() _G.NoclipConnection = nil end
@@ -1611,17 +1704,6 @@ end
                 _G.TimeAfterTP = nil 
                 _G.TimeAtTarget = nil 
                 isInteracting = false
-                
-                -- ⚡ TELEPORT ĐÓN ĐẦU: Nhảy ngay đến vị trí cách mục tiêu 20 studs nếu ở xa
-                pcall(function()
-                    local initialDist = (hrp.Position - tPos).Magnitude
-                    if initialDist > 50 then
-                        local approachDir = (tPos - hrp.Position).Unit
-                        local targetTeleportPos = tPos - (approachDir * 50)
-                        targetTeleportPos = Vector3.new(targetTeleportPos.X, tPos.Y + 1.8, targetTeleportPos.Z)
-                        hrp.CFrame = CFrame.new(targetTeleportPos, tPos)
-                    end
-                end)
             end
 
             -- =======================================================
