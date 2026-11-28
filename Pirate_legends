@@ -1488,20 +1488,44 @@ local function IsPathClear(hrp, destination)
     return result == nil
 end
 
+-- SMART FLY 3D - PERSISTENT WAYPOINT
+local smartFlyWaypoint = nil
+local smartFlyTarget = nil
+
 local function GetSmartFlyDirection(hrp, destination)
     local origin = hrp.Position
     local offset = destination - origin
 
     if offset.Magnitude < 0.1 then
+        smartFlyWaypoint = nil
         return Vector3.zero
     end
 
-    -- Đường thẳng an toàn: đi trực tiếp
+    -- Mục tiêu đổi vị trí đáng kể thì tìm đường lại
+    if not smartFlyTarget
+        or (destination - smartFlyTarget).Magnitude > 8 then
+        smartFlyWaypoint = nil
+        smartFlyTarget = destination
+    end
+
+    -- Đường tới mục tiêu đã thông
     if IsPathClear(hrp, destination) then
+        smartFlyWaypoint = nil
         return offset.Unit
     end
 
-    -- Tạo các hướng thử vòng tránh
+    -- Nếu waypoint cũ vẫn đi tới được thì tiếp tục đi
+    if smartFlyWaypoint then
+        local toWaypoint = smartFlyWaypoint - origin
+
+        if toWaypoint.Magnitude > 4
+            and IsPathClear(hrp, smartFlyWaypoint) then
+            return toWaypoint.Unit
+        end
+
+        smartFlyWaypoint = nil
+    end
+
     local forward = offset.Unit
     local right = forward:Cross(Vector3.yAxis)
 
@@ -1511,40 +1535,70 @@ local function GetSmartFlyDirection(hrp, destination)
         right = right.Unit
     end
 
-    local up = right:Cross(forward).Unit
+    local up = Vector3.yAxis
 
-    local candidates = {
-        forward + up,
-        forward - up,
-        forward + right,
-        forward - right,
-        forward + up * 0.7 + right * 0.7,
-        forward + up * 0.7 - right * 0.7,
-        forward - up * 0.7 + right * 0.7,
-        forward - up * 0.7 - right * 0.7,
-    }
+    local candidates = {}
 
-    local bestDirection = nil
-    local bestScore = math.huge
-    local lookAhead = math.min(offset.Magnitude, 12)
-
-    for _, candidate in ipairs(candidates) do
-        local direction = candidate.Unit
-        local waypoint = origin + direction * lookAhead
-
-        if IsPathClear(hrp, waypoint) then
-            local score =
-                (destination - waypoint).Magnitude
-                + (direction - forward).Magnitude * 2
-
-            if score < bestScore then
-                bestScore = score
-                bestDirection = direction
+    -- Thử vòng sang trái/phải và bay lên/xuống
+    for _, forwardDist in ipairs({10, 18, 28}) do
+        for _, sideDist in ipairs({-22, -14, 14, 22}) do
+            for _, height in ipairs({0, 14, -14, 22}) do
+                table.insert(candidates,
+                    origin
+                    + forward * forwardDist
+                    + right * sideDist
+                    + up * height
+                )
             end
         end
     end
 
-    return bestDirection
+    -- Chọn waypoint an toàn và gần mục tiêu nhất
+    local bestWaypoint = nil
+    local bestScore = math.huge
+
+    for _, waypoint in ipairs(candidates) do
+        if IsPathClear(hrp, waypoint) then
+            local remaining = (destination - waypoint).Magnitude
+            local detour = (waypoint - origin).Magnitude
+
+            local score = remaining + detour * 0.25
+
+            -- Ưu tiên waypoint có thể bay tiếp tới mục tiêu
+            if IsPathClear(hrp, waypoint)
+                and score < bestScore then
+                bestScore = score
+                bestWaypoint = waypoint
+            end
+        end
+    end
+
+    if bestWaypoint then
+        smartFlyWaypoint = bestWaypoint
+        return (bestWaypoint - origin).Unit
+    end
+
+    -- Không tìm được đường vòng: thử thoát theo các hướng xung quanh
+    local escapeDirections = {
+        right, -right, up, -up,
+        (forward + right).Unit,
+        (forward - right).Unit,
+        (forward + up).Unit,
+        (forward - up).Unit,
+        (-forward + right).Unit,
+        (-forward - right).Unit
+    }
+
+    for _, direction in ipairs(escapeDirections) do
+        local testPoint = origin + direction * 12
+
+        if IsPathClear(hrp, testPoint) then
+            smartFlyWaypoint = testPoint
+            return direction
+        end
+    end
+
+    return nil
 end
 
 local function StartBot()
@@ -1950,18 +2004,15 @@ local destPos = (toSeller or ghostDoor)
 
 local currentDir = GetSmartFlyDirection(hrp, destPos)
 
-if currentDir then
+if currentDir and currentDir.Magnitude > 0.01 then
     local moveStep = math.min(FLY_SPEED * dt, 60)
-
-    local nextPos = hrp.Position
-        + currentDir * moveStep
+    local nextPos = hrp.Position + currentDir * moveStep
 
     hrp.CFrame = CFrame.new(
         nextPos,
         nextPos + currentDir
     )
 else
-    -- Không có hướng an toàn: đứng chờ
     hrp.AssemblyLinearVelocity = Vector3.zero
 end
 
@@ -1982,6 +2033,8 @@ local function StopBot()
     _G.TimeAtTarget = nil
     _G.PauseStartTime = nil
     _G.IsPausedForAntiCheat = false
+    smartFlyWaypoint = nil
+    smartFlyTarget = nil
 
     isInteracting = false
 
